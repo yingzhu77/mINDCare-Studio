@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(glm-plan-usage:usage-query-skill)",
+      "WebSearch",
+      "Bash(curl:*)"
+    ]
+  }
+}

@@ -1,11 +1,10 @@
 <template>
   <div class="knowledge-container">
-    <!-- 头部区域：页面标题与右侧新增按钮 -->
+    <!-- 头部区域：页面标题与右侧新增按钮 (Updated) -->
     <div class="header-section">
       <h2 class="section-title">知识文章</h2>
       <div class="header-buttons">
         <el-button type="primary" @click="handleAdd">新增</el-button>
-        <el-button type="primary" plain>编辑</el-button>
       </div>
     </div>
 
@@ -59,12 +58,20 @@
         <!-- 操作区域：根据文章当前状态显示对应的业务按钮 -->
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary">编辑</el-button>
-            <!-- 状态切换：1为已发布，显示下线；0为草稿，显示发布 -->
-            <el-button link :type="row.status == '1' ? 'warning' : 'success'">
+            <el-button link type="primary" @click="handleEdit(row)"
+              >编辑</el-button
+            >
+            <!-- 状态切换：1为已发布，显示下线；2为已下线，显示发布 -->
+            <el-button
+              link
+              :type="row.status == '1' ? 'warning' : 'success'"
+              @click="handleStatusChange(row)"
+            >
               {{ row.status == '1' ? '下线' : '发布' }}
             </el-button>
-            <el-button link type="danger">删除</el-button>
+            <el-button link type="danger" @click="handleDelete(row)"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -82,6 +89,13 @@
         />
       </div>
     </el-card>
+
+    <!-- 新增/编辑弹窗组件 -->
+    <ArticleDialog
+      ref="articleDialogRef"
+      :categories="categories"
+      @refresh="handleSearch"
+    />
   </div>
 </template>
 
@@ -92,10 +106,19 @@
  * 它集成了 API 调用、动态表单组件和 Element Plus UI 框架。
  */
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document, PriceTag } from '@element-plus/icons-vue'
 import TableSearch from '@/components/TableSearch.vue'
-import { categoryTree, articlePage } from '@/api/admin'
+import ArticleDialog from '@/components/ArticleDialog.vue'
+import {
+  categoryTree,
+  articlePage,
+  articleDelete,
+  articleStatusUpdate,
+} from '@/api/admin'
+
+// 弹窗组件引用
+const articleDialogRef = ref(null)
 
 // 定义搜索栏的结构：这是一个数组，决定了搜索区域有哪些输入框
 const formItem = [
@@ -171,9 +194,81 @@ const handleReset = () => {
   handleSearch() // 重新获取数据
 }
 
-// 模拟新增按钮点击
+/**
+ * 新增文章
+ * 打开弹窗组件，传入 null 表示新增模式
+ */
 const handleAdd = () => {
-  ElMessage.info('新增文章功能正在开发中...')
+  if (articleDialogRef.value) {
+    articleDialogRef.value.open()
+  }
+}
+
+/**
+ * 编辑文章
+ * 打开弹窗组件，传入文章 ID 进入编辑模式
+ * @param {Object} row 行数据
+ */
+const handleEdit = (row) => {
+  if (articleDialogRef.value) {
+    articleDialogRef.value.open(row.id)
+  }
+}
+
+/**
+ * 更新文章状态 (发布/下线)
+ * @param {Object} row 行数据
+ */
+const handleStatusChange = async (row) => {
+  const isPublish = row.status != '1'
+  const actionText = isPublish ? '发布' : '下线'
+  const targetStatus = isPublish ? '1' : '2'
+
+  try {
+    await ElMessageBox.confirm(
+      `确认${actionText}文章《${row.title}》吗？`,
+      '确认操作',
+      {
+        confirmButtonText: `确认${actionText}`,
+        cancelButtonText: '取消',
+        type: isPublish ? 'success' : 'warning',
+      },
+    )
+
+    await articleStatusUpdate(row.id, targetStatus)
+    ElMessage.success(`${actionText}成功`)
+    handleSearch()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('更新状态失败:', error)
+    }
+  }
+}
+
+/**
+ * 删除文章
+ * @param {Object} row 行数据
+ */
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除文章《${row.title}》吗？删除后不可恢复。`,
+      '危险操作',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'error',
+      },
+    )
+
+    await articleDelete(row.id)
+    ElMessage.success('删除成功')
+    handleSearch()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除文章失败:', error)
+    }
+  }
 }
 
 // 存储分类映射关系，方便将 ID 转换为名称

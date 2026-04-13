@@ -40,11 +40,12 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { login } from '@/api/admin'
 
 /**
  * 登录页面逻辑
  * 1. 验证表单输入。
- * 2. 模拟登录成功，保存 Token 到本地存储。
+ * 2. 调用真实登录接口，保存返回的 Token 到本地存储。
  * 3. 登录成功后跳转到 /back/dashboard。
  */
 
@@ -68,15 +69,28 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true
       try {
-        // 模拟 API 请求延迟
-        await new Promise((resolve) => setTimeout(resolve, 800))
-        // 模拟保存 Token
-        localStorage.setItem('token', 'mock_token_12345')
-        ElMessage.success('登录成功')
-        // 跳转到控制台页面
-        router.push('/back/dashboard')
+        // 调用后端登录接口
+        const res = await login({
+          username: loginForm.username,
+          password: loginForm.password,
+        })
+        
+        // 兼容性处理：适配不同格式的后端返回数据
+        // 1. 如果 res 本身就是 token 字符串
+        // 2. 如果 res 是一个对象且包含 token 字段
+        const token = (res && typeof res === 'object') ? res.token : res
+        
+        if (token) {
+          localStorage.setItem('token', token)
+          ElMessage.success('登录成功')
+          // 跳转到控制台页面
+          router.push('/back/dashboard')
+        } else {
+          ElMessage.warning('登录成功但未获取到有效 Token，请联系管理员')
+        }
       } catch (error) {
-        console.error(error)
+        // 错误已由 request.js 拦截器统一处理，这里仅做日志
+        console.error('Login Error:', error)
       } finally {
         loading.value = false
       }
