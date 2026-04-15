@@ -50,7 +50,7 @@ const backendRouterRoutes = [
       },
       {
         path: 'consultations',
-        component: () => import('@/views/consultations.vue'),
+        component: () => import('@/views/emotional.vue'),
         meta: {
           title: '咨询记录',
           icon: 'ChatLineSquare',

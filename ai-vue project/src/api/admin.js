@@ -46,3 +46,18 @@ export function fileUpload(formData) {
     },
   })
 }
+
+// 分页查询咨询会话
+export function sessionPage(params) {
+  return service.get('/psychological-chat/sessions', { params })
+}
+
+// 获取会话消息列表
+export function sessionMessages(sessionId) {
+  return service.get(`/psychological-chat/sessions/${sessionId}/messages`)
+}
+
+// 获取会话详情 (基于用户要求，推测此接口用于拉取基础会话信息)
+export function sessionDetail(sessionId) {
+  return service.get(`/psychological-chat/sessions/${sessionId}`)
+}
