@@ -1,4 +1,4 @@
-﻿<template>
+﻿﻿<template>
   <div class="emotional-container">
     <div class="header-section">
       <h2 class="section-title">咨询记录</h2>
@@ -46,7 +46,7 @@
               </div>
               <div class="content-col">
                 <div class="session-title">
-                  <strong>小暖助手 - {{ formatDate(resolveStartTime(row), 'slash') }}</strong>
+                  <strong>小暖助手 - {{ formatDate(row.startTime, 'slash') }}</strong>
                 </div>
                 <div v-if="row.aiSummary" class="session-summary text-ellipsis">
                   {{ row.aiSummary }}
@@ -69,8 +69,8 @@
         <el-table-column width="180" align="right">
           <template #default="{ row }">
             <div class="time-display">
-              <div class="date">{{ formatDate(row.updateTime || resolveStartTime(row), 'date') }}</div>
-              <div class="time">{{ formatDate(row.updateTime || resolveStartTime(row), 'time') }}</div>
+              <div class="date">{{ formatDate(row.endTime, 'date') }}</div>
+              <div class="time">{{ formatDate(row.endTime, 'time') }}</div>
             </div>
           </template>
         </el-table-column>
@@ -109,7 +109,9 @@ import { ref, reactive, onMounted, nextTick } from 'vue'
 import { sessionPage, sessionMessages } from '@/api/admin'
 import SessionDetailDialog from '@/components/SessionDetailDialog.vue'
 import {
+  getFirstUserMessageTime,
   getFirstAssistantSummary,
+  getLastMessageTime,
   normalizeMessages,
   resolveMessagesTotal,
 } from '@/utils/sessionMessage'
@@ -130,12 +132,23 @@ const loading = ref(false)
 const detailDialogRef = ref(null)
 const summaryTaskVersion = ref(0)
 
+// 统一会话起始时间兜底，首屏先用列表接口字段，随后再用消息接口精确覆盖
 const resolveStartTime = (row) => (
   row?.startTime ||
   row?.sessionStartTime ||
   row?.beginTime ||
   row?.createdAt ||
   row?.createTime ||
+  ''
+)
+
+// 统一会话结束时间兜底，优先使用最后一条消息时间相关字段
+const resolveEndTime = (row) => (
+  row?.endTime ||
+  row?.sessionEndTime ||
+  row?.lastMessageTime ||
+  row?.updateTime ||
+  row?.updatedAt ||
   ''
 )
 
@@ -180,9 +193,11 @@ const fillAssistantSummaries = async (rows, version) => {
         if (summaryTaskVersion.value !== version) return
 
         const normalized = normalizeMessages(res)
+        // 列表展示严格按消息顺序计算，保证时间和摘要都来自真实对话内容
+        row.startTime = getFirstUserMessageTime(normalized) || row.startTime
         row.aiSummary = getFirstAssistantSummary(normalized)
+        row.endTime = getLastMessageTime(normalized) || row.endTime
         row.displayMessageCount = resolveMessagesTotal(res) || normalized.length || row.displayMessageCount
-        row.startTime = resolveStartTime(row)
       } catch {
         if (summaryTaskVersion.value !== version) return
         row.aiSummary = ''
@@ -208,6 +223,7 @@ const fetchTableData = async () => {
     const rows = (res?.records || res?.list || []).map((item) => ({
       ...item,
       startTime: resolveStartTime(item),
+      endTime: resolveEndTime(item),
       aiSummary: '',
       displayMessageCount: resolveRowMessageCount(item),
     }))

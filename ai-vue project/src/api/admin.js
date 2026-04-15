@@ -61,3 +61,18 @@ export function sessionMessages(sessionId) {
 export function sessionDetail(sessionId) {
   return service.get(`/psychological-chat/sessions/${sessionId}`)
 }
+
+// 分页查询情绪日记（管理端）
+export function emotionDiaryPage(params) {
+  return service.get('/emotion-diary/admin/page', { params })
+}
+
+// 删除情绪日记（管理端）
+export function emotionDiaryDelete(id) {
+  return service.delete(`/emotion-diary/admin/${id}`)
+}
+
+// 获取综合数据分析（管理端）
+export function dataAnalyticsOverview() {
+  return service.get('/data-analytics/overview')
+}

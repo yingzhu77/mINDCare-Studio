@@ -75,7 +75,11 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 import { sessionDetail, sessionMessages } from '@/api/admin'
-import { normalizeMessages, resolveMessagesTotal } from '@/utils/sessionMessage'
+import {
+  getFirstUserMessageTime,
+  normalizeMessages,
+  resolveMessagesTotal,
+} from '@/utils/sessionMessage'
 
 const visible = ref(false)
 const loading = ref(false)
@@ -124,6 +128,8 @@ const fetchDetail = async () => {
     detail.value = detailRes || {}
     const normalized = normalizeMessages(messagesRes)
     messages.value = normalized
+    // 详情页开始时间以“第一条用户提问时间”为准，更符合会话开始语义
+    detail.value.startTime = getFirstUserMessageTime(normalized) || resolveStartTime(detail.value)
     detail.value.messageCount =
       resolveMessagesTotal(messagesRes) ||
       normalized.length ||

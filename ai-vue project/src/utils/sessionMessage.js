@@ -194,6 +194,20 @@ export function resolveMessagesTotal(payload) {
   return toMessageArray(payload).length
 }
 
+export function getFirstUserMessageTime(payload) {
+  const normalized = normalizeMessages(payload)
+  // 会话开始时间定义为第一条用户提问时间，而不是 AI 回复时间
+  const firstUserMessage = normalized.find((item) => item.role === 'user' && item.time)
+  return firstUserMessage?.time || normalized[0]?.time || ''
+}
+
+export function getLastMessageTime(payload) {
+  const normalized = normalizeMessages(payload)
+  // 会话结束时间定义为最后一条带时间戳的消息时间
+  const messagesWithTime = normalized.filter((item) => item.time)
+  return messagesWithTime[messagesWithTime.length - 1]?.time || ''
+}
+
 export function getFirstAssistantSummary(payload, maxLength = 160) {
   const normalized = normalizeMessages(payload)
   const firstAssistant = normalized.find((item) => item.role === 'assistant' && stripHtml(item.content))
