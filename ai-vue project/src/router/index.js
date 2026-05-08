@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 import BackendLayout from '@/components/BackendLayout.vue'
+import ClientLayout from '@/views/ClientLayout.vue'
 
 const backendRouterRoutes = [
   {
@@ -63,6 +64,28 @@ const backendRouterRoutes = [
     ],
   },
   {
+    path: '/client',
+    component: ClientLayout,
+    children: [
+      {
+        path: 'chat',
+        component: () => import('@/views/ClientChat.vue'),
+        meta: {
+          title: 'AI 咨询',
+          roles: ['admin', 'user'],
+        },
+      },
+      {
+        path: 'diary',
+        component: () => import('@/views/ClientDiary.vue'),
+        meta: {
+          title: '情绪日记',
+          roles: ['admin', 'user'],
+        },
+      },
+    ],
+  },
+  {
     path: '/',
     redirect: '/auth/login',
   },
@@ -78,8 +101,11 @@ router.beforeEach(async (to, from, next) => {
 
   const token = localStorage.getItem('token')
 
-  // 访问 /back/* 需要登录
-  if (to.path.startsWith('/back')) {
+  // 需要登录才能访问的路径前缀
+  const protectedPaths = ['/back', '/client']
+
+  const needsAuth = protectedPaths.some((p) => to.path.startsWith(p))
+  if (needsAuth) {
     if (!token) {
       return next('/auth/login')
     }

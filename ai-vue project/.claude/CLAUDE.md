@@ -273,44 +273,34 @@
 
 当当前窗口关闭、下一个窗口继续时，请先读取本节内容建立上下文。
 
-### 当前完成节点（2026-05-08 v0.3.0）
+### 当前完成节点（2026-05-08 v0.4.0）
 
-已完成 Phase 1（管理端页面真实化）核心工作：
+已完成 Phase 1（管理端页面真实化）+ Phase 2（用户端基础模块）核心工作：
 
 - **知识文章页** — 已接入真实接口（articlePage/articleAdd/articleUpdate/articleDelete/articleStatusUpdate + categoryTree）
 - **咨询记录页**（emotional.vue）— 已接入真实接口（sessionPage/sessionMessages）
-- **情绪日志页**（logs.vue）— 已接入真实接口（emotionDiaryPage/emotionDiaryDelete），修复了 `current`→`currentPage` 分页参数和 `userId`→`userName` 搜索参数对齐
+- **情绪日志页**（logs.vue）— 已接入真实接口（emotionDiaryPage/emotionDiaryDelete）
 - **Dashboard** — 已从模拟数据切换为 `dataAnalyticsOverview` 真实接口
-- **useAuthStore**（`src/store/useAuthStore.js`）— 已创建，管理 token/user/role 持久化，集成到 Login.vue 和 PageHead.vue
-- **角色路由守卫** — 路由 `/back/*` 已配置 `meta.roles: ['admin']`，页面刷新自动恢复用户信息
-- **`server/` 后端** — 情绪日记管理端接口新增 `minMoodScore`/`maxMoodScore` 评分范围过滤支持（文件位于 `server/src/emotion-diary/`，整个 `server/` 目录尚未纳入 git 跟踪）
+- **useAuthStore**（`src/store/useAuthStore.js`）— 管理 token/user/role 持久化，集成到 Login.vue 和 PageHead.vue
+- **角色路由守卫** — `/back/*` 仅 admin，`/client/*` 允许 admin/user，页面刷新自动恢复用户信息
+- **登录按角色跳转** — admin → `/back/dashboard`，user → `/client/chat`
+- **`src/api/client.js`** — 用户端 API 封装（chatSend、myDiaryPage、diaryAdd/Update）
+- **`ClientLayout.vue`** — 用户端布局（顶部水平导航 + 用户下拉退出）
+- **`ClientChat.vue`** — AI 聊天页面（fetch + ReadableStream 解析 SSE，含快捷提问、markdown 渲染、会话恢复）
+- **`ClientDiary.vue`** — 用户端情绪日记（分页列表、新增/编辑弹窗、删除，心情/睡眠/压力评分滑块）
+- **`server/` 后端** — 全部 7 实体 + 认证 + 管理端接口 + AI 模块 + 用户端聊天/日记接口
 
 ### 下一窗口第一个任务
 
-**启动用户端基础模块。**
+**用户端文章投稿模块。**
 
-用户端是项目业务闭环的关键缺口。管理端全部页面已可真实运行，下一步让普通用户可以访问和使用平台。
+当前用户端已有 AI 聊天和情绪日记两个功能。文章投稿是第三个关键用户端功能，可以让用户创建知识文章草稿并提交管理员审核。
 
 具体范围：
-1. 新建 `src/views/ClientLayout.vue` — 用户端布局（顶部导航 + 主体区域），参考 BackendLayout 但简化
-2. 新建 `src/views/ClientChat.vue` — AI 聊天页面，对接 `POST /api/chat/send` SSE 流式接口
-3. 新建 `src/views/ClientDiary.vue` — 用户端情绪日记页面，对接 `GET /emotion-diary/my/page` + `POST /emotion-diary`
-4. 路由配置：`/client/chat`、`/client/diary`，允许 `user` 角色访问
-5. 路由守卫扩展：`/client/*` 允许 admin/user 角色，无需 admin 限制
-
-后端已就绪的用户端接口：
-- `POST /api/chat/send` — SSE 流式聊天（AI 回复 + 消息落库）
-- `GET /api/emotion-diary/my/page` — 我的情绪日记分页
-- `POST /api/emotion-diary` — 新增情绪日记
-- `PUT /api/emotion-diary/:id` — 更新情绪日记
-
-### 做之前的确认清单
-
-- [ ] `cd server && npm run dev` 后端是否在运行（端口 8000）
-- [ ] `npm run dev` 前端是否在运行（端口 5173）
-- [ ] 浏览器能否打开 `http://127.0.0.1:5173/auth/login` 并登录
-- [ ] 检查 `src/store/useAuthStore.js` 是否存在（依赖 auth store 的 token/role 管理）
-- [ ] 确认 `server/` 目录后端变更已就绪（若需要情绪日记评分过滤，需 `git add server/` 后重建）
+1. 新建 `src/views/ClientArticles.vue` — 用户文章投稿列表（分页展示自己的投稿，含状态标签）
+2. 新建 `src/views/ClientArticleCreate.vue` — 投稿创建/编辑页面（标题、分类、摘要、内容、封面）
+3. 路由配置：`/client/articles`、`/client/articles/create`、`/client/articles/:id/edit`
+4. 后端已有接口：`GET /api/client/article/page`、`POST /api/client/article`、`PUT /api/client/article/:id`、`PUT /api/client/article/:id/submit`
 
 ### 边界约束
 
@@ -318,20 +308,18 @@
 |--------|--------|
 | `src/views/Client*.vue`（新建用户端页面） | `server/` 后端代码（除非发现 bug 或需要新增用户端接口） |
 | `src/router/index.js`（添加用户端路由） | `backend/` FastAPI 遗留代码 |
-| `src/api/admin.js`（如需要新增用户端 API 函数） | 重构现有管理端页面布局或样式 |
+| `src/api/client.js`（如需要新增用户端 API 函数） | 重构现有管理端页面布局或样式 |
 | `src/store/useAuthStore.js`（扩展角色判断逻辑） | 引入新依赖（保持 Vue3 + Element Plus + Axios + Pinia 栈） |
 | `src/components/`（新建用户端复用组件） | 删除 `consultations.vue` 等未引用文件 |
 
 ### 关键设计决策
 
-1. **SSE 聊天对接**：前端使用 `EventSource` 或 fetch + `ReadableStream` 读取 `POST /api/chat/send` 的流式响应，逐块渲染 AI 回复。后端 `AiService.chatStream()` 已支持 mock 模式（无 DeepSeek Key 时返回预设中文回复）。
-2. **用户端路由**：在 `/client/*` 下添加路由，`router.beforeEach` 中允许 admin 和 user 角色访问（当前守卫已准备就绪，只允许 admin，需扩展）。
-3. **无须复制的模块**：用户端情绪日记复用管理端的 `EmotionDiaryDetailDialog.vue` 和 `EmotionDiaryTable.vue`（或简化版），数据通过用户端 API 获取。
+1. **SSE 聊天**：前端使用 `fetch` + `ReadableStream`（而非 EventSource，因 POST 请求不受限），逐块解析 `data: {"type":"token","content":"..."}` SSE 事件。
+2. **用户端路由**：`/client/*` 允许 admin 和 user 角色，`router.beforeEach` 中通过 `to.meta.roles` 统一检查。
+3. **用户端情绪日记**：独立实现（而非复用管理端组件），更轻量且数据隔离明确。
 
 ### 验收标准
 
 1. `npm run build` 通过。
-2. 使用非 admin 账号登录后能看到用户端页面（或路由正常跳转）。
-3. 用户端 AI 聊天页面能发送消息并接收流式回复（mock 模式即可）。
-4. 用户端情绪日记页面能查看和新增日记。
-5. 用户端页面与管理端页面数据隔离正确（用户只能看到自己的数据）。
+2. 用户端页面（聊天、情绪日记）在 `user` 角色下可正常访问。
+3. `admin` 角色登录后进入管理端，`user` 角色登录后进入用户端。

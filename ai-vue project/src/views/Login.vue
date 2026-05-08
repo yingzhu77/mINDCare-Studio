@@ -75,7 +75,12 @@ const handleLogin = async () => {
             authStore.setUser(res.user)
           }
           ElMessage.success('登录成功')
-          router.push('/back/dashboard')
+          const role = res.user?.role || ''
+          if (role === 'admin') {
+            router.push('/back/dashboard')
+          } else {
+            router.push('/client/chat')
+          }
         } else {
           ElMessage.warning('登录成功但未获取到有效 Token，请联系管理员')
         }
