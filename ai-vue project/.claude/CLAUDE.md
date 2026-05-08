@@ -3,9 +3,6 @@
 请始终使用简体中文与我对话，并在回答时保持专业、简洁。
 请用中文解释，但代码中的函数名保持英文风格，注释请写中文。
 
-该项目的后端接口文档地址：
-https://xsl1e23zpk.apifox.cn/llms.txt
-
 本文件用于约束后续 Claude/Codex 在本仓库中的开发行为。目标不是增加复杂流程，而是减少常见的 LLM 编码失误：
 
 - 擅自假设需求
@@ -25,7 +22,7 @@ https://xsl1e23zpk.apifox.cn/llms.txt
 ## 2. 保持最小实现
 
 - 只写完成当前目标所需的最少代码。
-- 不为“未来可能会用到”提前增加抽象层、配置项或框架封装。
+- 不为"未来可能会用到"提前增加抽象层、配置项或框架封装。
 - 单次任务优先解决一个明确问题，不顺手扩大范围。
 - 如果 50 行就能解决，不要写成 200 行。
 
@@ -44,45 +41,45 @@ https://xsl1e23zpk.apifox.cn/llms.txt
   - 检查哪个接口
   - 观察哪个字段
   - 预期看到什么结果
-- 对多步任务，优先按“先打通、再验证、再扩展”的顺序推进。
+- 对多步任务，优先按"先打通、再验证、再扩展"的顺序推进。
 
 ## 5. 本项目当前定位
 
 本项目当前定位为：
 
-`AI 心理健康管理平台：Vue3 管理后台 + FastAPI 后端 + MySQL 数据库 + AI 情绪分析/会话摘要`
+`AI 心理健康管理平台：Vue3 管理后台 + NestJS 后端 + Prisma + MySQL + DeepSeek AI 情绪分析/会话摘要`
 
-当前代码主体是 Vue3 管理后台，已有页面和接口调用已经覆盖登录鉴权、知识文章管理、咨询会话记录、情绪日记管理、数据概览等后台模块。
+项目长期目标是做成偏 Web SaaS 形态的开源项目，具备清晰的前后端边界、统一类型契约、可复制的本地启动流程和完整的业务闭环。
 
-当前阶段不要把项目误判为普通 Vue 模板，也不要继续沿用旧的 RAG 问答底座定位。
+当前代码主体是 Vue3 管理后台前端，已有页面和接口调用覆盖登录鉴权、知识文章管理、咨询会话记录、情绪日记管理、数据概览等后台模块。
 
-## 6. 本次计划目的
+当前阶段不要误判项目：**后端主线已重建完成**。`server/` NestJS + Prisma 主线已覆盖全部 7 个核心实体、认证闭环、管理端业务接口和 DeepSeek AI 代理骨架。`backend/` FastAPI 早期原型已标记为 legacy，仅作迁移参考。
 
-本次计划目的：生成实现项目的一份计划书。
+## 6. 当前阶段优先做什么
 
-当前阶段不是直接实现 FastAPI 后端、创建数据库或接入真实 AI API，而是先输出一份可落地的项目实现计划书。
+当前阶段优先顺序：
 
-计划书必须覆盖：
+1. **前端管理端页面真实化**：逐页将模拟数据切换到 `/api` 真实接口（知识文章、咨询记录、情绪日记、Dashboard）。
+2. **建立 `useAuthStore` + 角色路由守卫**：统一认证状态管理，区分 admin/user 路由权限。
+3. **补齐用户端基础**：ClientLayout、用户端文章投稿、用户端情绪日记。
+4. **接入 AI 聊天**：ClientChat 页面 + SSE 流式对话与会话落库。
+5. **AI 分析结果展示**：情绪日记详情和会话详情展示分析结果。
+6. **文章审核闭环**：完整状态机和审核队列。
+7. **补齐开源化基础文件**：LICENSE、CHANGELOG、启动脚本等。
 
-- 当前前端已经具备的功能和接口调用边界
-- FastAPI 后端目录结构和分层职责
-- MySQL 数据库表设计与核心字段
-- AI 情绪分析和会话摘要的输入、输出、落库策略
-- 前后端联调方式
-- 阶段性交付顺序
-- 明确的验证标准和验收方式
+## 7. 当前阶段不要做什么
 
-计划书默认技术方案为：
+除非用户明确要求，否则当前阶段不要直接执行这些工作：
 
-- 后端：FastAPI
-- 数据库：MySQL
-- ORM：SQLAlchemy 或 SQLModel，除非用户另有要求
-- 鉴权：JWT
-- AI 接入：OpenAI-compatible API，由后端统一调用
+- 继续扩展 FastAPI `backend/` 的业务模块。
+- 接入真实 DeepSeek API 或写入真实 API Key（mock 模式已可用）。
+- 改动与当前任务无关的前端页面。
+- 引入额外的前端构建工具或状态管理库。
+- 大规模重构前端现有页面样式或布局。
 
-## 7. 当前分层不可打乱
+## 8. 当前分层不可打乱
 
-前端固定分层：
+### 前端固定分层
 
 - `src/main.js`：入口
 - `src/App.vue`：根组件
@@ -93,23 +90,28 @@ https://xsl1e23zpk.apifox.cn/llms.txt
 - `src/router/`：路由与鉴权控制
 - `src/store/`：状态管理
 
-后端计划分层：
+### 后端计划分层（server/）
 
-- `backend/app/main.py`：FastAPI 应用入口
-- `backend/app/api/`：路由层，负责接收请求和返回响应
-- `backend/app/schemas/`：Pydantic 请求、响应结构
-- `backend/app/models/`：数据库 ORM 模型
-- `backend/app/services/`：业务编排
-- `backend/app/repositories/`：数据库访问
-- `backend/app/ai/`：AI 调用、提示词、结果解析
-- `backend/app/core/`：配置、鉴权、异常、统一响应
-- `backend/app/db/`：数据库连接、迁移或初始化脚本
+- `server/src/main.ts`：NestJS 应用入口
+- `server/src/app.module.ts`：根模块
+- `server/src/common/`：统一响应、全局异常过滤、分页 DTO、JWT Guard、角色 Guard、当前用户装饰器
+- `server/src/config/`：环境变量、数据库连接配置
+- `server/src/auth/`：认证模块（登录、注册、JWT 签发）
+- `server/src/users/`：用户管理模块
+- `server/src/knowledge/`：知识文章模块
+- `server/src/chat/`：咨询会话和 AI 聊天模块
+- `server/src/emotion-diary/`：情绪日记模块
+- `server/src/analysis/`：AI 分析模块
+- `server/src/analytics/`：数据概览模块
+- `server/src/upload/`：文件上传模块
+- `server/src/ai/`：DeepSeek 客户端、提示词、解析器
+- `server/prisma/`：schema、migration、seed
 
 除非用户明确要求重构，否则不要打乱这套结构。
 
-## 8. 接口稳定优先
+## 9. 接口稳定优先
 
-后续后端计划必须优先兼容当前前端已经调用的接口路径和返回结构。
+后续 TS 后端必须优先兼容当前前端已经调用的接口路径和返回结构。
 
 当前前端通过 `src/api/admin.js` 调用的核心接口包括：
 
@@ -130,7 +132,7 @@ https://xsl1e23zpk.apifox.cn/llms.txt
 - `DELETE /emotion-diary/admin/{id}`
 - `GET /data-analytics/overview`
 
-统一响应应兼容当前 `src/utils/request.js` 的处理逻辑：
+统一响应必须兼容当前 `src/utils/request.js` 的处理逻辑：
 
 ```json
 {
@@ -140,58 +142,51 @@ https://xsl1e23zpk.apifox.cn/llms.txt
 }
 ```
 
+分页统一返回：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "records": [],
+    "total": 0,
+    "currentPage": 1,
+    "size": 10
+  }
+}
+```
+
 在没有明确需求前，不要把接口改成新的路径，也不要要求前端大规模调整请求层。
 
-## 9. 当前阶段优先做什么
+## 10. 模型接入规则
 
-当前阶段优先顺序：
-
-1. 生成项目实现计划书
-2. 明确当前前端能力、接口边界和缺口
-3. 设计 FastAPI 后端结构
-4. 设计 MySQL 表结构
-5. 设计 AI 情绪分析与会话摘要流程
-6. 设计前后端联调和验收方式
-7. 再根据计划书进入实际实现
-
-## 10. 当前阶段不要做什么
-
-除非用户明确要求，否则当前阶段不要直接执行这些工作：
-
-- 创建完整 FastAPI 后端
-- 创建或迁移真实数据库
-- 接入真实 AI API
-- 写入任何真实 API Key、数据库密码或模型密钥
-- 大规模重构前端页面
-- 改动与计划书无关的业务代码
-- 把远程接口代理替换成本地后端并强制联调
-
-## 11. 模型接入规则
-
-- 模型 API Key 只能放后端本地环境变量，不得写入前端或提交到仓库。
+- 模型 API Key 只能放后端环境变量，不得写入前端或提交到仓库。
 - 前端不能直接调用模型 API。
-- 正确链路是：`前端 -> 本项目后端 -> 模型 API`。
+- 正确链路是：`前端 -> 本项目 NestJS 后端 -> DeepSeek API`。
 - 如果示例文件或脚本中需要展示环境变量，必须留空或写占位值，不得提交真实密钥。
 - AI 分析结果应优先由后端落库，前端只展示后端返回结果，避免每次打开详情都重复调用模型。
+- 支持 mock AI 模式：当 API Key 未配置时，返回模拟分析结果，确保本地演示不依赖外部服务。
 
-## 12. 数据库设计规则
+## 11. 数据库设计规则
 
+- 使用 Prisma schema 定义所有数据模型，通过 migration 管理表结构变更。
+- 不再依赖自动建表或 `sync()` 方式。
 - 新增数据库表之前，必须先说明实体关系和业务流程。
-- 不要只为当前接口临时加表或重复字段。
 - 计划书中至少覆盖这些核心实体：
-  - 用户
-  - 知识分类
-  - 知识文章
-  - 咨询会话
-  - 会话消息
-  - 情绪日记
-  - AI 分析结果
+  - users
+  - knowledge_categories
+  - knowledge_articles
+  - chat_sessions
+  - chat_messages
+  - emotion_diaries
+  - ai_analysis_results
 - 修改已有表结构前，要说明：
   - 当前表负责什么
   - 新字段为什么不能放在已有字段或已有表里
   - 是否会造成重复键、重复范式或迁移成本
 
-## 13. AI 分析设计规则
+## 12. AI 分析设计规则
 
 计划书中的 AI 分析必须至少覆盖两类能力：
 
@@ -207,7 +202,7 @@ https://xsl1e23zpk.apifox.cn/llms.txt
 
 模型调用失败时，不得阻塞核心业务查询。接口应返回已有业务数据，并让 AI 分析字段为空或标记为待分析。
 
-## 14. 安全与部署端口
+## 13. 安全与部署端口
 
 - 生产环境不能默认相信公网安全，暴露服务前必须考虑扫描、限流和访问控制。
 - API Key、数据库密码、模型密钥只能放后端环境变量，不能写入前端或仓库。
@@ -215,28 +210,29 @@ https://xsl1e23zpk.apifox.cn/llms.txt
 - 对外暴露的端口、CORS 域名、管理接口、上传接口都必须在部署说明里明确写清楚。
 - 本地开发端口可以保持简单，但生产端口和访问入口必须单独配置。
 
-## 15. 注释与可读性
+## 14. 注释与可读性
 
 - 项目内新增说明性注释优先使用中文，面向初学者可读。
-- 注释只解释“为什么这样做”或“这一段在流程里负责什么”。
+- 注释只解释"为什么这样做"或"这一段在流程里负责什么"。
 - 不要写同义反复型注释。
 
-## 16. 验收习惯
+## 15. 验收习惯
 
 完成改动后尽量至少做一项验证：
 
-- 前端构建检查
-- FastAPI 导入检查
-- Python 语法检查
+- 前端构建检查：`npm run build`
+- NestJS 构建检查：`cd server && npm run build`
+- Prisma 迁移状态：`npx prisma migrate status`
+- NestJS 导入检查：`cd server && npx ts-node -e "import { AppModule } from './src/app.module'; console.log('OK')"`
+- 登录接口快速验证（TS 后端启动后）
 - 接口返回结构检查
-- 最小函数调用检查
 - 真实浏览器流程检查
 
 如果无法验证，要明确说明原因和缺口。
 
 本次只修改开发上下文文档时，不需要运行前端构建；应检查文档是否为 UTF-8 中文可读，并确认旧项目定位已移除。
 
-## 17. 已接入的项目级 skills
+## 16. 已接入的项目级 skills
 
 当前仓库已经以项目级方式接入下面两个可复用 skill：
 
@@ -261,6 +257,81 @@ https://xsl1e23zpk.apifox.cn/llms.txt
 
 ### 使用原则
 
-- `web-design-guidelines` 更适合“审查页面质量”。
-- `playwright` 更适合“跑真实浏览器流程”。
+- `web-design-guidelines` 更适合"审查页面质量"。
+- `playwright` 更适合"跑真实浏览器流程"。
 - 这两个 skill 都是辅助工具，不改变本项目分层和接口边界。
+
+## 17. 主计划书
+
+当前唯一主计划书：
+
+- `docs/project-fullstack-plan.md`
+
+所有开发决策、阶段划分、验收标准均以该文件为准。不得同时维护多份互相矛盾的计划文档。
+
+## 18. 会话交接 — 下一窗口继续的方向
+
+当当前窗口关闭、下一个窗口继续时，请先读取本节内容建立上下文。
+
+### 当前完成节点（2026-05-08 v0.3.0）
+
+已完成 Phase 1（管理端页面真实化）核心工作：
+
+- **知识文章页** — 已接入真实接口（articlePage/articleAdd/articleUpdate/articleDelete/articleStatusUpdate + categoryTree）
+- **咨询记录页**（emotional.vue）— 已接入真实接口（sessionPage/sessionMessages）
+- **情绪日志页**（logs.vue）— 已接入真实接口（emotionDiaryPage/emotionDiaryDelete），修复了 `current`→`currentPage` 分页参数和 `userId`→`userName` 搜索参数对齐
+- **Dashboard** — 已从模拟数据切换为 `dataAnalyticsOverview` 真实接口
+- **useAuthStore**（`src/store/useAuthStore.js`）— 已创建，管理 token/user/role 持久化，集成到 Login.vue 和 PageHead.vue
+- **角色路由守卫** — 路由 `/back/*` 已配置 `meta.roles: ['admin']`，页面刷新自动恢复用户信息
+- **`server/` 后端** — 情绪日记管理端接口新增 `minMoodScore`/`maxMoodScore` 评分范围过滤支持（文件位于 `server/src/emotion-diary/`，整个 `server/` 目录尚未纳入 git 跟踪）
+
+### 下一窗口第一个任务
+
+**启动用户端基础模块。**
+
+用户端是项目业务闭环的关键缺口。管理端全部页面已可真实运行，下一步让普通用户可以访问和使用平台。
+
+具体范围：
+1. 新建 `src/views/ClientLayout.vue` — 用户端布局（顶部导航 + 主体区域），参考 BackendLayout 但简化
+2. 新建 `src/views/ClientChat.vue` — AI 聊天页面，对接 `POST /api/chat/send` SSE 流式接口
+3. 新建 `src/views/ClientDiary.vue` — 用户端情绪日记页面，对接 `GET /emotion-diary/my/page` + `POST /emotion-diary`
+4. 路由配置：`/client/chat`、`/client/diary`，允许 `user` 角色访问
+5. 路由守卫扩展：`/client/*` 允许 admin/user 角色，无需 admin 限制
+
+后端已就绪的用户端接口：
+- `POST /api/chat/send` — SSE 流式聊天（AI 回复 + 消息落库）
+- `GET /api/emotion-diary/my/page` — 我的情绪日记分页
+- `POST /api/emotion-diary` — 新增情绪日记
+- `PUT /api/emotion-diary/:id` — 更新情绪日记
+
+### 做之前的确认清单
+
+- [ ] `cd server && npm run dev` 后端是否在运行（端口 8000）
+- [ ] `npm run dev` 前端是否在运行（端口 5173）
+- [ ] 浏览器能否打开 `http://127.0.0.1:5173/auth/login` 并登录
+- [ ] 检查 `src/store/useAuthStore.js` 是否存在（依赖 auth store 的 token/role 管理）
+- [ ] 确认 `server/` 目录后端变更已就绪（若需要情绪日记评分过滤，需 `git add server/` 后重建）
+
+### 边界约束
+
+| 可以碰 | 不要碰 |
+|--------|--------|
+| `src/views/Client*.vue`（新建用户端页面） | `server/` 后端代码（除非发现 bug 或需要新增用户端接口） |
+| `src/router/index.js`（添加用户端路由） | `backend/` FastAPI 遗留代码 |
+| `src/api/admin.js`（如需要新增用户端 API 函数） | 重构现有管理端页面布局或样式 |
+| `src/store/useAuthStore.js`（扩展角色判断逻辑） | 引入新依赖（保持 Vue3 + Element Plus + Axios + Pinia 栈） |
+| `src/components/`（新建用户端复用组件） | 删除 `consultations.vue` 等未引用文件 |
+
+### 关键设计决策
+
+1. **SSE 聊天对接**：前端使用 `EventSource` 或 fetch + `ReadableStream` 读取 `POST /api/chat/send` 的流式响应，逐块渲染 AI 回复。后端 `AiService.chatStream()` 已支持 mock 模式（无 DeepSeek Key 时返回预设中文回复）。
+2. **用户端路由**：在 `/client/*` 下添加路由，`router.beforeEach` 中允许 admin 和 user 角色访问（当前守卫已准备就绪，只允许 admin，需扩展）。
+3. **无须复制的模块**：用户端情绪日记复用管理端的 `EmotionDiaryDetailDialog.vue` 和 `EmotionDiaryTable.vue`（或简化版），数据通过用户端 API 获取。
+
+### 验收标准
+
+1. `npm run build` 通过。
+2. 使用非 admin 账号登录后能看到用户端页面（或路由正常跳转）。
+3. 用户端 AI 聊天页面能发送消息并接收流式回复（mock 模式即可）。
+4. 用户端情绪日记页面能查看和新增日记。
+5. 用户端页面与管理端页面数据隔离正确（用户只能看到自己的数据）。

@@ -6,10 +6,10 @@
 
     <el-card class="search-card" shadow="never">
       <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="用户ID">
+        <el-form-item label="用户名称">
           <el-input
-            v-model="searchForm.userId"
-            placeholder="请输入用户ID"
+            v-model="searchForm.userName"
+            placeholder="请输入用户名称"
             clearable
             @keyup.enter="handleSearch"
           />
@@ -65,7 +65,7 @@ import EmotionDiaryDetailDialog from '@/components/EmotionDiaryDetailDialog.vue'
 import EmotionDiaryTable from '@/components/EmotionDiaryTable.vue'
 
 const searchForm = reactive({
-  userId: '',
+  userName: '',
   scoreRange: '',
 })
 
@@ -78,7 +78,7 @@ const scoreOptions = [
 ]
 
 const pagination = reactive({
-  current: 1,
+  currentPage: 1,
   size: 10,
   total: 0,
 })
@@ -92,11 +92,11 @@ const currentDetail = ref({})
 const overviewRaw = ref(null)
 
 const parseScoreRange = (value) => {
-  if (!value) return { minMoodScore: '', maxMoodScore: '' }
+  if (!value) return { minMoodScore: undefined, maxMoodScore: undefined }
   const parts = String(value).split('-')
   return {
-    minMoodScore: parts[0] || '',
-    maxMoodScore: parts[1] || '',
+    minMoodScore: parts[0] ? Number(parts[0]) : undefined,
+    maxMoodScore: parts[1] ? Number(parts[1]) : undefined,
   }
 }
 
@@ -144,9 +144,9 @@ const fetchDiaryPage = async () => {
   try {
     const scoreRange = parseScoreRange(searchForm.scoreRange)
     const params = {
-      current: pagination.current,
+      currentPage: pagination.currentPage,
       size: pagination.size,
-      userId: searchForm.userId || '',
+      userName: searchForm.userName || undefined,
       minMoodScore: scoreRange.minMoodScore,
       maxMoodScore: scoreRange.maxMoodScore,
     }
@@ -193,24 +193,24 @@ const currentOverviewAnalysis = computed(() => {
 })
 
 const handleSearch = () => {
-  pagination.current = 1
+  pagination.currentPage = 1
   fetchDiaryPage()
 }
 
 const handleReset = () => {
-  searchForm.userId = ''
+  searchForm.userName = ''
   searchForm.scoreRange = ''
   handleSearch()
 }
 
 const handleSizeChange = (size) => {
   pagination.size = size
-  pagination.current = 1
+  pagination.currentPage = 1
   fetchDiaryPage()
 }
 
 const handlePageChange = (current) => {
-  pagination.current = current
+  pagination.currentPage = current
   fetchDiaryPage()
 }
 
@@ -240,8 +240,8 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功')
 
     // 删除后如果当前页无数据且不是第一页，自动回退一页再刷新。
-    if (tableData.value.length === 1 && pagination.current > 1) {
-      pagination.current -= 1
+    if (tableData.value.length === 1 && pagination.currentPage > 1) {
+      pagination.currentPage -= 1
     }
 
     fetchDiaryPage()

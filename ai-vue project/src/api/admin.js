@@ -3,6 +3,11 @@ import service from '@/utils/request'
 export function login(data) {
   return service.post('/user/login', data)
 }
+
+// 获取当前登录用户信息
+export function getMe() {
+  return service.get('/user/me')
+}
 // 获取分类树
 export function categoryTree() {
   return service.get('/knowledge/category/tree')
@@ -60,6 +65,11 @@ export function sessionMessages(sessionId) {
 // 获取会话详情 (基于用户要求，推测此接口用于拉取基础会话信息)
 export function sessionDetail(sessionId) {
   return service.get(`/psychological-chat/sessions/${sessionId}`)
+}
+
+// 获取会话情绪分析结果（用户端文档路径）
+export function sessionEmotion(sessionId) {
+  return service.get(`/psychological-chat/session/${sessionId}/emotion`)
 }
 
 // 分页查询情绪日记（管理端）

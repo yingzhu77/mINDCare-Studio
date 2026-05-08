@@ -26,13 +26,13 @@
               :size="32"
               src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
             />
-            <span class="username">admin</span>
+            <span class="username">{{ authStore.username || '用户' }}</span>
             <el-icon><ArrowDown /></el-icon>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item>个人中心</el-dropdown-item>
-              <el-dropdown-item divided>退出登录</el-dropdown-item>
+              <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -43,15 +43,11 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useMenuStore } from '@/store/useMenuStore'
+import { useAuthStore } from '@/store/useAuthStore'
 import { Expand, Fold, ArrowDown } from '@element-plus/icons-vue'
 
-/**
- * PageHead 组件增强版
- * 1. 新增背景层配置，支持渐变和视差效果
- * 2. 响应式边距通过 CSS 变量统一管理
- */
 const props = defineProps({
   title: {
     type: String,
@@ -64,9 +60,16 @@ const props = defineProps({
 })
 
 const route = useRoute()
+const router = useRouter()
 const menuStore = useMenuStore()
+const authStore = useAuthStore()
 
 const currentRouteTitle = computed(() => route.meta.title || '管理后台')
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/auth/login')
+}
 </script>
 
 <style lang="scss" scoped>
