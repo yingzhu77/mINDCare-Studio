@@ -4,6 +4,11 @@ export function login(data) {
   return service.post('/user/login', data)
 }
 
+// 用户注册
+export function register(data) {
+  return service.post('/user/register', data)
+}
+
 // 获取当前登录用户信息
 export function getMe() {
   return service.get('/user/me')

@@ -53,6 +53,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { register } from '@/api/admin'
 
 /**
  * 注册页面逻辑
@@ -97,10 +98,12 @@ const handleRegister = async () => {
     if (valid) {
       loading.value = true
       try {
-        // 模拟 API 请求延迟
-        await new Promise((resolve) => setTimeout(resolve, 800))
+        await register({
+          username: registerForm.username,
+          email: registerForm.email,
+          password: registerForm.password,
+        })
         ElMessage.success('注册成功，请登录')
-        // 跳转到登录页面
         router.push('/auth/login')
       } catch (error) {
         console.error(error)
