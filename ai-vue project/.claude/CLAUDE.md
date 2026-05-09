@@ -57,22 +57,21 @@
 
 ## 6. 当前阶段优先做什么
 
-当前阶段优先顺序（Phase 4 → 5 → 6）：
+当前阶段优先顺序（Phase 5 → 6 → 遗留优化）：
 
-1. **AI 分析结果前端展示**：情绪日记详情弹窗和咨询记录详情弹窗接入后端分析接口（POST/GET），展示主情绪、风险等级、建议等。
-2. **文章审核闭环**：管理端新增审核队列页面，支持通过、驳回操作，完整实现 `draft → pending_review → published/rejected` 状态机。
-3. **开源化准备**：LICENSE、CONTRIBUTING、CHANGELOG、启动脚本、README 截图、seed 数据增强。
-4. **工程提效**：配置 Swagger、补充服务端测试、前端注册密码 minlength 校验。
+1. **文章审核闭环**：管理端新增审核队列页面，支持通过、驳回操作，完整实现 `draft → pending_review → published/rejected` 状态机。
+2. **开源化准备**：LICENSE、CONTRIBUTING、CHANGELOG、启动脚本、README 截图、seed 数据增强。
+3. **工程提效**：配置 Swagger、补充服务端测试、前端注册密码 minlength 校验。
 
-完成标准：以上 4 项全部完成后，项目进入 v1.0 候选阶段。
+完成标准：以上 3 项全部完成后，项目进入 v1.0 候选阶段。
 
 ## 7. 当前阶段不要做什么
 
 除非用户明确要求，否则当前阶段不要直接执行这些工作：
 
+- 改动 AI 分析模块（Phase 4 已完成且稳定）。
 - 继续扩展 FastAPI `backend/` 的业务模块。
 - 接入真实 DeepSeek API 或写入真实 API Key（mock 模式已可用）。
-- 改动与当前任务无关的前端页面。
 - 引入额外的前端构建工具或状态管理库。
 - 大规模重构前端现有页面样式或布局。
 
@@ -130,6 +129,10 @@
 - `GET /emotion-diary/admin/page`
 - `DELETE /emotion-diary/admin/{id}`
 - `GET /data-analytics/overview`
+- `POST /analysis/emotion-diary/{id}` （AI 分析 — 触发情绪日记分析）
+- `GET /analysis/emotion-diary/{id}` （AI 分析 — 查询结果）
+- `POST /analysis/chat-session/{id}` （AI 分析 — 触发会话分析）
+- `GET /analysis/chat-session/{id}` （AI 分析 — 查询结果）
 
 统一响应必须兼容当前 `src/utils/request.js` 的处理逻辑：
 
@@ -274,7 +277,7 @@
 
 ### 当前完成节点（2026-05-09 v0.5.0）
 
-已完成 Phase 0-3，Phase 2 收尾修复完成：
+已完成 Phase 0-4：
 
 **Phase 0 ✅ — TS 后端脚手架**
 - NestJS + Prisma + SQLite 后端主线，全部 7 实体 migration + seed
@@ -301,42 +304,62 @@
 - 消息自动落库 + 会话计数
 - mock AI 模式（无需 Key）
 
+**Phase 4 ✅ — AI 分析前端展示**
+- `EmotionDiaryDetailDialog` 接入分析 API，展示主情绪、强度、风险等级、专业建议
+- `SessionDetailDialog` 接入分析 API，展示摘要、情绪标签、风险等级
+- 缓存逻辑：已有结果直接展示，不重复调用模型
+- 分析失败不阻塞业务数据展示
+
 ### 下一窗口第一个任务
 
-**Phase 4：AI 分析结果前端展示。**
+**Phase 5：文章审核闭环。**
 
-后端已有的 AnalysisController（`POST/GET /analysis/emotion-diary/:id`、`POST/GET /analysis/chat-session/:id`）尚未接入前端。需要：
+当前状态：
+- 用户端已可提交审核（`draft → pending_review`）
+- 管理员可通过 `/knowledge/article/page?status=pending_review` 过滤 + `PUT /knowledge/article/{id}/status` 操作
+- **缺少专用审核队列页面**，流程串联不完整
 
-1. `EmotionDiaryDetailDialog` — 增加「AI 分析」按钮，调用 POST 触发分析，展示返回的主情绪、强度、风险等级、专业建议
-2. `SessionDetailDialog` — 增加「会话分析」按钮，展示情绪标签、摘要和风险等级
-3. 缓存逻辑：已有分析结果时显示「查看分析」，不再重复触发
+需要：
+
+1. **管理端新增「文章审核」页面**（`ArticleReview.vue`）
+   - 路由 `/back/article-review`，需要 admin 角色
+   - 默认加载 `pending_review` 状态文章
+   - 支持切换筛选：全部、待审核、已通过、已驳回
+   - 列表卡片式展示：标题、投稿人、提交时间、状态标签
+2. **审核操作**
+   - 「通过」按钮 → 调用 `PUT /knowledge/article/{id}/status`（status=published）
+   - 「驳回」按钮 → 弹窗输入驳回原因 → 调用状态接口（status=rejected），同时保存驳回原因
+   - 操作后刷新列表，显示成功/失败提示
+3. **用户端配合**
+   - `ClientArticles.vue` 已驳回文章增加「驳回原因」展示
+   - 已驳回文章可编辑后重新提交审核
 
 ### 边界约束
 
 | 可以碰 | 不要碰 |
 |--------|--------|
-| `src/components/EmotionDiaryDetailDialog.vue`（接入分析） | `server/` 后端 AnalysisController/Service（已完成且稳定） |
-| `src/components/SessionDetailDialog.vue`（接入分析） | `backend/` FastAPI 遗留代码 |
-| `src/api/admin.js`（如需要新增分析 API 函数） | 重构现有管理端布局或样式 |
-| `src/views/` 管理端页面（优化分析展示） | 引入新依赖（保持 Vue3 + Element Plus + Axios + Pinia 栈） |
-| `src/utils/` 分析结果格式化工具 | 改动用户端（ClientChat/Diary/Articles）非分析相关逻辑 |
+| `src/views/` 新增 ArticleReview.vue | `server/` 后端 KnowledgeController/Service（状态机已可用） |
+| `src/api/admin.js`（如需要新增审核相关函数） | AI 分析模块（Phase 4 已完成且稳定） |
+| `src/router/index.js`（新增审核路由） | `backend/` FastAPI 遗留代码 |
+| `src/views/ClientArticles.vue`（驳回原因展示） | 引入新依赖（保持 Vue3 + Element Plus + Axios + Pinia 栈） |
+| `src/components/` 如需要新增复用组件 | 改动用户端 ChatGPT/Diary 非审核相关逻辑 |
 
 ### 关键设计决策
 
-1. **SSE 聊天**：前端使用 `fetch` + `ReadableStream`（而非 EventSource），逐块解析 `data: {"type":"token","content":"..."}` SSE 事件。已有 60s `AbortController` 超时。
-2. **用户端路由**：`/client/*` 允许 admin 和 user 角色，`router.beforeEach` 通过 `to.meta.roles` 统一检查。
-3. **用户端情绪日记**：独立实现（而非复用管理端组件），更轻量且数据隔离明确。
-4. **AI 分析不阻塞**：分析接口失败时，详情页仍展示已有业务数据，分析区域留空或标记待分析。
+1. **审核页面独立**：新增 `ArticleReview.vue` 页面（在现有 knowledge.vue 之外），专注于审核 workflow，不混入文章 CRUD。
+2. **状态筛选**：通过 `articlePage({ status: filterValue })` 实现，后端已支持。
+3. **驳回原因**：复用现有 `rejectReason` 字段，审核时通过状态接口传入。前端不支持编辑已驳回文章的驳回原因。
+4. **权限**：审核操作仅 admin 角色可用，路由守卫已覆盖。
 
 ### 验收标准
 
 1. `npm run build` 前端通过。
-2. `cd server && npm run build` 后端通过。
-3. 情绪日记详情可触发并查看 AI 分析结果。
-4. 咨询记录详情可触发并查看会话分析结果。
-5. 同一记录重复打开不重复调用模型（已有结果直接展示）。
+2. 管理员可在审核队列看到待审核文章。
+3. 可通过、驳回文章，状态变化正确。
+4. 驳回时需填写原因，用户端可看到驳回原因。
+5. 已驳回文章可编辑后重新提交。
 
-### 遗留可优化项（不影响 Phase 4 推进）
+### 遗留可优化项（不影响 Phase 5 推进）
 
 - 前端注册页缺少密码 `minlength: 6` 校验
 - Swagger 未配置（`@nestjs/swagger` 已安装）
