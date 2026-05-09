@@ -113,6 +113,9 @@ const handleSend = async () => {
   const assistantMsg = { role: 'assistant', content: '' }
   messages.value.push(assistantMsg)
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 60000)
+
   try {
     const token = localStorage.getItem('token')
     const response = await fetch('/api/chat/send', {
@@ -125,6 +128,7 @@ const handleSend = async () => {
         sessionId: currentSessionId.value,
         content,
       }),
+      signal: controller.signal,
     })
 
     const reader = response.body.getReader()
@@ -164,10 +168,17 @@ const handleSend = async () => {
       }
     }
   } catch (error) {
+    clearTimeout(timeoutId)
     console.error('Chat error:', error)
-    assistantMsg.content = '网络连接失败，请检查后端服务是否运行。'
-    ElMessage.error('连接失败')
+    if (error.name === 'AbortError') {
+      assistantMsg.content = '请求超时，请稍后重试。'
+      ElMessage.warning('连接超时')
+    } else {
+      assistantMsg.content = '网络连接失败，请检查后端服务是否运行。'
+      ElMessage.error('连接失败')
+    }
   } finally {
+    clearTimeout(timeoutId)
     streaming.value = false
   }
 }

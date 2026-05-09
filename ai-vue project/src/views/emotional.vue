@@ -1,31 +1,8 @@
-﻿﻿<template>
+<template>
   <div class="emotional-container">
     <div class="header-section">
       <h2 class="section-title">咨询记录</h2>
     </div>
-
-    <el-card class="search-card" shadow="never">
-      <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="关键词">
-          <el-input v-model="searchForm.searchKey" placeholder="搜索关键词" clearable @keyup.enter="handleSearch" />
-        </el-form-item>
-        <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="searchForm.timeRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            @change="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
 
     <el-card class="table-card" shadow="never">
       <el-table
@@ -35,38 +12,65 @@
         class="custom-table"
         @row-click="handleShowDetail"
       >
-        <el-table-column min-width="500">
+        <el-table-column width="190">
           <template #header>
-            <span class="custom-header">咨询记录</span>
+            <span class="custom-header">会话ID</span>
           </template>
           <template #default="{ row }">
-            <div class="session-item">
-              <div class="avatar-col">
-                <el-avatar :size="44" class="user-avatar">{{ row.userName || '-' }}</el-avatar>
-              </div>
-              <div class="content-col">
-                <div class="session-title">
-                  <strong>小暖助手 - {{ formatDate(row.startTime, 'slash') }}</strong>
-                </div>
-                <div v-if="row.aiSummary" class="session-summary text-ellipsis">
-                  {{ row.aiSummary }}
-                </div>
-                <div v-else class="session-summary session-summary-empty">-</div>
+            <div class="session-id-col">
+              <el-avatar :size="42" class="user-avatar">{{ row.userName || '-' }}</el-avatar>
+              <div class="session-id-text" :title="String(row.displaySessionId || '-')">
+                {{ row.displaySessionId || '-' }}
               </div>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column width="130" align="center">
+        <el-table-column min-width="560">
+          <template #header>
+            <span class="custom-header">情绪标签</span>
+          </template>
+          <template #default="{ row }">
+            <div class="content-col">
+              <div class="session-title">
+                <span class="assistant-name">宁渡AI助手</span>
+                <span class="title-sep">-</span>
+                <span class="title-time">{{ formatDate(resolveTitleTime(row), 'slash') }}</span>
+              </div>
+
+              <div v-if="row.emotionTags.length > 0" class="emotion-tag-wrap">
+                <el-tag
+                  v-for="(tag, idx) in row.emotionTags"
+                  :key="`${row.displaySessionId || row.id}-tag-${idx}`"
+                  size="small"
+                  effect="light"
+                  class="emotion-tag"
+                >
+                  {{ tag }}
+                </el-tag>
+              </div>
+
+              <div v-if="row.previewText" class="session-preview text-ellipsis" :title="row.previewText">
+                {{ row.previewText }}
+              </div>
+              <div v-else class="session-preview session-preview-empty">-</div>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column width="92" align="center">
           <template #header>
             <span class="custom-header">消息数</span>
           </template>
           <template #default="{ row }">
-            <span class="msg-count">消息数：{{ row.displayMessageCount }}</span>
+            <span class="msg-count">{{ row.displayMessageCount }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column width="180" align="right">
+        <el-table-column width="160" align="center">
+          <template #header>
+            <span class="custom-header">时间</span>
+          </template>
           <template #default="{ row }">
             <div class="time-display">
               <div class="date">{{ formatDate(row.endTime, 'date') }}</div>
@@ -75,7 +79,10 @@
           </template>
         </el-table-column>
 
-        <el-table-column width="80" align="right" fixed="right">
+        <el-table-column width="82" align="center" fixed="right">
+          <template #header>
+            <span class="custom-header">操作</span>
+          </template>
           <template #default="{ row }">
             <el-button link type="primary" class="detail-link" @click.stop="handleShowDetail(row)">详情</el-button>
           </template>
@@ -110,21 +117,18 @@ import { sessionPage, sessionMessages } from '@/api/admin'
 import SessionDetailDialog from '@/components/SessionDetailDialog.vue'
 import {
   getFirstUserMessageTime,
-  getFirstAssistantSummary,
+  getFirstMessageTime,
   getLastMessageTime,
+  getPreferredAssistantPreview,
   normalizeMessages,
   resolveMessagesTotal,
+  stripHtml,
 } from '@/utils/sessionMessage'
-
-const searchForm = reactive({
-  searchKey: '',
-  timeRange: []
-})
 
 const pagination = reactive({
   pageNum: 1,
   pageSize: 10,
-  total: 0
+  total: 0,
 })
 
 const tableData = ref([])
@@ -132,37 +136,76 @@ const loading = ref(false)
 const detailDialogRef = ref(null)
 const summaryTaskVersion = ref(0)
 
-// 统一会话起始时间兜底，首屏先用列表接口字段，随后再用消息接口精确覆盖
 const resolveStartTime = (row) => (
-  row?.startTime ||
-  row?.sessionStartTime ||
-  row?.beginTime ||
-  row?.createdAt ||
-  row?.createTime ||
-  ''
+  row?.startTime || row?.sessionStartTime || row?.beginTime || row?.createdAt || row?.createTime || ''
 )
 
-// 统一会话结束时间兜底，优先使用最后一条消息时间相关字段
 const resolveEndTime = (row) => (
-  row?.endTime ||
-  row?.sessionEndTime ||
-  row?.lastMessageTime ||
-  row?.updateTime ||
-  row?.updatedAt ||
-  ''
+  row?.endTime || row?.sessionEndTime || row?.lastMessageTime || row?.updateTime || row?.updatedAt || ''
+)
+
+const resolveTitleTime = (row) => (
+  row?.titleTime || row?.startTime || row?.firstMessageTime || row?.endTime || ''
 )
 
 const resolveRowMessageCount = (row) => {
-  const value = [
-    row?.messageCount,
-    row?.messagesCount,
-    row?.msgCount,
-    row?.count,
-    row?.total,
-  ].find((item) => item !== undefined && item !== null && item !== '')
-
+  const value = [row?.messageCount, row?.messagesCount, row?.msgCount, row?.count, row?.total].find(
+    (item) => item !== undefined && item !== null && item !== ''
+  )
   const count = Number(value)
   return Number.isNaN(count) || count < 0 ? 0 : count
+}
+
+const toTagArray = (value) => {
+  if (value === undefined || value === null || value === '') return []
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean)
+
+  return String(value)
+    .split(/[;,，、|/]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+const resolveEmotionTagsFromObject = (obj) => {
+  if (!obj || typeof obj !== 'object') return []
+  const raw =
+    obj.emotionTag ?? obj.emotionTags ?? obj.dominantEmotion ?? obj.mainEmotion ?? obj.emotionLabel ?? obj.label ?? obj.tag
+  return toTagArray(raw)
+}
+
+const resolveDisplaySessionId = (row) => row?.sessionId || row?.chatSessionId || row?.conversationId || row?.id || ''
+
+const resolveRequestSessionId = (row) =>
+  row?.sessionId || row?.chatSessionId || row?.conversationId || row?.conversationNo || row?.sessionNo || row?.id || ''
+
+const isLikelyValidSessionId = (id) => {
+  if (id === undefined || id === null) return false
+  const value = String(id).trim()
+  if (!value) return false
+  return /^\d+$/.test(value) || /^[a-zA-Z0-9_-]{6,}$/.test(value)
+}
+
+// 列表预览兜底：消息接口异常时，优先使用列表接口已有字段，避免页面一直显示“-”。
+const resolvePreviewFromRow = (row, maxLength = 160) => {
+  const candidates = [
+    row?.firstAssistantMessage,
+    row?.firstAiMessage,
+    row?.firstUserMessage,
+    row?.firstMessage,
+    row?.preview,
+    row?.summary,
+    row?.sessionSummary,
+    row?.aiSummary,
+    row?.latestMessage,
+    row?.lastMessage,
+    row?.content,
+  ]
+
+  const picked = candidates.find((item) => item !== undefined && item !== null && String(item).trim() !== '')
+  if (!picked) return ''
+
+  const plain = stripHtml(picked)
+  return plain.length > maxLength ? `${plain.slice(0, maxLength)}...` : plain
 }
 
 const formatDate = (dateStr, type) => {
@@ -183,24 +226,31 @@ const formatDate = (dateStr, type) => {
   return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
 }
 
-const fillAssistantSummaries = async (rows, version) => {
+const fillSessionRows = async (rows, version) => {
   await Promise.allSettled(
     rows.map(async (row) => {
-      if (!row?.id) return
+      if (!row?.requestSessionId) return
+
+      // 会话ID不合法时只影响当前行，不阻断其他行消息加载。
+      if (!isLikelyValidSessionId(row.requestSessionId)) {
+        row.previewText = row.previewText || resolvePreviewFromRow(row)
+        return
+      }
 
       try {
-        const res = await sessionMessages(row.id)
+        const msgRes = await sessionMessages(row.requestSessionId)
         if (summaryTaskVersion.value !== version) return
 
-        const normalized = normalizeMessages(res)
-        // 列表展示严格按消息顺序计算，保证时间和摘要都来自真实对话内容
+        const normalized = normalizeMessages(msgRes)
+        row.firstMessageTime = getFirstMessageTime(normalized) || row.firstMessageTime
         row.startTime = getFirstUserMessageTime(normalized) || row.startTime
-        row.aiSummary = getFirstAssistantSummary(normalized)
+        row.previewText = getPreferredAssistantPreview(normalized) || row.previewText || resolvePreviewFromRow(row)
         row.endTime = getLastMessageTime(normalized) || row.endTime
-        row.displayMessageCount = resolveMessagesTotal(res) || normalized.length || row.displayMessageCount
+        row.displayMessageCount = resolveMessagesTotal(msgRes) || normalized.length || row.displayMessageCount
       } catch {
         if (summaryTaskVersion.value !== version) return
-        row.aiSummary = ''
+        // 单行失败保留兜底文案，不对全局会话请求做熔断。
+        row.previewText = row.previewText || resolvePreviewFromRow(row)
       }
     })
   )
@@ -214,24 +264,28 @@ const fetchTableData = async () => {
     const params = {
       currentPage: pagination.pageNum,
       size: pagination.pageSize,
-      searchKey: searchForm.searchKey,
-      startTime: searchForm.timeRange?.[0] || '',
-      endTime: searchForm.timeRange?.[1] || ''
+      // 按接口文档保留 emotionTag 参数，当前页面无检索时默认传空字符串。
+      emotionTag: '',
     }
 
     const res = await sessionPage(params)
     const rows = (res?.records || res?.list || []).map((item) => ({
       ...item,
+      displaySessionId: resolveDisplaySessionId(item),
+      requestSessionId: resolveRequestSessionId(item),
       startTime: resolveStartTime(item),
       endTime: resolveEndTime(item),
-      aiSummary: '',
+      firstMessageTime: '',
+      titleTime: resolveStartTime(item) || resolveEndTime(item),
+      previewText: resolvePreviewFromRow(item),
+      emotionTags: resolveEmotionTagsFromObject(item),
       displayMessageCount: resolveRowMessageCount(item),
     }))
 
     tableData.value = rows
     pagination.total = res?.total || 0
 
-    fillAssistantSummaries(rows, currentVersion)
+    fillSessionRows(rows, currentVersion)
   } catch (error) {
     console.error('获取咨询记录失败:', error)
     tableData.value = []
@@ -239,17 +293,6 @@ const fetchTableData = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const handleSearch = () => {
-  pagination.pageNum = 1
-  fetchTableData()
-}
-
-const handleReset = () => {
-  searchForm.searchKey = ''
-  searchForm.timeRange = []
-  handleSearch()
 }
 
 const handleSizeChange = (val) => {
@@ -273,8 +316,8 @@ const scrollToTop = () => {
 }
 
 const handleShowDetail = (row) => {
-  if (detailDialogRef.value && row?.id) {
-    detailDialogRef.value.open(row.id)
+  if (detailDialogRef.value && row?.requestSessionId) {
+    detailDialogRef.value.open(row.requestSessionId)
   }
 }
 
@@ -294,19 +337,6 @@ onMounted(() => {
       font-size: 20px;
       font-weight: 600;
       color: #303133;
-    }
-  }
-
-  .search-card {
-    border: none;
-    border-radius: 8px;
-    background-color: var(--card-bg);
-
-    .search-form {
-      :deep(.el-form-item) {
-        margin-bottom: 0;
-        margin-right: 24px;
-      }
     }
   }
 
@@ -340,54 +370,87 @@ onMounted(() => {
 
       :deep(.el-table__header) th {
         background-color: #fff;
-        color: #303133;
+        color: #909399;
         font-weight: 600;
         height: 50px;
         border-bottom: 1px solid #f0f0f0;
       }
     }
 
-    .session-item {
+    .session-id-col {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
 
-      .avatar-col {
-        flex-shrink: 0;
+      .user-avatar {
+        background: #d7d9dd;
+        color: #fff;
+        font-size: 13px;
+        text-transform: lowercase;
+      }
 
-        .user-avatar {
-          background: #d7d9dd;
-          color: #fff;
+      .session-id-text {
+        max-width: 102px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #909399;
+        font-size: 13px;
+      }
+    }
+
+    .content-col {
+      min-width: 0;
+
+      .session-title {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 6px;
+        line-height: 1.35;
+
+        .assistant-name {
+          font-size: 14px;
+          font-weight: 700;
+          color: #2f3440;
+        }
+
+        .title-sep {
+          color: #a0a6ad;
           font-size: 13px;
-          text-transform: lowercase;
+        }
+
+        .title-time {
+          font-size: 13px;
+          color: #6f7782;
+          font-weight: 500;
         }
       }
 
-      .content-col {
-        flex: 1;
-        overflow: hidden;
-        min-width: 0;
+      .emotion-tag-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
 
-        .session-title {
-          font-size: 16px;
-          color: #2f3440;
-          margin-bottom: 6px;
-          line-height: 1.3;
-
-          strong {
-            font-weight: 700;
-          }
+        .emotion-tag {
+          border-radius: 10px;
+          font-size: 12px;
+          background: #eef5ff;
+          border-color: #d9e8ff;
+          color: #3b6fb6;
         }
+      }
 
-        .session-summary {
-          font-size: 13px;
-          color: #7b8088;
-          line-height: 1.5;
-        }
+      .session-preview {
+        font-size: 13px;
+        color: #6f7782;
+        line-height: 1.6;
+      }
 
-        .session-summary-empty {
-          color: #c0c4cc;
-        }
+      .session-preview-empty {
+        color: #c0c4cc;
       }
     }
 
@@ -397,7 +460,7 @@ onMounted(() => {
     }
 
     .time-display {
-      text-align: right;
+      text-align: center;
       color: #7f8793;
       font-size: 13px;
       line-height: 1.55;
@@ -457,27 +520,5 @@ onMounted(() => {
   white-space: nowrap;
   display: block;
   max-width: 100%;
-}
-
-@media screen and (max-width: 768px) {
-  .search-form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    :deep(.el-form-item) {
-      margin-right: 0 !important;
-      width: 100%;
-
-      .el-form-item__content {
-        width: 100%;
-      }
-
-      .el-input,
-      .el-date-editor {
-        width: 100% !important;
-      }
-    }
-  }
 }
 </style>

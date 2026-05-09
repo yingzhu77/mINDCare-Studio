@@ -68,7 +68,7 @@ p {
 }
 
 /* 消除滚动条黑色边框的视觉优化 */
-::extra-selection {
+::selection {
   background: var(--primary-color);
   color: #fff;
 }

@@ -11,6 +11,7 @@ import { AnalysisModule } from './analysis/analysis.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { UploadModule } from './upload/upload.module';
 import { AiModule } from './ai/ai.module';
+import { ClientArticleModule } from './client-article/client-article.module';
 import { AppController } from './app/app.controller';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -28,6 +29,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     AnalyticsModule,
     UploadModule,
     AiModule,
+    ClientArticleModule,
   ],
   controllers: [AppController],
   providers: [

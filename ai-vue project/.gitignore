@@ -12,6 +12,18 @@ dist
 dist-ssr
 *.local
 
+# Python / backend local runtime files
+__pycache__/
+*.py[cod]
+backend/
+
+# NestJS / server local runtime files
+server/.env
+server/dev.db
+server/dist
+server/node_modules
+server/uploads/*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

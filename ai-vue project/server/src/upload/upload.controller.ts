@@ -9,7 +9,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('file')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@Roles('admin', 'user')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 

@@ -57,50 +57,82 @@
       </section>
 
       <section class="detail-section">
-        <h3 class="section-title">AI情绪分析结果</h3>
-        <div class="grid-table four-cols">
-          <div class="label-cell">主要情绪</div>
-          <div class="value-cell">
-            <el-tag type="info" effect="plain">{{ analysis.mainEmotion || '-' }}</el-tag>
-          </div>
-          <div class="label-cell">情绪强度</div>
-          <div class="value-cell">
-            <div class="progress-wrap">
-              <el-progress :percentage="analysis.intensityPercent" :show-text="true" :stroke-width="10" />
+        <div class="section-header">
+          <h3 class="section-title">AI情绪分析结果</h3>
+          <el-button
+            v-if="!analysisData"
+            type="primary"
+            size="small"
+            :loading="analysisLoading"
+            @click="handleTriggerAnalysis"
+          >
+            {{ analysisLoading ? '分析中...' : '开始AI分析' }}
+          </el-button>
+          <el-button
+            v-else
+            type="primary"
+            size="small"
+            plain
+            :loading="analysisLoading"
+            @click="handleTriggerAnalysis"
+          >
+            重新分析
+          </el-button>
+        </div>
+
+        <el-empty v-if="!analysisData && !analysisLoading && !analysisError" description="暂无分析结果，点击上方按钮开始分析" />
+
+        <div v-if="analysisError" class="analysis-error">
+          <el-alert :title="analysisError" type="error" show-icon :closable="false" />
+        </div>
+
+        <template v-if="analysisData && !analysisLoading">
+          <div class="grid-table four-cols">
+            <div class="label-cell">主要情绪</div>
+            <div class="value-cell">
+              <el-tag type="info" effect="plain">{{ analysis.mainEmotion || '-' }}</el-tag>
+            </div>
+            <div class="label-cell">情绪强度</div>
+            <div class="value-cell">
+              <div class="progress-wrap">
+                <el-progress :percentage="analysis.intensityPercent" :show-text="true" :stroke-width="10" />
+              </div>
+            </div>
+
+            <div class="label-cell">风险等级</div>
+            <div class="value-cell">
+              <el-tag :type="analysis.riskTagType" effect="plain">{{ analysis.riskLevel || '-' }}</el-tag>
+            </div>
+            <div class="label-cell">情绪性质</div>
+            <div class="value-cell">
+              <el-tag :type="analysis.natureTagType" effect="light">{{ analysis.emotionNature || '-' }}</el-tag>
             </div>
           </div>
 
-          <div class="label-cell">风险等级</div>
-          <div class="value-cell">
-            <el-tag type="warning" effect="plain">{{ analysis.riskLevel ?? '-' }}</el-tag>
+          <div class="advice-card">
+            <div class="advice-title">专业建议</div>
+            <div class="advice-content">{{ analysis.professionalAdvice || '-' }}</div>
           </div>
-          <div class="label-cell">情绪性质</div>
-          <div class="value-cell">
-            <el-tag :type="analysis.natureTagType" effect="light">{{ analysis.emotionNature || '-' }}</el-tag>
+
+          <div class="advice-card">
+            <div class="advice-title">风险描述</div>
+            <div class="advice-content">{{ analysis.riskDescription || '-' }}</div>
           </div>
-        </div>
 
-        <div class="advice-card">
-          <div class="advice-title">专业建议</div>
-          <div class="advice-content">{{ analysis.professionalAdvice || '-' }}</div>
-        </div>
-
-        <div class="advice-card">
-          <div class="advice-title">风险描述</div>
-          <div class="advice-content">{{ analysis.riskDescription || '-' }}</div>
-        </div>
-
-        <div class="advice-card">
-          <div class="advice-title">改善建议</div>
-          <div class="advice-content multiline">{{ analysis.improvementSuggestions || '-' }}</div>
-        </div>
+          <div class="advice-card">
+            <div class="advice-title">改善建议</div>
+            <div class="advice-content multiline">{{ analysis.improvementSuggestions || '-' }}</div>
+          </div>
+        </template>
       </section>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { getEmotionDiaryAnalysis, triggerEmotionDiaryAnalysis } from '@/api/admin'
 
 const props = defineProps({
   modelValue: {
@@ -111,42 +143,114 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
-  overviewAnalysis: {
-    type: Object,
-    default: () => ({}),
-  },
 })
 
 const emit = defineEmits(['update:modelValue'])
 
-// 统一计算 AI 分析字段，优先使用日志记录中的字段，其次使用综合分析接口的映射字段。
+// AI 分析状态
+const analysisData = ref(null)
+const analysisLoading = ref(false)
+const analysisError = ref('')
+
+// 弹窗打开或切换日记时拉取已有分析结果
+watch(() => props.modelValue, async (val) => {
+  if (val && props.detail?.id) {
+    await fetchExistingAnalysis()
+  } else if (!val) {
+    // 关闭弹窗时清理状态，避免下次打开闪现旧数据
+    resetAnalysisState()
+  }
+})
+
+watch(() => props.detail?.id, async (newId, oldId) => {
+  if (props.modelValue && newId && newId !== oldId) {
+    await fetchExistingAnalysis()
+  }
+})
+
+const resetAnalysisState = () => {
+  analysisData.value = null
+  analysisLoading.value = false
+  analysisError.value = ''
+}
+
+const fetchExistingAnalysis = async () => {
+  resetAnalysisState()
+  analysisLoading.value = true
+  try {
+    const res = await getEmotionDiaryAnalysis(props.detail.id)
+    analysisData.value = res?.id && res?.status === 'success' ? res : null
+  } catch {
+    analysisData.value = null
+  } finally {
+    analysisLoading.value = false
+  }
+}
+
+const handleTriggerAnalysis = async () => {
+  if (!props.detail?.id) return
+  analysisLoading.value = true
+  analysisError.value = ''
+  try {
+    const res = await triggerEmotionDiaryAnalysis(props.detail.id)
+    if (res?.id) {
+      if (res.status === 'success') {
+        analysisData.value = res
+        ElMessage.success('AI 分析完成')
+      } else {
+        analysisData.value = null
+        analysisError.value = res.errorMessage || '分析失败，请稍后重试'
+      }
+    }
+  } catch (err) {
+    analysisError.value = err.message || '分析请求失败'
+    analysisData.value = null
+  } finally {
+    analysisLoading.value = false
+  }
+}
+
+// 统一计算 AI 分析字段
 const analysis = computed(() => {
-  const source = {
-    ...props.overviewAnalysis,
-    ...props.detail,
+  if (!analysisData.value) {
+    return {
+      mainEmotion: '',
+      intensityPercent: 0,
+      riskLevel: '',
+      riskTagType: 'info',
+      emotionNature: '',
+      natureTagType: 'success',
+      professionalAdvice: '',
+      riskDescription: '',
+      improvementSuggestions: '',
+    }
   }
 
-  const rawIntensity = Number(
-    source.emotionIntensity ?? source.intensity ?? source.emotionStrength ?? source.score
-  )
-
+  const source = analysisData.value
+  const rawIntensity = Number(source.emotionIntensity ?? source.intensity ?? 0)
   const intensityPercent = Number.isNaN(rawIntensity)
     ? 0
     : rawIntensity <= 1
       ? Math.max(0, Math.min(100, Math.round(rawIntensity * 100)))
       : Math.max(0, Math.min(100, Math.round(rawIntensity)))
+  const nature = source.emotionNature || ''
+  const riskLevel = source.riskLevel || ''
 
-  const nature = source.emotionNature || source.nature || source.sentimentType || ''
+  const riskTagType =
+    riskLevel === 'critical' || riskLevel === 'high' ? 'danger'
+    : riskLevel === 'medium' ? 'warning'
+    : 'info'
 
   return {
-    mainEmotion: source.aiMainEmotion || source.mainEmotion || source.dominantEmotion || '',
+    mainEmotion: source.mainEmotion || '',
     intensityPercent,
-    riskLevel: source.riskLevel ?? source.aiRiskLevel,
+    riskLevel,
+    riskTagType,
     emotionNature: nature,
     natureTagType: String(nature).includes('负') ? 'danger' : 'success',
-    professionalAdvice: source.professionalAdvice || source.advice || source.aiAdvice || '',
-    riskDescription: source.riskDescription || source.riskDesc || '',
-    improvementSuggestions: source.improvementSuggestions || source.improveSuggestions || '',
+    professionalAdvice: source.professionalAdvice || '',
+    riskDescription: source.riskDescription || '',
+    improvementSuggestions: source.improvementSuggestions || '',
   }
 })
 
@@ -193,6 +297,13 @@ const displayFraction = (value) => {
   }
 
   .detail-section {
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
     .section-title {
       font-size: 30px;
       transform: scale(0.5);
@@ -201,6 +312,10 @@ const displayFraction = (value) => {
       font-weight: 700;
       color: #303133;
     }
+  }
+
+  .analysis-error {
+    margin-top: 12px;
   }
 
   .grid-table {

@@ -34,3 +34,30 @@ export function diaryUpdate(id, data) {
 export function diaryDetail(id) {
   return service.get(`/emotion-diary/${id}`)
 }
+
+// ================== 用户端文章投稿 ==================
+
+// 我的投稿分页
+export function myArticlePage(params) {
+  return service.get('/client/article/page', { params })
+}
+
+// 投稿详情
+export function myArticleDetail(id) {
+  return service.get(`/client/article/${id}`)
+}
+
+// 创建投稿
+export function myArticleAdd(data) {
+  return service.post('/client/article', data)
+}
+
+// 更新投稿
+export function myArticleUpdate(id, data) {
+  return service.put(`/client/article/${id}`, data)
+}
+
+// 提交审核
+export function myArticleSubmit(id) {
+  return service.put(`/client/article/${id}/submit`)
+}

@@ -1,4 +1,4 @@
-﻿export function toMessageArray(payload) {
+export function toMessageArray(payload) {
   if (Array.isArray(payload)) return payload
   if (!payload || typeof payload !== 'object') return []
 
@@ -75,8 +75,18 @@ export function resolveMessageContent(raw) {
     'message',
     'text',
     'msgContent',
+    'messageContent',
+    'messageText',
+    'chatContent',
     'reply',
     'answer',
+    'question',
+    'prompt',
+    'query',
+    'input',
+    'inputText',
+    'output',
+    'outputText',
     'body',
   ])
 
@@ -208,6 +218,12 @@ export function getLastMessageTime(payload) {
   return messagesWithTime[messagesWithTime.length - 1]?.time || ''
 }
 
+export function getFirstMessageTime(payload) {
+  const normalized = normalizeMessages(payload)
+  const firstWithTime = normalized.find((item) => item.time)
+  return firstWithTime?.time || ''
+}
+
 export function getFirstAssistantSummary(payload, maxLength = 160) {
   const normalized = normalizeMessages(payload)
   const firstAssistant = normalized.find((item) => item.role === 'assistant' && stripHtml(item.content))
@@ -216,6 +232,40 @@ export function getFirstAssistantSummary(payload, maxLength = 160) {
 
   const target = firstAssistant || firstNonUser || secondMessage
   if (!target) return ''
+
+  const plain = stripHtml(target.content)
+  return plain.length > maxLength ? `${plain.slice(0, maxLength)}...` : plain
+}
+
+// 列表预览规则：
+// 1) 只要会话里存在 AI 回复，优先展示“首条用户消息”；
+// 2) 若不存在 AI 回复，则展示“首条消息”（无论角色）；
+// 3) 始终返回纯文本并做长度截断。
+export function getPreferredSessionPreview(payload, maxLength = 160) {
+  const normalized = normalizeMessages(payload)
+  const withContent = normalized.filter((item) => stripHtml(item.content))
+  if (!withContent.length) return ''
+
+  const hasAssistantReply = withContent.some((item) => item.role === 'assistant')
+  const firstUser = withContent.find((item) => item.role === 'user')
+  const target = hasAssistantReply ? (firstUser || withContent[0]) : withContent[0]
+
+  const plain = stripHtml(target.content)
+  return plain.length > maxLength ? `${plain.slice(0, maxLength)}...` : plain
+}
+
+// 列表预览规则（当前咨询页）：
+// 1) 有 AI 回复时优先展示首条 AI 回复；
+// 2) 无 AI 回复时展示首条用户消息；
+// 3) 都不存在时展示首条可用消息。
+export function getPreferredAssistantPreview(payload, maxLength = 160) {
+  const normalized = normalizeMessages(payload)
+  const withContent = normalized.filter((item) => stripHtml(item.content))
+  if (!withContent.length) return ''
+
+  const firstAssistant = withContent.find((item) => item.role === 'assistant')
+  const firstUser = withContent.find((item) => item.role === 'user')
+  const target = firstAssistant || firstUser || withContent[0]
 
   const plain = stripHtml(target.content)
   return plain.length > maxLength ? `${plain.slice(0, maxLength)}...` : plain

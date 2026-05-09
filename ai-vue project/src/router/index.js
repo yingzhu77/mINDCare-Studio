@@ -83,6 +83,30 @@ const backendRouterRoutes = [
           roles: ['admin', 'user'],
         },
       },
+      {
+        path: 'articles',
+        component: () => import('@/views/ClientArticles.vue'),
+        meta: {
+          title: '我的投稿',
+          roles: ['admin', 'user'],
+        },
+      },
+      {
+        path: 'articles/create',
+        component: () => import('@/views/ClientArticleCreate.vue'),
+        meta: {
+          title: '写文章',
+          roles: ['admin', 'user'],
+        },
+      },
+      {
+        path: 'articles/:id/edit',
+        component: () => import('@/views/ClientArticleCreate.vue'),
+        meta: {
+          title: '编辑文章',
+          roles: ['admin', 'user'],
+        },
+      },
     ],
   },
   {

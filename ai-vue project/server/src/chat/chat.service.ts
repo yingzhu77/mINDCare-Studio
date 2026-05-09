@@ -28,11 +28,17 @@ export class ChatService {
       where.status = params.status;
     }
 
-    const [records, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       this.prisma.chatSession.findMany({
         where,
         include: {
           user: { select: { id: true, username: true } },
+          messages: {
+            where: { role: 'assistant' },
+            orderBy: { messageTime: 'asc' },
+            take: 1,
+            select: { content: true },
+          },
         },
         skip: (currentPage - 1) * size,
         take: size,
@@ -40,6 +46,13 @@ export class ChatService {
       }),
       this.prisma.chatSession.count({ where }),
     ]);
+
+    const records = rows.map(({ messages, ...rest }) => {
+      const content = messages[0]?.content || '';
+      const plain = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      const previewText = plain.length > 160 ? plain.slice(0, 160) + '...' : plain;
+      return { ...rest, previewText };
+    });
 
     return { records, total, currentPage, size };
   }

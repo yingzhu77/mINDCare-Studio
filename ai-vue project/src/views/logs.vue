@@ -48,16 +48,14 @@
     <EmotionDiaryDetailDialog
       v-model="detailVisible"
       :detail="currentDetail"
-      :overview-analysis="currentOverviewAnalysis"
     />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  dataAnalyticsOverview,
   emotionDiaryDelete,
   emotionDiaryPage,
 } from '@/api/admin'
@@ -87,9 +85,6 @@ const loading = ref(false)
 const tableData = ref([])
 const detailVisible = ref(false)
 const currentDetail = ref({})
-
-// 综合数据分析接口结果缓存：详情弹窗中优先按 diaryId/userId 映射。
-const overviewRaw = ref(null)
 
 const parseScoreRange = (value) => {
   if (!value) return { minMoodScore: undefined, maxMoodScore: undefined }
@@ -128,16 +123,6 @@ const resolveTotal = (res, records) => {
   return Number.isNaN(total) ? records.length : total
 }
 
-const fetchOverview = async () => {
-  try {
-    overviewRaw.value = await dataAnalyticsOverview()
-  } catch (error) {
-    // 综合分析不是核心列表数据，失败时只保留空对象，避免中断主流程。
-    overviewRaw.value = null
-    console.warn('获取综合数据分析失败:', error)
-  }
-}
-
 const fetchDiaryPage = async () => {
   loading.value = true
 
@@ -164,33 +149,6 @@ const fetchDiaryPage = async () => {
     loading.value = false
   }
 }
-
-const currentOverviewAnalysis = computed(() => {
-  const diary = currentDetail.value || {}
-  const source = overviewRaw.value
-  if (!source) return {}
-
-  const candidates = [
-    ...(Array.isArray(source?.diaryAnalytics) ? source.diaryAnalytics : []),
-    ...(Array.isArray(source?.diaryAnalysisList) ? source.diaryAnalysisList : []),
-    ...(Array.isArray(source?.emotionDiaryList) ? source.emotionDiaryList : []),
-    ...(Array.isArray(source?.userAnalysisList) ? source.userAnalysisList : []),
-    ...(Array.isArray(source?.records) ? source.records : []),
-  ]
-
-  if (candidates.length === 0) return source
-
-  const matched = candidates.find((item) => {
-    const itemDiaryId = item.diaryId ?? item.id ?? item.recordId
-    const itemUserId = item.userId ?? item.uid
-    return (
-      String(itemDiaryId || '') === String(diary.id || '') ||
-      String(itemUserId || '') === String(diary.userId || '')
-    )
-  })
-
-  return matched || {}
-})
 
 const handleSearch = () => {
   pagination.currentPage = 1
@@ -253,8 +211,8 @@ const handleDelete = async (row) => {
   }
 }
 
-onMounted(async () => {
-  await Promise.allSettled([fetchOverview(), fetchDiaryPage()])
+onMounted(() => {
+  fetchDiaryPage()
 })
 </script>
 

@@ -57,15 +57,14 @@
 
 ## 6. 当前阶段优先做什么
 
-当前阶段优先顺序：
+当前阶段优先顺序（Phase 4 → 5 → 6）：
 
-1. **前端管理端页面真实化**：逐页将模拟数据切换到 `/api` 真实接口（知识文章、咨询记录、情绪日记、Dashboard）。
-2. **建立 `useAuthStore` + 角色路由守卫**：统一认证状态管理，区分 admin/user 路由权限。
-3. **补齐用户端基础**：ClientLayout、用户端文章投稿、用户端情绪日记。
-4. **接入 AI 聊天**：ClientChat 页面 + SSE 流式对话与会话落库。
-5. **AI 分析结果展示**：情绪日记详情和会话详情展示分析结果。
-6. **文章审核闭环**：完整状态机和审核队列。
-7. **补齐开源化基础文件**：LICENSE、CHANGELOG、启动脚本等。
+1. **AI 分析结果前端展示**：情绪日记详情弹窗和咨询记录详情弹窗接入后端分析接口（POST/GET），展示主情绪、风险等级、建议等。
+2. **文章审核闭环**：管理端新增审核队列页面，支持通过、驳回操作，完整实现 `draft → pending_review → published/rejected` 状态机。
+3. **开源化准备**：LICENSE、CONTRIBUTING、CHANGELOG、启动脚本、README 截图、seed 数据增强。
+4. **工程提效**：配置 Swagger、补充服务端测试、前端注册密码 minlength 校验。
+
+完成标准：以上 4 项全部完成后，项目进入 v1.0 候选阶段。
 
 ## 7. 当前阶段不要做什么
 
@@ -273,53 +272,73 @@
 
 当当前窗口关闭、下一个窗口继续时，请先读取本节内容建立上下文。
 
-### 当前完成节点（2026-05-08 v0.4.0）
+### 当前完成节点（2026-05-09 v0.5.0）
 
-已完成 Phase 1（管理端页面真实化）+ Phase 2（用户端基础模块）核心工作：
+已完成 Phase 0-3，Phase 2 收尾修复完成：
 
-- **知识文章页** — 已接入真实接口（articlePage/articleAdd/articleUpdate/articleDelete/articleStatusUpdate + categoryTree）
-- **咨询记录页**（emotional.vue）— 已接入真实接口（sessionPage/sessionMessages）
-- **情绪日志页**（logs.vue）— 已接入真实接口（emotionDiaryPage/emotionDiaryDelete）
-- **Dashboard** — 已从模拟数据切换为 `dataAnalyticsOverview` 真实接口
-- **useAuthStore**（`src/store/useAuthStore.js`）— 管理 token/user/role 持久化，集成到 Login.vue 和 PageHead.vue
-- **角色路由守卫** — `/back/*` 仅 admin，`/client/*` 允许 admin/user，页面刷新自动恢复用户信息
-- **登录按角色跳转** — admin → `/back/dashboard`，user → `/client/chat`
-- **`src/api/client.js`** — 用户端 API 封装（chatSend、myDiaryPage、diaryAdd/Update）
-- **`ClientLayout.vue`** — 用户端布局（顶部水平导航 + 用户下拉退出）
-- **`ClientChat.vue`** — AI 聊天页面（fetch + ReadableStream 解析 SSE，含快捷提问、markdown 渲染、会话恢复）
-- **`ClientDiary.vue`** — 用户端情绪日记（分页列表、新增/编辑弹窗、删除，心情/睡眠/压力评分滑块）
-- **`server/` 后端** — 全部 7 实体 + 认证 + 管理端接口 + AI 模块 + 用户端聊天/日记接口
+**Phase 0 ✅ — TS 后端脚手架**
+- NestJS + Prisma + SQLite 后端主线，全部 7 实体 migration + seed
+- 统一响应、全局异常过滤、JWT 认证（兼容 `token` 头 + `Authorization: Bearer`）
+- 健康检查、登录、注册、当前用户接口
+
+**Phase 1 ✅ — 管理端页面真实化**
+- 知识文章 CRUD + 分类树、咨询记录 + 消息列表、情绪日记 + 删除、Dashboard 统计
+- 全部接入真实后端接口
+
+**Phase 2 ✅ — 用户体系 + 用户端基础**
+- `useAuthStore` + 角色路由守卫 + 登录按角色跳转
+- `ClientLayout`、`ClientChat`（SSE 流式）、`ClientDiary`（CRUD）
+- **用户端文章投稿**：`ClientArticles.vue`（列表+状态标签）、`ClientArticleCreate.vue`（创建/编辑+封面上传）
+- 服务端 `ClientArticleModule`（`/api/client/article/*`）
+- 🔐 注册 role 越权漏洞修复（拒绝客户端传入 role）
+- 📁 上传控制器同时允许 admin+user
+- ⏱ SSE 聊天 60s 超时保护
+- 🗑 N+1 查询消除（sessionPage 返回 previewText）
+- 🧹 `consultations.vue` 死文件清理 + `server/.env.example` 创建
+
+**Phase 3 ✅ — DeepSeek 聊天**
+- `POST /api/chat/send` SSE 流式输出
+- 消息自动落库 + 会话计数
+- mock AI 模式（无需 Key）
 
 ### 下一窗口第一个任务
 
-**用户端文章投稿模块。**
+**Phase 4：AI 分析结果前端展示。**
 
-当前用户端已有 AI 聊天和情绪日记两个功能。文章投稿是第三个关键用户端功能，可以让用户创建知识文章草稿并提交管理员审核。
+后端已有的 AnalysisController（`POST/GET /analysis/emotion-diary/:id`、`POST/GET /analysis/chat-session/:id`）尚未接入前端。需要：
 
-具体范围：
-1. 新建 `src/views/ClientArticles.vue` — 用户文章投稿列表（分页展示自己的投稿，含状态标签）
-2. 新建 `src/views/ClientArticleCreate.vue` — 投稿创建/编辑页面（标题、分类、摘要、内容、封面）
-3. 路由配置：`/client/articles`、`/client/articles/create`、`/client/articles/:id/edit`
-4. 后端已有接口：`GET /api/client/article/page`、`POST /api/client/article`、`PUT /api/client/article/:id`、`PUT /api/client/article/:id/submit`
+1. `EmotionDiaryDetailDialog` — 增加「AI 分析」按钮，调用 POST 触发分析，展示返回的主情绪、强度、风险等级、专业建议
+2. `SessionDetailDialog` — 增加「会话分析」按钮，展示情绪标签、摘要和风险等级
+3. 缓存逻辑：已有分析结果时显示「查看分析」，不再重复触发
 
 ### 边界约束
 
 | 可以碰 | 不要碰 |
 |--------|--------|
-| `src/views/Client*.vue`（新建用户端页面） | `server/` 后端代码（除非发现 bug 或需要新增用户端接口） |
-| `src/router/index.js`（添加用户端路由） | `backend/` FastAPI 遗留代码 |
-| `src/api/client.js`（如需要新增用户端 API 函数） | 重构现有管理端页面布局或样式 |
-| `src/store/useAuthStore.js`（扩展角色判断逻辑） | 引入新依赖（保持 Vue3 + Element Plus + Axios + Pinia 栈） |
-| `src/components/`（新建用户端复用组件） | 删除 `consultations.vue` 等未引用文件 |
+| `src/components/EmotionDiaryDetailDialog.vue`（接入分析） | `server/` 后端 AnalysisController/Service（已完成且稳定） |
+| `src/components/SessionDetailDialog.vue`（接入分析） | `backend/` FastAPI 遗留代码 |
+| `src/api/admin.js`（如需要新增分析 API 函数） | 重构现有管理端布局或样式 |
+| `src/views/` 管理端页面（优化分析展示） | 引入新依赖（保持 Vue3 + Element Plus + Axios + Pinia 栈） |
+| `src/utils/` 分析结果格式化工具 | 改动用户端（ClientChat/Diary/Articles）非分析相关逻辑 |
 
 ### 关键设计决策
 
-1. **SSE 聊天**：前端使用 `fetch` + `ReadableStream`（而非 EventSource，因 POST 请求不受限），逐块解析 `data: {"type":"token","content":"..."}` SSE 事件。
-2. **用户端路由**：`/client/*` 允许 admin 和 user 角色，`router.beforeEach` 中通过 `to.meta.roles` 统一检查。
+1. **SSE 聊天**：前端使用 `fetch` + `ReadableStream`（而非 EventSource），逐块解析 `data: {"type":"token","content":"..."}` SSE 事件。已有 60s `AbortController` 超时。
+2. **用户端路由**：`/client/*` 允许 admin 和 user 角色，`router.beforeEach` 通过 `to.meta.roles` 统一检查。
 3. **用户端情绪日记**：独立实现（而非复用管理端组件），更轻量且数据隔离明确。
+4. **AI 分析不阻塞**：分析接口失败时，详情页仍展示已有业务数据，分析区域留空或标记待分析。
 
 ### 验收标准
 
-1. `npm run build` 通过。
-2. 用户端页面（聊天、情绪日记）在 `user` 角色下可正常访问。
-3. `admin` 角色登录后进入管理端，`user` 角色登录后进入用户端。
+1. `npm run build` 前端通过。
+2. `cd server && npm run build` 后端通过。
+3. 情绪日记详情可触发并查看 AI 分析结果。
+4. 咨询记录详情可触发并查看会话分析结果。
+5. 同一记录重复打开不重复调用模型（已有结果直接展示）。
+
+### 遗留可优化项（不影响 Phase 4 推进）
+
+- 前端注册页缺少密码 `minlength: 6` 校验
+- Swagger 未配置（`@nestjs/swagger` 已安装）
+- 服务端测试文件为空
+- 开源化基础文件（LICENSE、CONTRIBUTING、CHANGELOG、启动脚本）

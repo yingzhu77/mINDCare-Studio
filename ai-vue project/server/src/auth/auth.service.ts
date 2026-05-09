@@ -60,7 +60,7 @@ export class AuthService {
       throw new ConflictException('用户名或邮箱已存在');
     }
 
-    const role = dto.role || 'user';
+    const role = 'user';
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.prisma.user.create({

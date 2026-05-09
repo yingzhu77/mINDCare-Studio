@@ -91,3 +91,23 @@ export function emotionDiaryDelete(id) {
 export function dataAnalyticsOverview() {
   return service.get('/data-analytics/overview')
 }
+
+// AI 分析 — 触发情绪日记分析
+export function triggerEmotionDiaryAnalysis(id) {
+  return service.post(`/analysis/emotion-diary/${id}`)
+}
+
+// AI 分析 — 查询情绪日记分析结果
+export function getEmotionDiaryAnalysis(id) {
+  return service.get(`/analysis/emotion-diary/${id}`)
+}
+
+// AI 分析 — 触发咨询会话分析
+export function triggerChatSessionAnalysis(id) {
+  return service.post(`/analysis/chat-session/${id}`)
+}
+
+// AI 分析 — 查询会话分析结果
+export function getChatSessionAnalysis(id) {
+  return service.get(`/analysis/chat-session/${id}`)
+}

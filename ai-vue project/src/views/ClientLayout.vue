@@ -13,6 +13,7 @@
         >
           <el-menu-item index="/client/chat">AI 咨询</el-menu-item>
           <el-menu-item index="/client/diary">情绪日记</el-menu-item>
+          <el-menu-item index="/client/articles">文章投稿</el-menu-item>
         </el-menu>
       </div>
       <div class="header-right">

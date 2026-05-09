@@ -62,6 +62,85 @@
           </div>
         </div>
       </div>
+
+      <div class="analysis-section">
+        <div class="section-header">
+          <h3 class="section-title">AI会话分析</h3>
+          <el-button
+            v-if="!sessionAnalysisData && !sessionAnalysisLoading"
+            type="primary"
+            size="small"
+            @click="handleTriggerSessionAnalysis"
+          >
+            生成分析
+          </el-button>
+          <el-button
+            v-else
+            type="primary"
+            size="small"
+            plain
+            :loading="sessionAnalysisLoading"
+            @click="handleTriggerSessionAnalysis"
+          >
+            重新分析
+          </el-button>
+        </div>
+
+        <div v-if="sessionAnalysisLoading && !sessionAnalysisData" class="analysis-loading">
+          <el-skeleton :rows="4" animated />
+        </div>
+
+        <el-empty
+          v-if="!sessionAnalysisData && !sessionAnalysisLoading && !sessionAnalysisError"
+          description="暂无分析结果"
+        />
+
+        <div v-if="sessionAnalysisError" class="analysis-error">
+          <el-alert :title="sessionAnalysisError" type="error" show-icon :closable="false" />
+        </div>
+
+        <template v-if="sessionAnalysisData">
+          <div class="analysis-grid">
+            <div class="analysis-item">
+              <span class="analysis-label">情绪标签</span>
+              <div class="analysis-tags">
+                <el-tag
+                  v-for="(tag, i) in sessionAnalysisData.emotionTagList"
+                  :key="i"
+                  size="small"
+                  class="emotion-tag"
+                >
+                  {{ tag }}
+                </el-tag>
+                <span v-if="!sessionAnalysisData.emotionTagList?.length" class="analysis-value">-</span>
+              </div>
+            </div>
+            <div class="analysis-item">
+              <span class="analysis-label">风险等级</span>
+              <el-tag :type="sessionAnalysisRiskTagType" effect="plain">
+                {{ sessionAnalysisData.riskLevel || '-' }}
+              </el-tag>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <div class="analysis-card-title">会话摘要</div>
+            <div class="analysis-card-content">{{ sessionAnalysisData.summary || '-' }}</div>
+          </div>
+          <div class="analysis-card">
+            <div class="analysis-card-title">风险描述</div>
+            <div class="analysis-card-content">{{ sessionAnalysisData.riskDescription || '-' }}</div>
+          </div>
+          <div class="analysis-card">
+            <div class="analysis-card-title">专业建议</div>
+            <div class="analysis-card-content">{{ sessionAnalysisData.professionalAdvice || '-' }}</div>
+          </div>
+          <div class="analysis-card">
+            <div class="analysis-card-title">改善建议</div>
+            <div class="analysis-card-content multiline">{{ sessionAnalysisData.improvementSuggestions || '-' }}</div>
+          </div>
+        </template>
+      </div>
     </div>
 
     <template #footer>
@@ -73,8 +152,9 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
-import { sessionDetail, sessionMessages } from '@/api/admin'
+import { ref, computed, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
+import { sessionDetail, sessionMessages, getChatSessionAnalysis, triggerChatSessionAnalysis } from '@/api/admin'
 import {
   getFirstUserMessageTime,
   normalizeMessages,
@@ -89,6 +169,11 @@ const currentId = ref(null)
 const detail = ref({})
 const messages = ref([])
 const timelineRef = ref(null)
+
+// AI 会话分析状态
+const sessionAnalysisData = ref(null)
+const sessionAnalysisLoading = ref(false)
+const sessionAnalysisError = ref('')
 
 const resolveStartTime = (session) => (
   session?.startTime ||
@@ -113,6 +198,27 @@ const formatDateTime = (value) => {
   return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
 }
 
+// 解析情绪标签（支持字符串数组或JSON字符串）
+const resolveEmotionTagList = (data) => {
+  if (!data) return []
+  const raw = data.emotionTags || data.emotionTag || '[]'
+  if (Array.isArray(raw)) return raw
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return String(raw).split(/[;,，、|/]+/).map(t => t.trim()).filter(Boolean)
+  }
+}
+
+// 风险等级标签样式
+const sessionAnalysisRiskTagType = computed(() => {
+  const level = sessionAnalysisData.value?.riskLevel || ''
+  if (level === 'critical' || level === 'high') return 'danger'
+  if (level === 'medium') return 'warning'
+  return 'info'
+})
+
 const fetchDetail = async () => {
   if (!currentId.value) return
 
@@ -128,7 +234,7 @@ const fetchDetail = async () => {
     detail.value = detailRes || {}
     const normalized = normalizeMessages(messagesRes)
     messages.value = normalized
-    // 详情页开始时间以“第一条用户提问时间”为准，更符合会话开始语义
+    // 详情页开始时间以”第一条用户提问时间”为准，更符合会话开始语义
     detail.value.startTime = getFirstUserMessageTime(normalized) || resolveStartTime(detail.value)
     detail.value.messageCount =
       resolveMessagesTotal(messagesRes) ||
@@ -141,11 +247,55 @@ const fetchDetail = async () => {
         timelineRef.value.scrollTop = timelineRef.value.scrollHeight
       }
     })
+
+    // 拉取已有会话分析结果
+    fetchExistingSessionAnalysis()
   } catch (err) {
     console.error('拉取会话详情失败:', err)
     error.value = true
   } finally {
     loading.value = false
+  }
+}
+
+const fetchExistingSessionAnalysis = async () => {
+  if (!currentId.value) return
+  try {
+    const res = await getChatSessionAnalysis(currentId.value)
+    if (res?.id && res?.status === 'success') {
+      sessionAnalysisData.value = {
+        ...res,
+        emotionTagList: resolveEmotionTagList(res),
+      }
+    }
+  } catch {
+    // 无已有分析结果，保持空状态
+  }
+}
+
+const handleTriggerSessionAnalysis = async () => {
+  if (!currentId.value) return
+  sessionAnalysisLoading.value = true
+  sessionAnalysisError.value = ''
+  try {
+    const res = await triggerChatSessionAnalysis(currentId.value)
+    if (res?.id) {
+      if (res.status === 'success') {
+        sessionAnalysisData.value = {
+          ...res,
+          emotionTagList: resolveEmotionTagList(res),
+        }
+        ElMessage.success('会话分析完成')
+      } else {
+        sessionAnalysisData.value = null
+        sessionAnalysisError.value = res.errorMessage || '分析失败，请稍后重试'
+      }
+    }
+  } catch (err) {
+    sessionAnalysisError.value = err.message || '分析请求失败'
+    sessionAnalysisData.value = null
+  } finally {
+    sessionAnalysisLoading.value = false
   }
 }
 
@@ -167,6 +317,10 @@ const filterXSS = (html) => {
 
 const open = (id) => {
   currentId.value = id
+  // 重置分析状态，避免打开新会话时闪现旧数据
+  sessionAnalysisData.value = null
+  sessionAnalysisLoading.value = false
+  sessionAnalysisError.value = ''
   visible.value = true
   fetchDetail()
 }
@@ -324,6 +478,93 @@ defineExpose({ open })
           text-align: center;
           color: #909399;
           padding-top: 150px;
+        }
+      }
+    }
+
+    .analysis-section {
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #303133;
+        margin: 0;
+      }
+
+      .analysis-loading {
+        padding: 20px 0;
+      }
+
+      .analysis-error {
+        margin-top: 12px;
+      }
+
+      .analysis-grid {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 16px;
+
+        .analysis-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+
+          .analysis-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #606266;
+          }
+
+          .analysis-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+
+            .emotion-tag {
+              border-radius: 10px;
+              font-size: 12px;
+              background: #eef5ff;
+              border-color: #d9e8ff;
+              color: #3b6fb6;
+            }
+          }
+
+          .analysis-value {
+            color: #303133;
+          }
+        }
+      }
+
+      .analysis-card {
+        border: 1px solid #ebeef5;
+        margin-top: 12px;
+        border-radius: 4px;
+
+        .analysis-card-title {
+          background: #f0f3f6;
+          font-weight: 600;
+          color: #50545c;
+          padding: 10px 14px;
+          font-size: 14px;
+        }
+
+        .analysis-card-content {
+          background: #fff;
+          padding: 12px 14px;
+          line-height: 1.7;
+          color: #303133;
+          min-height: 52px;
+          font-size: 14px;
+        }
+
+        .multiline {
+          white-space: pre-wrap;
         }
       }
     }
