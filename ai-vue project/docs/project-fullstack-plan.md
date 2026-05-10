@@ -77,7 +77,7 @@
 | 缺失 | 真实 DeepSeek API Key 验证 | Mock 模式已可用，无需 Key |
 | 缺失 | i18n 国际化支持 | 仅中文界面 |
 | 修复 | @CurrentUser('userId') 误用（knowledge + notification） | 已修复，见"已修复的关键问题" |
-| 待排期 | 技术债务优化项（XSS 统一 / N+1 查询 / 事务保护 等） | 详见 §19 待后续窗口 |
+| 已完成 | 技术债务优化项（XSS 统一 / N+1 查询 / 事务保护 等） | 全部 11 项已在 v2.3.1 中解决 |
 
 ### 当前索引覆盖
 
@@ -545,32 +545,32 @@ LICENSE、CONTRIBUTING、CHANGELOG、启动脚本、Swagger、E2E 测试、Seed 
 
 ## 19. 待后续窗口 — 技术债务与架构优化
 
-以下项目来自 v2.3.1 独立复查，不阻塞当前功能闭环，安排到后续窗口按优先级处理。
+以下项目来自 v2.3.1 独立复查，**已在 v2.3.1 全部解决**。
 
-### P0 — 核心稳定性
+### P0 — 核心稳定性 ✅
 
-| 项目 | 说明 | 影响 |
+| 项目 | 状态 | 说明 |
 |------|------|------|
-| SessionDetailDialog XSS 统一 | 自定义正则过滤 → DOMPurify | 安全一致性 |
-| UploadService 异步化 | `writeFileSync` → `fs.promises.writeFile` | 上传 I/O 不阻塞事件循环 |
-| 异常过滤 HTTP 日志 | `AllExceptionsFilter` 对 HttpException 增加 `logger.warn` | 调试可观测性 |
-| 通知 DTO 校验 | `@Query('page')` 原始参数 → PaginationDto | 参数边界校验 |
+| SessionDetailDialog XSS 统一 | ✅ | 已使用 DOMPurify |
+| UploadService 异步化 | ✅ | 已改用 `fs/promises.writeFile` |
+| 异常过滤 HTTP 日志 | ✅ | HttpException 已按级别记录日志 |
+| 通知 DTO 校验 | ✅ | 已使用 `PaginationDto` |
 
-### P1 — 数据一致性与性能
+### P1 — 数据一致性与性能 ✅
 
-| 项目 | 说明 | 影响 |
+| 项目 | 状态 | 说明 |
 |------|------|------|
-| 管理端咨询列表 N+1 消除 | emotional.vue `fillSessionRows` 对每行发独立请求 | 管理端列表首屏加载性能 |
-| 分析结果事务保护 | `analysis.service.ts` AI 分析回写 session + 创建结果在事务外 | 数据一致性 |
-| `emotionTags` 序列化统一 | JSON 字符串 vs 数组在各端解析路径不一致 | 可维护性 |
+| 管理端咨询列表 N+1 消除 | ✅ | 后端单次 `findMany` + `include`，无 N+1 |
+| 分析结果事务保护 | ✅ | 已包装 `$transaction` |
+| `emotionTags` 序列化统一 | ✅ | 新增 `json-helper.ts` 统一解析 |
 
-### P2 — 架构长期可维护
+### P2 — 架构长期可维护 ✅
 
-| 项目 | 说明 |
-|------|------|
-| 用户端情绪日记删除 API | 当前 `ClientDiary.vue` 动态 import 管理端 API，应拆出独立用户端接口 + 后端所有权校验 |
-| SQLite 原始 SQL 迁移兼容 | `analytics.service.ts` 使用 `strftime`/`DATE` SQLite 特有函数，MySQL 不兼容 |
-| 路由守卫 token 读取源统一 | `router/index.js` 直接读 localStorage vs store 状态不同步风险 |
+| 项目 | 状态 | 说明 |
+|------|------|------|
+| 用户端情绪日记删除 API | ✅ | 独立 `DELETE /api/emotion-diary/:id` + client.ts |
+| SQLite 原始 SQL 迁移兼容 | ✅ | 改为 Prisma 查询 + 内存聚合 |
+| 路由守卫 token 读取源统一 | ✅ | 统一使用 Pinia store |
 
 ## 18. 验证策略
 

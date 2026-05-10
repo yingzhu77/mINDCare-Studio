@@ -262,19 +262,25 @@ Phase 0-8 全部完成。技术债务优化项已列入计划（docs/project-ful
 4. **启动提示**：`scripts/start-dev.ps1` 在启动时检测 Key 配置状态并提示用户
 5. **README 说明**：明确告知用户"使用前需自行申请并配置 API Key"
 
-## 20. 已列入计划待后续窗口的优化项
+## 20. 技术债务状态（v2.3.1 已全部解决）
 
-详见 `docs/project-fullstack-plan.md` §19 待后续窗口。包括但不限于：
+详见 `docs/project-fullstack-plan.md` §19。**全部 11 项已在 v2.3.1 中解决：**
 
-- SessionDetailDialog XSS 过滤统一为 DOMPurify
-- UploadService 异步化（writeFileSync → fs.promises.writeFile）
-- 管理端咨询列表 N+1 查询消除
-- 分析结果事务保护
-- emotionTags 序列化统一
-- 用户端情绪日记独立删除 API
-- analytics.service.ts SQLite 原始 SQL 的 MySQL 兼容
-- AllExceptionsFilter 增加 HttpException 日志
-- 通知 DTO 校验规范化
+### P0 核心稳定性 ✅
+- SessionDetailDialog XSS → DOMPurify
+- UploadService 异步化 → fs/promises
+- 异常过滤 HTTP 日志 → 已按级别记录
+- 通知 DTO 校验 → PaginationDto
+
+### P1 数据一致性+性能 ✅
+- 管理端咨询列表 N+1 → 后端单次 `findMany`+`include`
+- 分析结果事务保护 → `$transaction` 包装
+- emotionTags 序列化统一 → `json-helper.ts`
+
+### P2 架构可维护 ✅
+- 用户端情绪日记独立删除 API → 客户端独立接口
+- SQLite 原始 SQL → Prisma 聚合+内存聚合
+- 路由守卫 token 读取源 → 统一 Pinia store
 
 ## 21. 进度同步规则
 
