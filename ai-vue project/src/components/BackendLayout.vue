@@ -15,7 +15,7 @@
         <!-- 二级路由出口：渲染数据分析、咨询记录等具体页面 -->
         <router-view v-slot="{ Component }">
           <transition name="fade-transform" mode="out-in">
-            <component :is="Component" />
+            <component :is="Component" :key="$route.fullPath" />
           </transition>
         </router-view>
       </el-main>

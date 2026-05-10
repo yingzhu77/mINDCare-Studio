@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Playwright E2E
+test-results/
+playwright-report/
+
 # Python / backend local runtime files
 __pycache__/
 *.py[cod]

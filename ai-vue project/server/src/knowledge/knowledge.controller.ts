@@ -8,6 +8,7 @@ import { CreateArticleDto, UpdateArticleDto, UpdateArticleStatusDto } from './dt
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('knowledge')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -57,8 +58,8 @@ export class KnowledgeController {
   }
 
   @Post('article')
-  articleAdd(@Body() dto: CreateArticleDto) {
-    return this.knowledgeService.createArticle(dto, 1);
+  articleAdd(@Body() dto: CreateArticleDto, @CurrentUser('sub') userId: number) {
+    return this.knowledgeService.createArticle(dto, userId);
   }
 
   @Put('article')
@@ -72,7 +73,11 @@ export class KnowledgeController {
   }
 
   @Put('article/:id/status')
-  articleStatusUpdate(@Param('id') id: string, @Body() dto: UpdateArticleStatusDto) {
-    return this.knowledgeService.updateArticleStatus(Number(id), dto.status);
+  articleStatusUpdate(
+    @Param('id') id: string,
+    @Body() dto: UpdateArticleStatusDto,
+    @CurrentUser('sub') userId: number,
+  ) {
+    return this.knowledgeService.updateArticleStatus(Number(id), dto.status, userId, dto.rejectReason);
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { parseJsonArray } from '../common/utils/json-helper';
 
 @Injectable()
 export class AnalysisService {
@@ -20,7 +21,7 @@ export class AnalysisService {
     const existing = await this.prisma.aiAnalysisResult.findFirst({
       where: { bizType: 'emotion_diary', bizId: diaryId, status: 'success' },
     });
-    if (existing) return existing;
+    if (existing) return { ...existing, emotionTags: parseJsonArray(existing.emotionTags) };
 
     const prompt = this.buildDiaryPrompt();
     const input = JSON.stringify({
@@ -36,7 +37,7 @@ export class AnalysisService {
       const raw = await this.aiService.analyze(prompt, input);
       const parsed = this.safeParse(raw);
 
-      return this.prisma.aiAnalysisResult.create({
+      const result = await this.prisma.aiAnalysisResult.create({
         data: {
           bizType: 'emotion_diary',
           bizId: diaryId,
@@ -55,6 +56,7 @@ export class AnalysisService {
           status: 'success',
         },
       });
+      return { ...result, emotionTags: parseJsonArray(result.emotionTags) };
     } catch (error) {
       return this.prisma.aiAnalysisResult.create({
         data: {
@@ -79,7 +81,7 @@ export class AnalysisService {
     const existing = await this.prisma.aiAnalysisResult.findFirst({
       where: { bizType: 'chat_session', chatSessionId: session.id, status: 'success' },
     });
-    if (existing) return existing;
+    if (existing) return { ...existing, emotionTags: parseJsonArray(existing.emotionTags) };
 
     const messages = await this.prisma.chatMessage.findMany({
       where: { sessionId },
@@ -95,32 +97,35 @@ export class AnalysisService {
       const raw = await this.aiService.analyze(prompt, input);
       const parsed = this.safeParse(raw);
 
-      // 回写会话摘要
-      await this.prisma.chatSession.update({
-        where: { sessionId },
-        data: {
-          emotionTags: JSON.stringify(parsed.emotionTags),
-          aiSummary: parsed.summary,
-          riskLevel: parsed.riskLevel,
-        },
-      });
+      return this.prisma.$transaction(async (tx) => {
+        // 回写会话摘要
+        await tx.chatSession.update({
+          where: { sessionId },
+          data: {
+            emotionTags: JSON.stringify(parsed.emotionTags),
+            aiSummary: parsed.summary,
+            riskLevel: parsed.riskLevel,
+          },
+        });
 
-      return this.prisma.aiAnalysisResult.create({
-        data: {
-          bizType: 'chat_session',
-          bizId: session.id,
-          userId: session.userId,
-          chatSessionId: session.id,
-          summary: parsed.summary,
-          emotionTags: JSON.stringify(parsed.emotionTags),
-          riskLevel: parsed.riskLevel,
-          riskDescription: parsed.riskDescription,
-          professionalAdvice: parsed.professionalAdvice,
-          improvementSuggestions: parsed.improvementSuggestions,
-          modelName: parsed.modelName,
-          rawResponse: raw,
-          status: 'success',
-        },
+        const result = await tx.aiAnalysisResult.create({
+          data: {
+            bizType: 'chat_session',
+            bizId: session.id,
+            userId: session.userId,
+            chatSessionId: session.id,
+            summary: parsed.summary,
+            emotionTags: JSON.stringify(parsed.emotionTags),
+            riskLevel: parsed.riskLevel,
+            riskDescription: parsed.riskDescription,
+            professionalAdvice: parsed.professionalAdvice,
+            improvementSuggestions: parsed.improvementSuggestions,
+            modelName: parsed.modelName,
+            rawResponse: raw,
+            status: 'success',
+          },
+        });
+        return { ...result, emotionTags: parseJsonArray(result.emotionTags) };
       });
     } catch (error) {
       return this.prisma.aiAnalysisResult.create({
@@ -139,20 +144,24 @@ export class AnalysisService {
   // ================== 查询分析结果 ==================
 
   async getEmotionDiaryAnalysis(diaryId: number) {
-    return this.prisma.aiAnalysisResult.findFirst({
+    const result = await this.prisma.aiAnalysisResult.findFirst({
       where: { bizType: 'emotion_diary', bizId: diaryId },
       orderBy: { createdAt: 'desc' },
     });
+    if (!result) return null;
+    return { ...result, emotionTags: parseJsonArray(result.emotionTags) };
   }
 
   async getChatSessionAnalysis(sessionId: string) {
     const session = await this.prisma.chatSession.findUnique({ where: { sessionId } });
     if (!session) throw new NotFoundException('会话不存在');
 
-    return this.prisma.aiAnalysisResult.findFirst({
+    const result = await this.prisma.aiAnalysisResult.findFirst({
       where: { bizType: 'chat_session', bizId: session.id },
       orderBy: { createdAt: 'desc' },
     });
+    if (!result) return null;
+    return { ...result, emotionTags: parseJsonArray(result.emotionTags) };
   }
 
   private buildDiaryPrompt(): string {
@@ -168,7 +177,7 @@ export class AnalysisService {
   "professionalAdvice": "专业建议",
   "improvementSuggestions": "改善建议",
   "emotionTags": ["标签1", "标签2"],
-  "modelName": "deepseek-chat"
+  "modelName": "deepseek-v4-flash"
 }
 
 注意：
@@ -188,7 +197,7 @@ export class AnalysisService {
   "riskDescription": "风险描述（如有风险）",
   "professionalAdvice": "给咨询师的督导建议",
   "improvementSuggestions": "给用户的后续建议",
-  "modelName": "deepseek-chat"
+  "modelName": "deepseek-v4-flash"
 }
 
 注意：

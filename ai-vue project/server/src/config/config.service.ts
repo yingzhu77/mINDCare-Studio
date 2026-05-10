@@ -52,7 +52,7 @@ export class ConfigService {
   }
 
   get deepseekModel(): string {
-    return process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+    return process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
   }
 
   get isMockAi(): boolean {

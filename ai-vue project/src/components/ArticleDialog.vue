@@ -98,23 +98,9 @@
         </div>
       </el-form-item>
 
-      <!-- 文章内容 - 富文本编辑器 -->
+      <!-- 文章内容 - 富文本编辑器（异步加载，不影响首屏） -->
       <el-form-item label="文章内容" prop="content">
-        <div class="editor-wrapper">
-          <Toolbar
-            style="border-bottom: 1px solid #ccc"
-            :editor="editorRef"
-            :defaultConfig="toolbarConfig"
-            mode="default"
-          />
-          <Editor
-            style="height: 320px; overflow-y: hidden;"
-            v-model="form.content"
-            :defaultConfig="editorConfig"
-            mode="default"
-            @onCreated="handleCreated"
-          />
-        </div>
+        <ArticleEditor v-model="form.content" />
       </el-form-item>
     </el-form>
 
@@ -135,17 +121,19 @@
  * 本组件实现了文章的创建、编辑、封面上传及富文本编辑功能。
  * 严格遵循 Element Plus 和 wangEditor v5 的官方最佳实践。
  */
-import { ref, reactive, shallowRef, onBeforeUnmount, watch } from 'vue'
+import { ref, reactive, defineAsyncComponent } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import '@wangeditor/editor/dist/css/style.css'
-import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
-import { 
-  articleAdd, 
-  articleUpdate, 
-  articleDetail, 
-  fileUpload 
+import {
+  articleAdd,
+  articleUpdate,
+  articleDetail,
+  fileUpload
 } from '@/api/admin'
+import { logger } from '@/utils/logger'
+
+// wangEditor 通过异步组件加载，Vite 自动拆分为独立 chunk（~500kB）
+const ArticleEditor = defineAsyncComponent(() => import('@/components/ArticleEditor.vue'))
 
 // 定义组件接收的属性：目前主要是分类列表，用于填充下拉选择框
 const props = defineProps({
@@ -164,9 +152,6 @@ const dialogTitle = ref('新增文章')  // 弹窗动态标题
 const submitting = ref(false)     // 提交按钮的加载状态
 const uploading = ref(false)      // 封面上传时的加载状态
 const formRef = ref(null)         // 获取表单 DOM 实例，用于校验
-
-// 编辑器实例引用，必须使用 shallowRef 避免深层响应式代理导致性能问题或功能异常
-const editorRef = shallowRef()
 
 // 常用标签库：提供预定义的建议标签
 const commonTags = ['焦虑', '抑郁', '情绪管理', '压力', '睡眠', '人际关系', '心理健康']
@@ -209,45 +194,6 @@ const rules = {
   ]
 }
 
-// wangEditor 菜单栏配置：根据需求精简工具栏
-const toolbarConfig = {
-  toolbarKeys: [
-    'headerSelect', 'bold', 'italic', 'underline', 'through', '|',
-    'color', 'bgColor', '|',
-    'fontSize', 'fontFamily', '|',
-    'lineHeight', '|',
-    'bulletedList', 'numberedList', 'todo', '|',
-    'justifyLeft', 'justifyCenter', 'justifyRight', '|',
-    'insertLink', 'insertImage', 'insertTable', 'codeBlock', 'blockquote', '|',
-    'undo', 'redo'
-  ]
-}
-
-// wangEditor 编辑器核心配置
-const editorConfig = { 
-  placeholder: '请输入文章内容，支持富文本格式\n可以使用加粗、斜体、列表、标题等格式来丰富文章内容。',
-  MENU_CONF: {
-    // 自定义图片上传逻辑：直接对接后端文件上传接口
-    uploadImage: {
-      async customUpload(file, insertFn) {
-        try {
-          const formData = new FormData()
-          formData.append('file', file)
-          formData.append('businessType', 'ARTICLE')
-          formData.append('businessId', form.id || 'new')
-          formData.append('businessField', 'content')
-          
-          const url = await fileUpload(formData)
-          // 上传成功后，将图片插入到编辑器当前光标处
-          insertFn(url, '文章图片', url)
-        } catch (error) {
-          ElMessage.error('富文本图片上传失败')
-        }
-      }
-    }
-  }
-}
-
 /**
  * 公开方法：由父组件通过 ref 调用来打开弹窗
  * @param {String} id 文章 ID，存在则为编辑模式，否则为新增模式
@@ -286,9 +232,6 @@ const fetchDetail = async (id) => {
 const resetForm = () => {
   if (formRef.value) formRef.value.resetFields()
   Object.assign(form, initialForm)
-  if (editorRef.value) {
-    editorRef.value.clear() // 彻底清空富文本内容
-  }
 }
 
 /**
@@ -297,22 +240,6 @@ const resetForm = () => {
 const handleClose = () => {
   resetForm()
 }
-
-/**
- * 编辑器创建后的回调：保存实例以便后续操作
- */
-const handleCreated = (editor) => {
-  editorRef.value = editor
-}
-
-/**
- * 生命周期管理：组件销毁前必须销毁编辑器实例以释放内存
- */
-onBeforeUnmount(() => {
-  const editor = editorRef.value
-  if (editor == null) return
-  editor.destroy()
-})
 
 /**
  * 封面图上传：支持点击和拖拽
@@ -343,11 +270,11 @@ const handleUpload = async (uploadFile) => {
     formData.append('businessId', form.id || 'new')
     formData.append('businessField', 'cover')
     
-    const url = await fileUpload(formData)
-    form.coverImage = url // 回显缩略图并保存 URL
+    const uploadResult = await fileUpload(formData)
+    form.coverImage = uploadResult.url // 回显缩略图并保存 URL
     ElMessage.success('封面上传成功')
   } catch (error) {
-    console.error('上传异常:', error)
+    logger.error('上传异常:', error)
     ElMessage.error('封面上传失败，请稍后重试')
   } finally {
     uploading.value = false // 隐藏加载遮罩

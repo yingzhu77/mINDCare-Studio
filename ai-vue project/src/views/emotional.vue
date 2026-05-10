@@ -4,6 +4,18 @@
       <h2 class="section-title">咨询记录</h2>
     </div>
 
+    <el-card class="search-card" shadow="never">
+      <el-form :inline="true" class="search-form">
+        <el-form-item label="用户名称">
+          <el-input v-model="searchUser" placeholder="请输入用户名称" clearable @keyup.enter="handleSearch" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <el-card class="table-card" shadow="never">
       <el-table
         v-loading="loading"
@@ -35,7 +47,7 @@
               <div class="session-title">
                 <span class="assistant-name">宁渡AI助手</span>
                 <span class="title-sep">-</span>
-                <span class="title-time">{{ formatDate(resolveTitleTime(row), 'slash') }}</span>
+                <span class="title-time">{{ formatDate(row.startTime || row.endTime, 'slash') }}</span>
               </div>
 
               <div v-if="row.emotionTags.length > 0" class="emotion-tag-wrap">
@@ -113,17 +125,9 @@
 
 <script setup>
 import { ref, reactive, onMounted, nextTick } from 'vue'
-import { sessionPage, sessionMessages } from '@/api/admin'
+import { sessionPage } from '@/api/admin'
 import SessionDetailDialog from '@/components/SessionDetailDialog.vue'
-import {
-  getFirstUserMessageTime,
-  getFirstMessageTime,
-  getLastMessageTime,
-  getPreferredAssistantPreview,
-  normalizeMessages,
-  resolveMessagesTotal,
-  stripHtml,
-} from '@/utils/sessionMessage'
+import { logger } from '@/utils/logger'
 
 const pagination = reactive({
   pageNum: 1,
@@ -134,79 +138,7 @@ const pagination = reactive({
 const tableData = ref([])
 const loading = ref(false)
 const detailDialogRef = ref(null)
-const summaryTaskVersion = ref(0)
-
-const resolveStartTime = (row) => (
-  row?.startTime || row?.sessionStartTime || row?.beginTime || row?.createdAt || row?.createTime || ''
-)
-
-const resolveEndTime = (row) => (
-  row?.endTime || row?.sessionEndTime || row?.lastMessageTime || row?.updateTime || row?.updatedAt || ''
-)
-
-const resolveTitleTime = (row) => (
-  row?.titleTime || row?.startTime || row?.firstMessageTime || row?.endTime || ''
-)
-
-const resolveRowMessageCount = (row) => {
-  const value = [row?.messageCount, row?.messagesCount, row?.msgCount, row?.count, row?.total].find(
-    (item) => item !== undefined && item !== null && item !== ''
-  )
-  const count = Number(value)
-  return Number.isNaN(count) || count < 0 ? 0 : count
-}
-
-const toTagArray = (value) => {
-  if (value === undefined || value === null || value === '') return []
-  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean)
-
-  return String(value)
-    .split(/[;,，、|/]+/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-const resolveEmotionTagsFromObject = (obj) => {
-  if (!obj || typeof obj !== 'object') return []
-  const raw =
-    obj.emotionTag ?? obj.emotionTags ?? obj.dominantEmotion ?? obj.mainEmotion ?? obj.emotionLabel ?? obj.label ?? obj.tag
-  return toTagArray(raw)
-}
-
-const resolveDisplaySessionId = (row) => row?.sessionId || row?.chatSessionId || row?.conversationId || row?.id || ''
-
-const resolveRequestSessionId = (row) =>
-  row?.sessionId || row?.chatSessionId || row?.conversationId || row?.conversationNo || row?.sessionNo || row?.id || ''
-
-const isLikelyValidSessionId = (id) => {
-  if (id === undefined || id === null) return false
-  const value = String(id).trim()
-  if (!value) return false
-  return /^\d+$/.test(value) || /^[a-zA-Z0-9_-]{6,}$/.test(value)
-}
-
-// 列表预览兜底：消息接口异常时，优先使用列表接口已有字段，避免页面一直显示“-”。
-const resolvePreviewFromRow = (row, maxLength = 160) => {
-  const candidates = [
-    row?.firstAssistantMessage,
-    row?.firstAiMessage,
-    row?.firstUserMessage,
-    row?.firstMessage,
-    row?.preview,
-    row?.summary,
-    row?.sessionSummary,
-    row?.aiSummary,
-    row?.latestMessage,
-    row?.lastMessage,
-    row?.content,
-  ]
-
-  const picked = candidates.find((item) => item !== undefined && item !== null && String(item).trim() !== '')
-  if (!picked) return ''
-
-  const plain = stripHtml(picked)
-  return plain.length > maxLength ? `${plain.slice(0, maxLength)}...` : plain
-}
+const searchUser = ref('')
 
 const formatDate = (dateStr, type) => {
   if (!dateStr) return '-'
@@ -226,68 +158,28 @@ const formatDate = (dateStr, type) => {
   return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
 }
 
-const fillSessionRows = async (rows, version) => {
-  await Promise.allSettled(
-    rows.map(async (row) => {
-      if (!row?.requestSessionId) return
-
-      // 会话ID不合法时只影响当前行，不阻断其他行消息加载。
-      if (!isLikelyValidSessionId(row.requestSessionId)) {
-        row.previewText = row.previewText || resolvePreviewFromRow(row)
-        return
-      }
-
-      try {
-        const msgRes = await sessionMessages(row.requestSessionId)
-        if (summaryTaskVersion.value !== version) return
-
-        const normalized = normalizeMessages(msgRes)
-        row.firstMessageTime = getFirstMessageTime(normalized) || row.firstMessageTime
-        row.startTime = getFirstUserMessageTime(normalized) || row.startTime
-        row.previewText = getPreferredAssistantPreview(normalized) || row.previewText || resolvePreviewFromRow(row)
-        row.endTime = getLastMessageTime(normalized) || row.endTime
-        row.displayMessageCount = resolveMessagesTotal(msgRes) || normalized.length || row.displayMessageCount
-      } catch {
-        if (summaryTaskVersion.value !== version) return
-        // 单行失败保留兜底文案，不对全局会话请求做熔断。
-        row.previewText = row.previewText || resolvePreviewFromRow(row)
-      }
-    })
-  )
-}
-
 const fetchTableData = async () => {
   loading.value = true
-  const currentVersion = ++summaryTaskVersion.value
 
   try {
     const params = {
       currentPage: pagination.pageNum,
       size: pagination.pageSize,
-      // 按接口文档保留 emotionTag 参数，当前页面无检索时默认传空字符串。
-      emotionTag: '',
+      userName: searchUser.value || undefined,
     }
 
     const res = await sessionPage(params)
-    const rows = (res?.records || res?.list || []).map((item) => ({
+    const rows = (res?.records || []).map((item) => ({
       ...item,
-      displaySessionId: resolveDisplaySessionId(item),
-      requestSessionId: resolveRequestSessionId(item),
-      startTime: resolveStartTime(item),
-      endTime: resolveEndTime(item),
-      firstMessageTime: '',
-      titleTime: resolveStartTime(item) || resolveEndTime(item),
-      previewText: resolvePreviewFromRow(item),
-      emotionTags: resolveEmotionTagsFromObject(item),
-      displayMessageCount: resolveRowMessageCount(item),
+      displaySessionId: item.sessionId || item.id,
+      emotionTags: Array.isArray(item.emotionTags) ? item.emotionTags : [],
+      displayMessageCount: item.messageCount ?? 0,
     }))
 
     tableData.value = rows
     pagination.total = res?.total || 0
-
-    fillSessionRows(rows, currentVersion)
   } catch (error) {
-    console.error('获取咨询记录失败:', error)
+    logger.error('获取咨询记录失败:', error)
     tableData.value = []
     pagination.total = 0
   } finally {
@@ -306,6 +198,17 @@ const handleCurrentChange = (val) => {
   fetchTableData().then(scrollToTop)
 }
 
+const handleSearch = () => {
+  pagination.pageNum = 1
+  fetchTableData()
+}
+
+const handleReset = () => {
+  searchUser.value = ''
+  pagination.pageNum = 1
+  fetchTableData()
+}
+
 const scrollToTop = () => {
   nextTick(() => {
     const mainContent = document.querySelector('.main-content')
@@ -316,8 +219,8 @@ const scrollToTop = () => {
 }
 
 const handleShowDetail = (row) => {
-  if (detailDialogRef.value && row?.requestSessionId) {
-    detailDialogRef.value.open(row.requestSessionId)
+  if (detailDialogRef.value && row?.sessionId) {
+    detailDialogRef.value.open(row.sessionId)
   }
 }
 
@@ -337,6 +240,19 @@ onMounted(() => {
       font-size: 20px;
       font-weight: 600;
       color: #303133;
+    }
+  }
+
+  .search-card {
+    border: none;
+    border-radius: 8px;
+    background-color: var(--card-bg);
+
+    .search-form {
+      :deep(.el-form-item) {
+        margin-right: 24px;
+        margin-bottom: 0;
+      }
     }
   }
 

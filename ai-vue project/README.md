@@ -4,16 +4,16 @@
 
 ## 项目状态
 
-**当前阶段：用户端基础模块已启动 (v0.4.0)**
+**当前阶段：用户端聊天历史管理已完成 (v1.2.0)**
 
 | 层级 | 状态 | 说明 |
 |------|------|------|
 | 前端 | ✅ 管理端完成 | 登录/知识文章/咨询记录/情绪日志/Dashboard 全部接入真实接口 |
-| 前端 | ✅ 用户端基础 | ClientLayout + AI 聊天(SSE) + 情绪日记页面已就绪 |
-| 后端 | ✅ 主线完成 | NestJS + Prisma + 7 实体 + 认证 + 管理端接口 + AI 模块 |
+| 前端 | ✅ 用户端基础 | ClientLayout + AI 聊天(SSE + 会话侧边栏) + 情绪日记 + 文章投稿 |
+| 后端 | ✅ 主线完成 | NestJS + Prisma + 7 实体 + 认证 + 管理端/用户端接口 + AI 模块 |
 | 数据库 | ✅ 主线完成 | Prisma migration 管理，SQLite 开发，可切换 MySQL |
 | AI | ✅ 骨架就绪 | DeepSeek 客户端 + mock AI 模式 + SSE 流式 + 分析结果落库 |
-| 开源 | 🔄 进行中 | 计划书已就绪，工程文件随阶段补齐 |
+| P5 | ✅ 聊天历史管理 | 会话列表侧边栏、级联删除、JSON 导出、E2E 测试覆盖 |
 
 ## 目标技术栈
 
@@ -79,7 +79,6 @@ ai-vue project/
     tsconfig.json
     .env.example
 
-  backend/                   # 旧 FastAPI 后端（legacy，不再扩展）
   docs/                      # 项目文档和计划书
   scripts/                   # 一键启动和演示数据脚本
   vite.config.js
@@ -109,16 +108,6 @@ npx prisma migrate dev
 npx prisma db seed
 npm run start:dev
 ```
-
-### 旧后端（FastAPI legacy，已停止扩展）
-
-```powershell
-python -m pip install -r .\backend\requirements.txt
-python -m backend.app.db.init_db
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
-```
-
-> Vite 代理已指向 NestJS 后端（`http://127.0.0.1:8000`），FastAPI 后端不再使用。
 
 ## 已实现接口
 
@@ -151,6 +140,9 @@ python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/api/chat/send` | AI 聊天 SSE 流式 |
+| GET | `/api/chat/sessions/my` | 我的会话列表带预览 |
+| DELETE | `/api/chat/session/:sessionId` | 删除会话（级联消息） |
+| GET | `/api/chat/session/:sessionId/export` | 导出会话为 JSON |
 | GET | `/api/emotion-diary/my/page` | 我的情绪日记分页 |
 | POST | `/api/emotion-diary` | 新增情绪日记 |
 | PUT | `/api/emotion-diary/:id` | 更新情绪日记 |
@@ -215,3 +207,29 @@ curl -X POST http://127.0.0.1:8000/api/user/login \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"admin\",\"password\":\"admin123456\"}"
 ```
+
+## AI 功能配置
+
+### Mock AI 模式（默认）
+
+项目默认使用 **Mock AI 模式**，无需任何 API Key 即可完整演示所有功能。AI 聊天会返回预设回复（逐字流式效果），分析功能返回模拟的结构化结果。**此模式适合开发、演示和评估阶段。**
+
+### 接入真实 DeepSeek API
+
+如需使用真实 AI 能力（推荐在部署到生产环境前接入），请配置 API Key：
+
+```powershell
+# 编辑 server/.env，填入你的 DeepSeek API Key
+DEEPSEEK_API_KEY=sk-your-key-here
+```
+
+重启后端后，所有 AI 功能自动切换到真实模型调用：
+
+- AI 聊天使用 DeepSeek Chat 模型实时生成回复
+- 情绪日记分析使用真实模型分析
+- 会话摘要由模型生成真实摘要
+
+> ⚠️ **注意**：
+> - API Key 只存在于后端 `.env` 文件中，不会写入前端或提交到仓库
+> - 未配置 Key 时系统自动使用 Mock 模式，不会报错
+> - 如果你 clone 了本仓库，使用前请先确认是否已配置自己的 API Key

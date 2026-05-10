@@ -6,6 +6,7 @@ import { SendMessageDto } from './dto/chat.dto';
 import { AiService } from '../ai/ai.service';
 import { Response } from 'express';
 import { randomUUID } from 'crypto';
+import { parseJsonArray } from '../common/utils/json-helper';
 
 @Injectable()
 export class ChatService {
@@ -34,10 +35,8 @@ export class ChatService {
         include: {
           user: { select: { id: true, username: true } },
           messages: {
-            where: { role: 'assistant' },
             orderBy: { messageTime: 'asc' },
-            take: 1,
-            select: { content: true },
+            select: { content: true, messageTime: true, role: true },
           },
         },
         skip: (currentPage - 1) * size,
@@ -48,10 +47,21 @@ export class ChatService {
     ]);
 
     const records = rows.map(({ messages, ...rest }) => {
-      const content = messages[0]?.content || '';
+      const firstUserMsg = messages.find(m => m.role === 'user');
+      const firstAssistantMsg = messages.find(m => m.role === 'assistant');
+      const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+
+      const content = firstAssistantMsg?.content || '';
       const plain = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
       const previewText = plain.length > 160 ? plain.slice(0, 160) + '...' : plain;
-      return { ...rest, previewText };
+
+      return {
+        ...rest,
+        emotionTags: parseJsonArray(rest.emotionTags),
+        previewText,
+        firstMessageTime: firstUserMsg?.messageTime || rest.startTime,
+        lastMessageTime: lastMsg?.messageTime || rest.endTime || rest.startTime,
+      };
     });
 
     return { records, total, currentPage, size };
@@ -65,7 +75,7 @@ export class ChatService {
       },
     });
     if (!session) throw new NotFoundException('会话不存在');
-    return session;
+    return { ...session, emotionTags: parseJsonArray(session.emotionTags) };
   }
 
   async sessionMessages(sessionId: string) {
@@ -155,6 +165,90 @@ export class ChatService {
     }
 
     res.end();
+  }
+
+  // ================== 用户端会话管理 ==================
+
+  async mySessions(userId: number, dto: PaginationDto) {
+    const { currentPage = 1, size = 10 } = dto;
+    const where = { userId };
+
+    const [records, total] = await Promise.all([
+      this.prisma.chatSession.findMany({
+        where,
+        include: {
+          messages: {
+            orderBy: { messageTime: 'desc' },
+            take: 1,
+            select: { content: true, messageTime: true },
+          },
+        },
+        skip: (currentPage - 1) * size,
+        take: size,
+        orderBy: { endTime: { sort: 'desc', nulls: 'last' } },
+      }),
+      this.prisma.chatSession.count({ where }),
+    ]);
+
+    const list = records.map(({ messages, ...rest }) => {
+      const lastMsg = messages[0];
+      const plain = lastMsg
+        ? lastMsg.content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 80)
+        : '';
+      return { ...rest, emotionTags: parseJsonArray(rest.emotionTags), lastMessage: plain, lastTime: lastMsg?.messageTime || rest.startTime };
+    });
+
+    return { records: list, total, currentPage, size };
+  }
+
+  async deleteSession(sessionId: string, userId: number) {
+    const session = await this.prisma.chatSession.findUnique({
+      where: { sessionId },
+    });
+    if (!session) throw new NotFoundException('会话不存在');
+    if (session.userId !== userId) throw new NotFoundException('会话不存在');
+
+    await this.prisma.$transaction(async (tx) => {
+      // 级联删除关联分析结果
+      await tx.aiAnalysisResult.deleteMany({
+        where: { bizType: 'chat_session', bizId: session.id },
+      });
+      // 删除所有消息
+      await tx.chatMessage.deleteMany({
+        where: { sessionId },
+      });
+      // 删除会话
+      await tx.chatSession.delete({
+        where: { sessionId },
+      });
+    });
+
+    return { code: 200, message: '会话已删除', data: null };
+  }
+
+  async exportSession(sessionId: string, userId: number) {
+    const session = await this.prisma.chatSession.findUnique({
+      where: { sessionId },
+    });
+    if (!session) throw new NotFoundException('会话不存在');
+    if (session.userId !== userId) throw new NotFoundException('会话不存在');
+
+    const messages = await this.prisma.chatMessage.findMany({
+      where: { sessionId },
+      orderBy: { messageTime: 'asc' },
+      select: { role: true, content: true, messageTime: true },
+    });
+
+    return {
+      session: {
+        sessionId: session.sessionId,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        messageCount: session.messageCount,
+      },
+      messages,
+      exportedAt: new Date().toISOString(),
+    };
   }
 
   private async getOrCreateSession(existingSessionId: string | undefined, userId: number, userName: string) {

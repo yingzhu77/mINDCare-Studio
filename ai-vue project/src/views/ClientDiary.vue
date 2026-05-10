@@ -209,7 +209,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { myDiaryPage, diaryAdd, diaryUpdate } from '@/api/client'
+import { myDiaryPage, diaryAdd, diaryUpdate, diaryDelete } from '@/api/client'
+import { logger } from '@/utils/logger'
 
 const pagination = reactive({
   pageNum: 1,
@@ -266,7 +267,7 @@ const fetchTableData = async () => {
     tableData.value = res?.records || []
     pagination.total = res?.total || 0
   } catch (error) {
-    console.error('获取情绪日记失败:', error)
+    logger.error('获取情绪日记失败:', error)
     tableData.value = []
     pagination.total = 0
   } finally {
@@ -324,9 +325,7 @@ const handleDelete = async (row) => {
     await ElMessageBox.confirm('确定删除这条日记吗？', '确认删除', {
       type: 'warning',
     })
-    // 使用管理端删除接口（用户端暂无独立删除接口）
-    const { emotionDiaryDelete } = await import('@/api/admin')
-    await emotionDiaryDelete(row.id)
+    await diaryDelete(row.id)
     ElMessage.success('已删除')
     fetchTableData()
   } catch {
@@ -362,7 +361,7 @@ const handleSubmit = async () => {
       dialogVisible.value = false
       fetchTableData()
     } catch (error) {
-      console.error('保存日记失败:', error)
+      logger.error('保存日记失败:', error)
     } finally {
       submitting.value = false
     }

@@ -48,8 +48,8 @@ export class EmotionDiaryController {
 
   @Put('emotion-diary/:id')
   @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() dto: UpdateDiaryDto) {
-    return this.diaryService.update(Number(id), dto);
+  update(@Param('id') id: string, @Body() dto: UpdateDiaryDto, @CurrentUser() user: any) {
+    return this.diaryService.update(Number(id), dto, user.sub);
   }
 
   @Get('emotion-diary/my/page')
@@ -60,5 +60,11 @@ export class EmotionDiaryController {
     @Query('diaryDate') diaryDate?: string,
   ) {
     return this.diaryService.myPage(dto, user.sub, { diaryDate });
+  }
+
+  @Delete('emotion-diary/:id')
+  @UseGuards(JwtAuthGuard)
+  delete(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.diaryService.delete(Number(id), user.sub);
   }
 }

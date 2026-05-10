@@ -7,6 +7,17 @@
       </el-button>
     </div>
 
+    <!-- 审核结果通知：仅当有文章状态变更时显示 -->
+    <el-alert
+      v-if="showNewReviewBanner"
+      title="您有新的审核结果"
+      type="success"
+      show-icon
+      closable
+      @close="showNewReviewBanner = false"
+      class="review-notice"
+    />
+
     <el-card class="table-card" shadow="never">
       <el-table v-loading="loading" :data="tableData" style="width: 100%">
         <el-table-column label="标题" min-width="200">
@@ -31,27 +42,34 @@
 
         <el-table-column label="创建时间" width="170">
           <template #default="{ row }">
-            {{ row.createdAt || '-' }}
+            {{ formatDate(row.createdAt) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="200" align="center" fixed="right">
+        <el-table-column label="操作" width="240" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button
-              v-if="row.status === 'draft'"
-              link type="primary"
-              @click="$router.push(`/client/articles/${row.id}/edit`)"
-            >编辑</el-button>
-            <el-button
-              v-if="row.status === 'draft'"
-              link type="success"
-              @click="handleSubmit(row)"
-            >提交审核</el-button>
-            <el-tag v-else-if="row.status === 'pending_review'" size="small" effect="plain">审核中</el-tag>
-            <el-tag v-else-if="row.status === 'published'" size="small" type="success" effect="plain">已发布</el-tag>
-            <el-tag v-else-if="row.status === 'rejected'" size="small" type="danger" effect="plain">
-              已驳回{{ row.rejectReason ? ': ' + row.rejectReason : '' }}
-            </el-tag>
+            <div class="action-cell">
+              <el-button
+                v-if="row.status === 'draft' || row.status === 'rejected'"
+                link type="primary"
+                @click="$router.push(`/client/articles/${row.id}/edit`)"
+              >编辑</el-button>
+              <el-button
+                v-if="row.status === 'draft'"
+                link type="success"
+                @click="handleSubmit(row)"
+              >提交审核</el-button>
+              <el-button
+                v-if="row.status === 'rejected'"
+                link type="warning"
+                @click="handleSubmit(row)"
+              >重新提交</el-button>
+              <el-tag v-if="row.status === 'pending_review'" size="small" effect="plain">审核中</el-tag>
+              <el-tag v-if="row.status === 'published'" size="small" type="success" effect="plain">已发布</el-tag>
+              <el-tag v-if="row.status === 'rejected'" size="small" type="danger" effect="plain">
+                已驳回{{ row.rejectReason ? ': ' + row.rejectReason : '' }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
 
@@ -80,7 +98,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { formatDate } from '@/utils/date'
 import { myArticlePage, myArticleSubmit } from '@/api/client'
+
+const LAST_CHECK_KEY = 'client_articles_last_check'
 
 const pagination = reactive({
   pageNum: 1,
@@ -90,6 +111,7 @@ const pagination = reactive({
 
 const tableData = ref([])
 const loading = ref(false)
+const showNewReviewBanner = ref(false)
 
 const statusLabel = (status) => {
   const map = { draft: '草稿', pending_review: '审核中', published: '已发布', rejected: '已驳回', offline: '已下线' }
@@ -130,21 +152,46 @@ const handleCurrentChange = (val) => {
 }
 
 const handleSubmit = async (row) => {
+  const isRejected = row.status === 'rejected'
+  const msg = isRejected
+    ? `确认将《${row.title}》重新提交审核？`
+    : `确认将《${row.title}》提交审核？提交后不可编辑。`
   try {
-    await ElMessageBox.confirm(`确认将《${row.title}》提交审核？提交后不可编辑。`, '提交审核', {
+    await ElMessageBox.confirm(msg, '提交审核', {
       type: 'info',
       confirmButtonText: '确认提交',
       cancelButtonText: '取消',
     })
     await myArticleSubmit(row.id)
-    ElMessage.success('已提交审核')
+    ElMessage.success(isRejected ? '已重新提交审核' : '已提交审核')
     fetchData()
   } catch {
     // 取消
   }
 }
 
-onMounted(fetchData)
+const checkNewResults = () => {
+  const lastCheck = localStorage.getItem(LAST_CHECK_KEY)
+  if (!lastCheck) {
+    localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString())
+    return
+  }
+  const lastCheckTime = new Date(lastCheck).getTime()
+  const hasNew = tableData.value.some((row) => {
+    if (row.status !== 'published' && row.status !== 'rejected') return false
+    if (!row.updatedAt) return false
+    return new Date(row.updatedAt).getTime() > lastCheckTime
+  })
+  if (hasNew) {
+    showNewReviewBanner.value = true
+  }
+  localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString())
+}
+
+onMounted(async () => {
+  await fetchData()
+  checkNewResults()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -186,6 +233,14 @@ onMounted(fetchData)
         color: #909399;
         font-size: 14px;
       }
+    }
+
+    .action-cell {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
   }
 }

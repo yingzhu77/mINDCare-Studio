@@ -1,0 +1,62 @@
+# ============================================
+# AI 心理健康管理平台 — Docker Compose
+# 使用方式:
+#   docker compose up -d
+# ============================================
+
+name: ai-mental-health
+
+services:
+  # ========== MySQL 数据库 ==========
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      MYSQL_DATABASE: ai_vue
+      MYSQL_USER: ai_vue_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ai_vue_pass}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ========== NestJS 后端 ==========
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      DATABASE_URL: mysql://ai_vue_user:${MYSQL_PASSWORD:-ai_vue_pass}@mysql:3306/ai_vue?charset=utf8mb4
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN: 1440m
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: https://api.deepseek.com
+      DEEPSEEK_MODEL: deepseek-chat
+    ports:
+      - "8000:8000"
+
+  # ========== Vue3 前端 ==========
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  mysql_data:

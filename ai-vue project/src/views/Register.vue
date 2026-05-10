@@ -54,6 +54,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { register } from '@/api/admin'
+import { logger } from '@/utils/logger'
 
 /**
  * 注册页面逻辑
@@ -88,7 +89,10 @@ const rules = {
     { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: ['blur', 'change'] },
   ],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于 6 位', trigger: 'blur' },
+  ],
   confirmPassword: [{ validator: validatePass2, trigger: 'blur' }],
 }
 
@@ -106,7 +110,7 @@ const handleRegister = async () => {
         ElMessage.success('注册成功，请登录')
         router.push('/auth/login')
       } catch (error) {
-        console.error(error)
+        logger.error(error)
       } finally {
         loading.value = false
       }

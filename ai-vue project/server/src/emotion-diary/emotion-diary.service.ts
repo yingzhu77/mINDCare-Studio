@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateDiaryDto, UpdateDiaryDto } from './dto/diary.dto';
@@ -68,8 +68,12 @@ export class EmotionDiaryService {
     });
   }
 
-  async update(id: number, dto: UpdateDiaryDto) {
-    await this.getDiaryOrFail(id);
+  async update(id: number, dto: UpdateDiaryDto, userId?: number) {
+    const diary = await this.getDiaryOrFail(id);
+    // 用户端更新需校验所有权
+    if (userId !== undefined && diary.userId !== userId) {
+      throw new ForbiddenException('无权修改他人的情绪日记');
+    }
     return this.prisma.emotionDiary.update({ where: { id }, data: dto });
   }
 
@@ -95,6 +99,14 @@ export class EmotionDiaryService {
     ]);
 
     return { records, total, currentPage, size };
+  }
+
+  async delete(id: number, userId: number) {
+    const diary = await this.getDiaryOrFail(id);
+    if (diary.userId !== userId) {
+      throw new ForbiddenException('无权删除他人的情绪日记');
+    }
+    return this.prisma.emotionDiary.delete({ where: { id } });
   }
 
   private async getDiaryOrFail(id: number) {

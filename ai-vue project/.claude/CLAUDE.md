@@ -45,35 +45,29 @@
 
 ## 5. 本项目当前定位
 
-本项目当前定位为：
-
 `AI 心理健康管理平台：Vue3 管理后台 + NestJS 后端 + Prisma + MySQL + DeepSeek AI 情绪分析/会话摘要`
 
 项目长期目标是做成偏 Web SaaS 形态的开源项目，具备清晰的前后端边界、统一类型契约、可复制的本地启动流程和完整的业务闭环。
 
-当前代码主体是 Vue3 管理后台前端，已有页面和接口调用覆盖登录鉴权、知识文章管理、咨询会话记录、情绪日记管理、数据概览等后台模块。
+当前版本 **v2.3.1**，Phase 0-8 全部完成 + @CurrentUser 修复。
 
-当前阶段不要误判项目：**后端主线已重建完成**。`server/` NestJS + Prisma 主线已覆盖全部 7 个核心实体、认证闭环、管理端业务接口和 DeepSeek AI 代理骨架。`backend/` FastAPI 早期原型已标记为 legacy，仅作迁移参考。
+## 6. 当前阶段做什么 — Phase 0-8 已全部完成
 
-## 6. 当前阶段优先做什么
+Phase 0-8 全部完成。等待下一阶段规划。详见计划书 docs/project-fullstack-plan.md。
 
-当前阶段优先顺序（Phase 5 → 6 → 遗留优化）：
-
-1. **文章审核闭环**：管理端新增审核队列页面，支持通过、驳回操作，完整实现 `draft → pending_review → published/rejected` 状态机。
-2. **开源化准备**：LICENSE、CONTRIBUTING、CHANGELOG、启动脚本、README 截图、seed 数据增强。
-3. **工程提效**：配置 Swagger、补充服务端测试、前端注册密码 minlength 校验。
-
-完成标准：以上 3 项全部完成后，项目进入 v1.0 候选阶段。
+P6-P7-P8 继续延后（真实 DeepSeek 验证 / Playwright e2e / 剩余图表）。
 
 ## 7. 当前阶段不要做什么
 
-除非用户明确要求，否则当前阶段不要直接执行这些工作：
+除非用户明确要求，否则不要直接执行这些工作：
 
-- 改动 AI 分析模块（Phase 4 已完成且稳定）。
-- 继续扩展 FastAPI `backend/` 的业务模块。
-- 接入真实 DeepSeek API 或写入真实 API Key（mock 模式已可用）。
-- 引入额外的前端构建工具或状态管理库。
-- 大规模重构前端现有页面样式或布局。
+- 接入真实 DeepSeek API Key（mock 模式已可用）。
+- 引入 WebSocket 实时通知。
+- 进行前端 TypeScript 迁移。
+- 重构现有页面样式或布局。
+- 做移动端适配。
+- 改动 Docker Compose / MySQL schema 已有配置。
+- 改动 ECharts 图表样式。
 
 ## 8. 当前分层不可打乱
 
@@ -88,28 +82,29 @@
 - `src/router/`：路由与鉴权控制
 - `src/store/`：状态管理
 
-### 后端计划分层（server/）
+### 后端分层（server/）
 
 - `server/src/main.ts`：NestJS 应用入口
 - `server/src/app.module.ts`：根模块
 - `server/src/common/`：统一响应、全局异常过滤、分页 DTO、JWT Guard、角色 Guard、当前用户装饰器
 - `server/src/config/`：环境变量、数据库连接配置
-- `server/src/auth/`：认证模块（登录、注册、JWT 签发）
-- `server/src/users/`：用户管理模块
-- `server/src/knowledge/`：知识文章模块
-- `server/src/chat/`：咨询会话和 AI 聊天模块
-- `server/src/emotion-diary/`：情绪日记模块
-- `server/src/analysis/`：AI 分析模块
-- `server/src/analytics/`：数据概览模块
-- `server/src/upload/`：文件上传模块
-- `server/src/ai/`：DeepSeek 客户端、提示词、解析器
+- `server/src/auth/`：认证模块
+- `server/src/users/`：用户管理
+- `server/src/knowledge/`：知识文章
+- `server/src/client-article/`：用户端投稿
+- `server/src/chat/`：咨询会话 + AI 聊天
+- `server/src/emotion-diary/`：情绪日记
+- `server/src/analysis/`：AI 分析
+- `server/src/analytics/`：数据统计
+- `server/src/upload/`：文件上传
+- `server/src/ai/`：DeepSeek 客户端
 - `server/prisma/`：schema、migration、seed
 
 除非用户明确要求重构，否则不要打乱这套结构。
 
 ## 9. 接口稳定优先
 
-后续 TS 后端必须优先兼容当前前端已经调用的接口路径和返回结构。
+后端必须优先兼容当前前端已经调用的接口路径和返回结构。
 
 当前前端通过 `src/api/admin.js` 调用的核心接口包括：
 
@@ -129,34 +124,22 @@
 - `GET /emotion-diary/admin/page`
 - `DELETE /emotion-diary/admin/{id}`
 - `GET /data-analytics/overview`
-- `POST /analysis/emotion-diary/{id}` （AI 分析 — 触发情绪日记分析）
-- `GET /analysis/emotion-diary/{id}` （AI 分析 — 查询结果）
-- `POST /analysis/chat-session/{id}` （AI 分析 — 触发会话分析）
-- `GET /analysis/chat-session/{id}` （AI 分析 — 查询结果）
+- `GET /data-analytics/trends?type=emotion|session|article`
+- `POST /analysis/emotion-diary/{id}`
+- `GET /analysis/emotion-diary/{id}`
+- `POST /analysis/chat-session/{id}`
+- `GET /analysis/chat-session/{id}`
 
-统一响应必须兼容当前 `src/utils/request.js` 的处理逻辑：
+统一响应格式：
 
 ```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {}
-}
+{"code": 200, "message": "success", "data": {}}
 ```
 
-分页统一返回：
+分页返回：
 
 ```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "records": [],
-    "total": 0,
-    "currentPage": 1,
-    "size": 10
-  }
-}
+{"code": 200, "message": "success", "data": {"records": [], "total": 0, "currentPage": 1, "size": 10}}
 ```
 
 在没有明确需求前，不要把接口改成新的路径，也不要要求前端大规模调整请求层。
@@ -175,40 +158,20 @@
 - 使用 Prisma schema 定义所有数据模型，通过 migration 管理表结构变更。
 - 不再依赖自动建表或 `sync()` 方式。
 - 新增数据库表之前，必须先说明实体关系和业务流程。
-- 计划书中至少覆盖这些核心实体：
-  - users
-  - knowledge_categories
-  - knowledge_articles
-  - chat_sessions
-  - chat_messages
-  - emotion_diaries
-  - ai_analysis_results
-- 修改已有表结构前，要说明：
-  - 当前表负责什么
-  - 新字段为什么不能放在已有字段或已有表里
-  - 是否会造成重复键、重复范式或迁移成本
+- 计划书中至少覆盖这些核心实体：users、knowledge_categories、knowledge_articles、chat_sessions、chat_messages、emotion_diaries、ai_analysis_results。
+- 修改已有表结构前，要说明：当前表负责什么、新字段为什么不能放在已有字段或已有表里、是否会造成重复键或迁移成本。
 
 ## 12. AI 分析设计规则
 
-计划书中的 AI 分析必须至少覆盖两类能力：
-
-- 情绪日记分析：
-  - 输入：日记内容、心情评分、睡眠质量、压力等级、触发因素
-  - 输出：主情绪、情绪强度、情绪性质、风险等级、风险描述、专业建议、改善建议
-  - 落库：保存到 AI 分析结果表，并关联情绪日记
-
-- 咨询会话摘要：
-  - 输入：某次会话下的用户和 AI 消息列表
-  - 输出：会话摘要、情绪标签、风险提示、建议关注点
-  - 落库：保存到 AI 分析结果表，并可回写会话摘要字段
-
-模型调用失败时，不得阻塞核心业务查询。接口应返回已有业务数据，并让 AI 分析字段为空或标记为待分析。
+- 情绪日记分析：输入（内容、评分、睡眠、压力、触发因素）→ 输出（主情绪、强度、性质、风险等级、建议），结果落库。
+- 咨询会话摘要：输入（消息列表）→ 输出（摘要、情绪标签、风险提示），结果落库。
+- 模型调用失败时，不得阻塞核心业务查询。
 
 ## 13. 安全与部署端口
 
 - 生产环境不能默认相信公网安全，暴露服务前必须考虑扫描、限流和访问控制。
 - API Key、数据库密码、模型密钥只能放后端环境变量，不能写入前端或仓库。
-- 部署时不要机械使用默认端口作为公网入口，例如数据库、管理后台、调试服务不应直接暴露。
+- 部署时不要机械使用默认端口作为公网入口。
 - 对外暴露的端口、CORS 域名、管理接口、上传接口都必须在部署说明里明确写清楚。
 - 本地开发端口可以保持简单，但生产端口和访问入口必须单独配置。
 
@@ -225,143 +188,114 @@
 - 前端构建检查：`npm run build`
 - NestJS 构建检查：`cd server && npm run build`
 - Prisma 迁移状态：`npx prisma migrate status`
-- NestJS 导入检查：`cd server && npx ts-node -e "import { AppModule } from './src/app.module'; console.log('OK')"`
 - 登录接口快速验证（TS 后端启动后）
 - 接口返回结构检查
 - 真实浏览器流程检查
 
 如果无法验证，要明确说明原因和缺口。
 
-本次只修改开发上下文文档时，不需要运行前端构建；应检查文档是否为 UTF-8 中文可读，并确认旧项目定位已移除。
-
 ## 16. 已接入的项目级 skills
 
-当前仓库已经以项目级方式接入下面两个可复用 skill：
-
 ### web-design-guidelines
-
 - 位置：`.agents/skills/web-design-guidelines`
-- 用途：审查前端页面、交互、可访问性、视觉层次是否符合通用 Web 设计规范
-- 适合场景：
-  - 管理后台页面改版
-  - 表单与错误提示优化
-  - 表格、弹窗、详情页可读性检查
+- 用途：审查前端页面、交互、可访问性、视觉层次
 
 ### playwright
-
 - 位置：`.agents/skills/playwright`
-- 用途：通过真实浏览器自动化做页面联调、流程回归、截图、交互检查
-- 适合场景：
-  - 页面是否能打开
-  - 表单是否能输入
-  - 登录后是否能进入后台
-  - 表格和弹窗交互是否正常
+- 用途：真实浏览器自动化联调、回归、截图
 
-### 使用原则
-
-- `web-design-guidelines` 更适合"审查页面质量"。
-- `playwright` 更适合"跑真实浏览器流程"。
-- 这两个 skill 都是辅助工具，不改变本项目分层和接口边界。
+使用原则：辅助工具，不改变本项目分层和接口边界。
 
 ## 17. 主计划书
 
 当前唯一主计划书：
-
 - `docs/project-fullstack-plan.md`
 
 所有开发决策、阶段划分、验收标准均以该文件为准。不得同时维护多份互相矛盾的计划文档。
 
-## 18. 会话交接 — 下一窗口继续的方向
+## 18. 当前状态（2026-05-10 v2.3.1）
 
-当当前窗口关闭、下一个窗口继续时，请先读取本节内容建立上下文。
+Phase 0-8 全部完成。@CurrentUser 误用修复 + logs.vue CSS 清理。
 
-### 当前完成节点（2026-05-09 v0.5.0）
+### 已完成（累计）
 
-已完成 Phase 0-4：
+| 优先级 | 内容 |
+|--------|------|
+| Phase 0-6 | 核心 7 实体、认证闭环、管理端/用户端业务、DeepSeek AI、审核通知、开源交付 |
+| 限流与安全 | @nestjs/throttler 全局限流 + 上传白名单 |
+| MySQL 迁移 | prisma/mysql/schema.prisma 就绪 + 生产环境变量模板 |
+| Docker Compose | MySQL 8.0 + NestJS + Vue3 三容器编排 |
+| wangEditor 分割 | defineAsyncComponent 动态导入，独立 chunk |
+| 审核通知 | Notification 模型 + 迁移 + CRUD + 前端铃铛轮询 |
+| 聊天历史管理 | 侧边栏 + 级联删除 + JSON 导出 + E2E 测试 |
+| **v2.0 收口** | **XSS 修复、emotional.vue 精简、Vitest 骨架(33 用例)、el-empty 统一、logger 迁移** |
+| **Phase 7** | **Dashboard ECharts 图表、GitHub Actions CI、后端 15 新用例、部署文档** |
+| **Phase 8** | **P0 前端组件测试(8 用例) + P1 后端测试深化(27 新用例) + P2 Playwright E2E 骨架 + P3 搜索筛选体验统一** |
 
-**Phase 0 ✅ — TS 后端脚手架**
-- NestJS + Prisma + SQLite 后端主线，全部 7 实体 migration + seed
-- 统一响应、全局异常过滤、JWT 认证（兼容 `token` 头 + `Authorization: Bearer`）
-- 健康检查、登录、注册、当前用户接口
+### 当前状态
 
-**Phase 1 ✅ — 管理端页面真实化**
-- 知识文章 CRUD + 分类树、咨询记录 + 消息列表、情绪日记 + 删除、Dashboard 统计
-- 全部接入真实后端接口
+Phase 0-8 全部完成。技术债务优化项已列入计划（docs/project-fullstack-plan.md §19），待后续窗口处理。
 
-**Phase 2 ✅ — 用户体系 + 用户端基础**
-- `useAuthStore` + 角色路由守卫 + 登录按角色跳转
-- `ClientLayout`、`ClientChat`（SSE 流式）、`ClientDiary`（CRUD）
-- **用户端文章投稿**：`ClientArticles.vue`（列表+状态标签）、`ClientArticleCreate.vue`（创建/编辑+封面上传）
-- 服务端 `ClientArticleModule`（`/api/client/article/*`）
-- 🔐 注册 role 越权漏洞修复（拒绝客户端传入 role）
-- 📁 上传控制器同时允许 admin+user
-- ⏱ SSE 聊天 60s 超时保护
-- 🗑 N+1 查询消除（sessionPage 返回 previewText）
-- 🧹 `consultations.vue` 死文件清理 + `server/.env.example` 创建
+### 测试综合
 
-**Phase 3 ✅ — DeepSeek 聊天**
-- `POST /api/chat/send` SSE 流式输出
-- 消息自动落库 + 会话计数
-- mock AI 模式（无需 Key）
+| 层级 | 测试类型 | 数量 |
+|------|---------|------|
+| 前端 | Vitest 单元测试 | 41 用例（4 utils + 3 组件） |
+| 后端 | Jest 单元测试 | 52 用例（5 模块） |
+| E2E | Playwright 冒烟测试 | 3 用例（登录→Dashboard→未登录重定向） |
 
-**Phase 4 ✅ — AI 分析前端展示**
-- `EmotionDiaryDetailDialog` 接入分析 API，展示主情绪、强度、风险等级、专业建议
-- `SessionDetailDialog` 接入分析 API，展示摘要、情绪标签、风险等级
-- 缓存逻辑：已有结果直接展示，不重复调用模型
-- 分析失败不阻塞业务数据展示
+### 当前不做什么
 
-### 下一窗口第一个任务
+- 不接入真实 DeepSeek API Key
+- 不引入 WebSocket 实时通知
+- 不进行前端 TypeScript 迁移
+- 不做移动端适配
+- 不动 Docker Compose / MySQL schema
 
-**Phase 5：文章审核闭环。**
+## 19. API Key 合规规则
 
-当前状态：
-- 用户端已可提交审核（`draft → pending_review`）
-- 管理员可通过 `/knowledge/article/page?status=pending_review` 过滤 + `PUT /knowledge/article/{id}/status` 操作
-- **缺少专用审核队列页面**，流程串联不完整
+在开放源代码的仓库中工作必须遵守以下规则：
 
-需要：
+1. **绝不提交真实 API Key**：`.env`、`.env.production`、任何配置文件中不得出现真实 Key
+2. **绝不硬编码测试用 Key**：自用 Key 只放在本地 `.env`（已加入 `.gitignore`）
+3. **Mock 模式作为兜底**：未配置 Key 时自动降级至 Mock 模式，确保 clone 即用
+4. **启动提示**：`scripts/start-dev.ps1` 在启动时检测 Key 配置状态并提示用户
+5. **README 说明**：明确告知用户"使用前需自行申请并配置 API Key"
 
-1. **管理端新增「文章审核」页面**（`ArticleReview.vue`）
-   - 路由 `/back/article-review`，需要 admin 角色
-   - 默认加载 `pending_review` 状态文章
-   - 支持切换筛选：全部、待审核、已通过、已驳回
-   - 列表卡片式展示：标题、投稿人、提交时间、状态标签
-2. **审核操作**
-   - 「通过」按钮 → 调用 `PUT /knowledge/article/{id}/status`（status=published）
-   - 「驳回」按钮 → 弹窗输入驳回原因 → 调用状态接口（status=rejected），同时保存驳回原因
-   - 操作后刷新列表，显示成功/失败提示
-3. **用户端配合**
-   - `ClientArticles.vue` 已驳回文章增加「驳回原因」展示
-   - 已驳回文章可编辑后重新提交审核
+## 20. 已列入计划待后续窗口的优化项
 
-### 边界约束
+详见 `docs/project-fullstack-plan.md` §19 待后续窗口。包括但不限于：
 
-| 可以碰 | 不要碰 |
-|--------|--------|
-| `src/views/` 新增 ArticleReview.vue | `server/` 后端 KnowledgeController/Service（状态机已可用） |
-| `src/api/admin.js`（如需要新增审核相关函数） | AI 分析模块（Phase 4 已完成且稳定） |
-| `src/router/index.js`（新增审核路由） | `backend/` FastAPI 遗留代码 |
-| `src/views/ClientArticles.vue`（驳回原因展示） | 引入新依赖（保持 Vue3 + Element Plus + Axios + Pinia 栈） |
-| `src/components/` 如需要新增复用组件 | 改动用户端 ChatGPT/Diary 非审核相关逻辑 |
+- SessionDetailDialog XSS 过滤统一为 DOMPurify
+- UploadService 异步化（writeFileSync → fs.promises.writeFile）
+- 管理端咨询列表 N+1 查询消除
+- 分析结果事务保护
+- emotionTags 序列化统一
+- 用户端情绪日记独立删除 API
+- analytics.service.ts SQLite 原始 SQL 的 MySQL 兼容
+- AllExceptionsFilter 增加 HttpException 日志
+- 通知 DTO 校验规范化
 
-### 关键设计决策
+## 21. 进度同步规则
 
-1. **审核页面独立**：新增 `ArticleReview.vue` 页面（在现有 knowledge.vue 之外），专注于审核 workflow，不混入文章 CRUD。
-2. **状态筛选**：通过 `articlePage({ status: filterValue })` 实现，后端已支持。
-3. **驳回原因**：复用现有 `rejectReason` 字段，审核时通过状态接口传入。前端不支持编辑已驳回文章的驳回原因。
-4. **权限**：审核操作仅 admin 角色可用，路由守卫已覆盖。
+每次推进项目（完成一个或多个 Phase 任务）后必须执行以下操作：
 
-### 验收标准
+1. **更新主计划书** `docs/project-fullstack-plan.md`：
+   - 更新第 2 节"当前状态"的版本号和阶段标记
+   - 在前端/后端描述中加入新增功能
+   - 将已完成的 Phase 从"当前窗口"移入"已完成"列表
+   - 补齐"当前遗留问题"（删除已解决的，加入新出现的）
+   - 将"下一窗口"重新编号为正确的新序号
 
-1. `npm run build` 前端通过。
-2. 管理员可在审核队列看到待审核文章。
-3. 可通过、驳回文章，状态变化正确。
-4. 驳回时需填写原因，用户端可看到驳回原因。
-5. 已驳回文章可编辑后重新提交。
+2. **更新 CLAUDE.md 自身**：
+   - 更新第 5 节版本号（v2.x.x）
+   - 更新第 6 节"当前阶段做什么"为下一窗口任务
+   - 更新第 7 节"当前阶段不要做什么"
+   - 更新第 18 节"当前状态"（已完成累计 + 当前窗口 + 不做什么）
+   - 如果新增了接口，同步更新第 9 节接口列表
 
-### 遗留可优化项（不影响 Phase 5 推进）
+3. **验证**：
+   - 修改后执行 `npm run build`（前端）和 `cd server && npm run build`（后端）确保构建不坏
+   - 执行 `npm run test` 和 `cd server && npm run test` 确保测试通过
 
-- 前端注册页缺少密码 `minlength: 6` 校验
-- Swagger 未配置（`@nestjs/swagger` 已安装）
-- 服务端测试文件为空
-- 开源化基础文件（LICENSE、CONTRIBUTING、CHANGELOG、启动脚本）
+此规则自动化了"做完功能 → 同步文档 → 验证"的闭环，避免出现功能做了但文档停留在旧版本的情况。

@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
+import { writeFile } from 'fs/promises';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 
@@ -31,7 +32,7 @@ export class UploadService {
 
     const filename = `${randomUUID()}${ext}`;
     const filepath = join(this.uploadDir, filename);
-    writeFileSync(filepath, file.buffer);
+    await writeFile(filepath, file.buffer);
 
     return {
       filename: file.originalname,

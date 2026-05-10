@@ -17,6 +17,7 @@
         </el-menu>
       </div>
       <div class="header-right">
+        <NotificationBell />
         <el-dropdown trigger="click">
           <div class="user-info">
             <el-avatar :size="32" class="user-avatar">{{ authStore.username?.[0] || 'U' }}</el-avatar>
@@ -45,6 +46,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/useAuthStore'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -114,6 +116,9 @@ const handleLogout = () => {
     }
 
     .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
       .user-info {
         display: flex;
         align-items: center;

@@ -1,6 +1,7 @@
 import {
-  Controller, Get, Post, Param, Query, Body, UseGuards, Res,
+  Controller, Get, Post, Delete, Param, Query, Body, UseGuards, Res,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { ChatService } from './chat.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -51,6 +52,7 @@ export class ChatController {
   }
 
   // 用户端：发送消息 (SSE)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('chat/send')
   @UseGuards(JwtAuthGuard)
   sendMessage(
@@ -59,5 +61,35 @@ export class ChatController {
     @Res() res: Response,
   ) {
     return this.chatService.sendMessage(dto, user.sub, user.username, res);
+  }
+
+  // 用户端：我的会话列表
+  @Get('chat/sessions/my')
+  @UseGuards(JwtAuthGuard)
+  mySessions(
+    @Query() dto: PaginationDto,
+    @CurrentUser('sub') userId: number,
+  ) {
+    return this.chatService.mySessions(userId, dto);
+  }
+
+  // 用户端：删除会话
+  @Delete('chat/session/:sessionId')
+  @UseGuards(JwtAuthGuard)
+  deleteSession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUser('sub') userId: number,
+  ) {
+    return this.chatService.deleteSession(sessionId, userId);
+  }
+
+  // 用户端：导出会话
+  @Get('chat/session/:sessionId/export')
+  @UseGuards(JwtAuthGuard)
+  exportSession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUser('sub') userId: number,
+  ) {
+    return this.chatService.exportSession(sessionId, userId);
   }
 }

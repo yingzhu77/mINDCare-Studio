@@ -31,6 +31,22 @@ export default defineConfig(({ mode }) => {
           target: apiTarget,
           changeOrigin: true,
         },
+        '/uploads': {
+          target: apiTarget,
+          changeOrigin: true,
+        },
+      },
+    },
+    // https://vitetest.dev/config/
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      css: true,
+      include: ['src/**/*.{test,spec}.{js,ts}'],
+      server: {
+        deps: {
+          inline: ['element-plus'],
+        },
       },
     },
   }

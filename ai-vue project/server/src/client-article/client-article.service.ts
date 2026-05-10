@@ -60,13 +60,13 @@ export class ClientArticleService {
   async submit(id: number, userId: number) {
     const article = await this.getMyArticleOrFail(id, userId);
 
-    if (article.status !== 'draft') {
-      throw new ForbiddenException('仅草稿状态可以提交审核');
+    if (article.status !== 'draft' && article.status !== 'rejected') {
+      throw new ForbiddenException('仅草稿或已驳回状态可以提交审核');
     }
 
     return this.prisma.knowledgeArticle.update({
       where: { id },
-      data: { status: 'pending_review' },
+      data: { status: 'pending_review', rejectReason: null },
     });
   }
 

@@ -1,0 +1,36 @@
+# ============================================
+# AI 心理健康管理平台 — 前端 Docker 构建上下文忽略
+# ============================================
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 服务端代码（前端构建不需要）
+server/
+
+# 文档
+docs/
+*.md
+
+# 环境文件
+.env
+.env.local
+
+# Docker 相关（避免循环引用）
+docker-compose*.yml

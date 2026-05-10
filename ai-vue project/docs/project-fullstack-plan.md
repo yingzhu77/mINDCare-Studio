@@ -1,6 +1,6 @@
 # AI 心理健康管理平台开源化与 TypeScript 全栈实现计划书
 
-生成日期：2026-05-08
+生成日期：2026-05-10（最后更新）
 
 ## 1. 项目目标
 
@@ -16,98 +16,106 @@
 
 ## 2. 当前状态
 
-当前项目已完成：
+版本：**v2.3.1**（2026-05-10）— Phase 0-8 ✅ + @CurrentUser 修复
 
 ### 前端（Vue3 + Vite + Element Plus + Pinia）
 
-- **管理端**：登录、注册、Dashboard、知识文章 CRUD、咨询记录（含会话详情弹窗）、情绪日记（含分析关联）、用户管理。
-- **用户端**：`ClientLayout`（顶部导航 + 用户下拉退出）、`ClientChat`（SSE 流式 AI 聊天 + 快捷提问）、`ClientDiary`（情绪日记 CRUD + 滑块评分）、`ClientArticles`（文章投稿列表 + 创建/编辑）。
-- **认证体系**：`useAuthStore`（token/user/role 持久化）、角色路由守卫（`/back/*` 仅 admin、`/client/*` 允许 admin+user）、登录按角色跳转。
-- **接口封装**：`src/api/admin.js`（管理端全部接口）、`src/api/client.js`（用户端 API）。
-- **工具层**：`src/utils/request.js`（统一请求/响应拦截）、`src/utils/sessionMessage.js`（消息归一化、预览提取）。
+- **管理端**：登录、注册、Dashboard（含 ECharts 趋势图：情绪月均/咨询量/文章发布）、知识文章 CRUD + 分类管理、文章审核队列（通过/驳回+原因）、咨询记录（含会话详情弹窗+AI 摘要）、情绪日记（含 AI 分析关联）、用户管理。
+- **用户端**：`ClientLayout`（顶部导航 + 用户下拉退出 + 通知铃铛轮询）、`ClientChat`（SSE 流式 AI 聊天 + 快捷提问 + 会话侧边栏 + 删除/导出）、`ClientDiary`（情绪日记 CRUD + 滑块评分）、`ClientArticles`（文章投稿列表 + 创建/编辑/提交审核）。
+- **认证体系**：`useAuthStore`（token/user/role 持久化 + Pinia persist）、角色路由守卫（`/back/*` 仅 admin、`/client/*` 允许 admin+user）、登录按角色跳转。
+- **工程优化**：统一日期格式化 `src/utils/date.js`、搜索筛选栏 CSS 防折叠、路由切换 `:key` 强制重渲染、封面上传 `uploadResult.url` 取值修复、统一日志通道 `src/utils/logger.js`（全部视图已迁移）。
 
-### 后端（NestJS + Prisma + SQLite/MySQL）
+### 后端（NestJS + Prisma + SQLite）
 
-- **全部 7 个核心实体**：Prisma schema、migration、seed 完备。
-- **统一基础设施**：`TransformInterceptor`（响应包装）、`AllExceptionsFilter`（异常过滤）、`JwtAuthGuard`（同时兼容 `token` 头和 `Authorization: Bearer`）、`RolesGuard`、全局 `ValidationPipe`。
+- **全部 7 个核心实体**：Prisma schema、migration、seed 完备。Seed 数据增强：管理员 + 测试用户、7 篇知识文章（含不同状态）、2 条咨询会话 + 消息、3 条情绪日记。
+- **统一基础设施**：`TransformInterceptor`（响应包装）、`AllExceptionsFilter`（异常过滤）、`JwtAuthGuard`（同时兼容 `token` 头和 `Authorization: Bearer`）、`RolesGuard`、全局 `ValidationPipe`（whitelist + transform）。
 - **认证模块**：`POST /user/login`、`POST /user/register`、`GET /user/me`。
-- **管理端业务**：知识分类/文章 CRUD、咨询会话查询/详情/消息、情绪日记管理、Dashboard 统计、文件上传、用户分页/启禁。
-- **用户端业务**：`POST /chat/send`（SSE 流式）、`GET /emotion-diary/my/page`、`POST/GET/PUT /client/article/*`（投稿 CRUD+提交审核）。
-- **AI 模块**：DeepSeek 客户端 + 系统提示词 + mock AI 模式（无需 API Key 即可演示）。
-- **分析模块**：`POST/GET /analysis/emotion-diary/:id`、`POST/GET /analysis/chat-session/:id`。
+- **管理端业务**：知识分类/文章 CRUD + 状态管理（draft/pending_review/published/rejected/offline）、咨询会话分页/详情/消息、情绪日记分页/删除、Dashboard 统计、文件上传、用户分页/启禁。
+- **用户端业务**：`POST /chat/send`（SSE 流式）、情绪日记 CRUD、文章投稿 CRUD + 提交审核（`/api/client/article/*`）。
+- **AI 模块**：DeepSeek 客户端 + 系统提示词 + mock AI 模式（无需 API Key 即可演示）。分析结果落库 + 缓存，重复打开不重复调用模型。
+- **分析模块**：`POST/GET /analysis/emotion-diary/:id`、`POST/GET /analysis/chat-session/:id`。分析失败不阻塞业务。
+- **Swagger**：`/api/docs` 已配置，标题/描述/版本 + Bearer Auth + token 头双重认证。
+- **单元测试**：Jest + 52 用例覆盖 notification、analysis、chat、emotion-diary 共 5 个模块。
+- **E2E 测试**：Jest + supertest，覆盖 `GET /health`、`POST /user/login`、用户会话管理。
+- **组件测试**：Vitest + 41 用例，覆盖 utils 和 DashboardCharts、NotificationBell、TableSearch 组件。
+- **Playwright E2E**：3 冒烟测试覆盖登录页加载、管理员登录→Dashboard、未登录重定向。
 
-### 已修复/优化的工程问题
+### 已修复的关键问题
 
-- 注册角色越权漏洞（拒绝客户端传入 `role` 字段）
+- 注册角色越权漏洞（拒绝客户端传入 `role`）
 - 上传控制器同时允许 admin 和 user
 - SSE 聊天 60s 超时保护
-- 咨询记录页 N+1 查询消除（后端返回 `previewText`）
-- `consultations.vue` 死文件清理
-- 创建 `server/.env.example` 环境模板
+- 咨询记录 N+1 查询消除（`previewText` 方案）
+- 死文件清理（`consultations.vue`）
+- 知识文章分类显示"未分类" → 改为 `row.category?.categoryName`
+- 时间统一格式化 → 创建 `src/utils/date.js`
+- 路由切换页面空白 → `:key="$route.fullPath"`
+- 搜索筛选栏折叠 → TableSearch CSS 加固
+- 封面上传不显示 → `uploadResult.url` 取值
+- 状态筛选/发布下线按钮无效 → 字符串状态匹配
+- 文章创建硬编码 `authorId=1` → `@CurrentUser('sub')` 真实用户
+- 管理员创建文章默认 draft → 默认 `published`
+- `@CurrentUser('userId')` 误用修复 → `@CurrentUser('sub')`，影响 knowledge + notification 模块（导致 authorId/reviewerId 为 undefined、通知数据泄漏）
+- logs.vue 标题 CSS transform scale hack 移除 → 改用标准 font-size
 
-### 当前主要缺口
+### v2.0 收口阶段已修复
 
-- **AI 分析未接入前端**：情绪日记详情和咨询记录详情尚未展示 AI 分析结果。
-- **文章审核闭环不完整**：管理员缺少专门的待审核队列和驳回/通过操作页面。
-- **开源化基础文件**：缺少 LICENSE、CONTRIBUTING、CHANGELOG、启动脚本。
-- **前端注册页缺少密码最小长度校验**（服务端要求 6 位，前端仅验证 `required`）。
-- **Swagger/OpenAPI 未配置**（依赖已安装但未启用）。
-- **服务端测试为空**。
+| 类型 | 问题 | 状态 |
+|------|------|------|
+| 安全 | ClientChat.vue XSS 风险（`v-html` + 正则解析） | ✅ 改用 marked + DOMPurify |
+| 代码 | emotional.vue 过度防御式编程（30+ 字段 fallback） | ✅ 收敛到已知后端字段 |
+| 代码 | `console.error` 散落 15+ 处 | ✅ 全部迁移至 logger.js（9 文件，15+ 处） |
+| 测试 | 前端零测试 | ✅ Vitest 骨架搭建完成，33 用例通过 |
+| 体验 | 各页面空状态不一致 | ✅ 已统一 el-empty，修复静默 catch |
 
-## 3. 技术决策
+### 当前遗留问题
 
-### 3.1 后端改用 TypeScript
+| 类型 | 问题 | 影响 |
+|------|------|------|
+| 性能 | wangEditor chunk ~800kB（已代码分割） | 不影响首屏 |
+| 性能 | ECharts ~1.1MB 合入 Dashboard chunk（首次加载） | 仅影响管理端首屏加载 |
+| 缺失 | 真实 DeepSeek API Key 验证 | Mock 模式已可用，无需 Key |
+| 缺失 | i18n 国际化支持 | 仅中文界面 |
+| 修复 | @CurrentUser('userId') 误用（knowledge + notification） | 已修复，见"已修复的关键问题" |
+| 待排期 | 技术债务优化项（XSS 统一 / N+1 查询 / 事务保护 等） | 详见 §19 待后续窗口 |
 
-项目目标转向长期 Web SaaS 开源项目，因此后端主线从 FastAPI 调整为 TypeScript。
+### 当前索引覆盖
 
-推荐组合：
+| 表 | 索引 | 覆盖查询 |
+|----|------|---------|
+| knowledge_articles | `[status]` | 管理端按状态筛选审核队列 |
+| knowledge_articles | `[authorId]` | 用户查询自己的文章列表 |
+| ai_analysis_results | `[bizType, bizId]` | 按业务类型+ID 查找分析结果（情绪日记/会话分析） |
+| chat_messages | `[sessionId]` | 按会话查询消息列表 |
+| notifications | `[userId, isRead]` | 查询用户未读通知 |
 
-- NestJS：模块化、依赖注入、Guard、Pipe、Interceptor、Swagger 支持完善。
-- Prisma：schema、migration、seed 和类型生成适合开源协作。
-- MySQL：项目目标数据库。
-- SQLite：仅作为本地快速演示可选数据库。
-- Zod 或 class-validator：请求参数校验。
-- jose 或 jsonwebtoken：JWT。
-- undici 或 fetch：DeepSeek API 调用。
+其余外键字段（`knowledge_articles.categoryId`、`chat_sessions.userId`、`emotion_diaries.userId` 等）由 Prisma 自动建立索引。
 
-### 3.2 为什么此时重构
+## 3. 技术栈
 
-当前 FastAPI 后端还处于早期，仅完成登录闭环，业务模块尚未大量沉淀。此时切换 TS 后端，重构成本可控；等知识文章、聊天、AI 分析等模块全部完成后再切换，成本会显著增加。
+### 当前技术栈
 
-TypeScript 后端对本项目的优势：
+- **前端**：Vue 3 + Vite 5 + Element Plus + Pinia + Vue Router
+- **后端**：NestJS 10 + Prisma 5 + SQLite（开发）/ MySQL（目标）
+- **AI**：DeepSeek API 代理（mock 模式可用）
+- **认证**：JWT（@nestjs/jwt），兼容 `token` 头和 `Authorization: Bearer`
+- **文档**：Swagger（`/api/docs`）
+- **测试**：Jest + supertest（E2E）
 
-- 前后端语言统一，降低长期维护和贡献门槛。
-- 可通过 Prisma 和 DTO 生成稳定类型契约。
-- 更贴近 Web SaaS 工程生态。
-- SSE、WebSocket、文件上传、部署脚本和前端工具链都在 Node 生态内。
-- NestJS 模块边界清晰，适合按业务域拆分。
-
-### 3.3 FastAPI 后端处理方式
-
-现有 `backend/` FastAPI 代码作为阶段性参考，不继续扩展业务模块。
-
-重构策略：
-
-1. 新建 `server/` 作为 TypeScript 后端。
-2. 在 `server/` 中实现健康检查、统一响应、认证、用户表和登录接口。
-3. 保持接口路径兼容当前前端：`/api/user/login`、`/user/login`。
-4. 前端代理切到 `server` 的 NestJS 服务端口。
-5. TS 后端通过验证后，旧 FastAPI 目录标记为 legacy，后续删除或迁移到归档目录。
-
-## 4. 目标架构
+## 4. 项目架构
 
 ```text
 ai-vue project/
   src/                       # Vue3 前端
     api/
       admin.js
-      client.js              # 新增，用户端 API
+      client.js
     components/
     router/
     store/
     views/
 
-  server/                    # 新增，TypeScript 后端主线
+  server/                    # NestJS 后端主线
     prisma/
       schema.prisma
       seed.ts
@@ -115,16 +123,12 @@ ai-vue project/
     src/
       main.ts
       app.module.ts
-      common/
-        response.ts
-        filters/
-        interceptors/
-        guards/
-        decorators/
+      common/                # 过滤器、拦截器、守卫、装饰器
       config/
       auth/
       users/
       knowledge/
+      client-article/
       chat/
       emotion-diary/
       analysis/
@@ -136,7 +140,6 @@ ai-vue project/
     tsconfig.json
     .env.example
 
-  backend/                   # 旧 FastAPI 后端，迁移完成后归档或删除
   docs/
   scripts/
 ```
@@ -187,170 +190,74 @@ ai-vue project/
 - 管理端 `/back/*` 需要 `admin` 角色。
 - 用户端 `/client/*` 需要 `user` 或 `admin` 角色。
 
-## 6. 数据模型规划
+## 6. 数据模型
 
 ### 6.1 users
 
-用户和管理员账号。
-
-- `id`
-- `username`
-- `email`
-- `passwordHash`
-- `role`：`admin` 或 `user`
+- `id` / `username` / `email` / `passwordHash`
+- `role`：`admin` / `user`
 - `status`：启用、禁用
-- `createdAt`
-- `updatedAt`
+- `createdAt` / `updatedAt`
 
 ### 6.2 knowledge_categories
 
-知识文章分类。
-
-- `id`
-- `categoryName`
-- `parentId`
-- `sortOrder`
-- `status`
-- `createdAt`
-- `updatedAt`
+- `id` / `categoryName` / `parentId` / `sortOrder` / `status`
+- `createdAt` / `updatedAt`
 
 ### 6.3 knowledge_articles
 
-知识文章和用户投稿统一存储。
-
-- `id`
-- `title`
-- `categoryId`
-- `authorId`
-- `summary`
-- `tags`
-- `coverImage`
-- `content`
-- `readCount`
-- `status`：`draft`、`pending_review`、`published`、`rejected`、`offline`
-- `rejectReason`
-- `publishedAt`
-- `createdAt`
-- `updatedAt`
+- `id` / `title` / `categoryId` / `authorId` / `summary` / `tags` / `coverImage` / `content`
+- `readCount` / `rejectReason` / `publishedAt`
+- `status`：`draft` / `pending_review` / `published` / `rejected` / `offline`
+- `createdAt` / `updatedAt`
 
 ### 6.4 chat_sessions
 
-AI 心理咨询会话。
-
-- `id`
-- `sessionId`
-- `userId`
-- `userName`
-- `startTime`
-- `endTime`
-- `messageCount`
-- `emotionTags`
-- `aiSummary`
-- `riskLevel`
-- `status`
-- `createdAt`
-- `updatedAt`
+- `id` / `sessionId` / `userId` / `userName` / `startTime` / `endTime`
+- `messageCount` / `emotionTags` / `aiSummary` / `riskLevel` / `status`
+- `createdAt` / `updatedAt`
 
 ### 6.5 chat_messages
 
-会话消息。
-
-- `id`
-- `sessionId`
-- `role`：`user` 或 `assistant`
-- `content`
-- `messageTime`
-- `rawPayload`
+- `id` / `sessionId` / `role` / `content` / `messageTime` / `rawPayload`
 - `createdAt`
 
 ### 6.6 emotion_diaries
 
-情绪日记。
-
-- `id`
-- `userId`
-- `userName`
-- `diaryDate`
-- `moodScore`
-- `sleepQuality`
-- `stressLevel`
-- `dominantEmotion`
-- `emotionTriggers`
-- `diaryContent`
-- `createdAt`
-- `updatedAt`
+- `id` / `userId` / `userName` / `diaryDate` / `moodScore`
+- `sleepQuality` / `stressLevel` / `dominantEmotion` / `emotionTriggers` / `diaryContent`
+- `createdAt` / `updatedAt`
 
 ### 6.7 ai_analysis_results
 
-AI 分析结果统一表。
+- `id` / `bizType`（emotion_diary / chat_session）/ `bizId`
+- `mainEmotion` / `emotionIntensity` / `emotionNature` / `riskLevel` / `riskDescription`
+- `professionalAdvice` / `improvementSuggestions` / `summary` / `emotionTags`
+- `modelName` / `rawResponse` / `status`（pending / success / failed）/ `errorMessage`
+- `createdAt` / `updatedAt`
 
-- `id`
-- `bizType`：`emotion_diary` 或 `chat_session`
-- `bizId`
-- `mainEmotion`
-- `emotionIntensity`
-- `emotionNature`
-- `riskLevel`
-- `riskDescription`
-- `professionalAdvice`
-- `improvementSuggestions`
-- `summary`
-- `emotionTags`
-- `modelName`
-- `rawResponse`
-- `status`：`pending`、`success`、`failed`
-- `errorMessage`
-- `createdAt`
-- `updatedAt`
-
-## 7. TypeScript 后端模块规划
+## 7. 后端模块
 
 ### 7.1 common
 
-职责：
-
-- 统一响应包装。
-- 全局异常过滤。
-- 请求日志。
-- 分页 DTO。
-- 当前用户装饰器。
-- JWT Guard 和角色 Guard。
+统一响应包装、全局异常过滤、请求日志、分页 DTO、当前用户装饰器、JWT Guard 和角色 Guard。
 
 ### 7.2 auth
 
-接口：
-
+登录、注册、密码哈希、JWT 签发、当前用户读取。
 - `POST /user/login`
-- `POST /api/user/login`
 - `POST /user/register`
-- `POST /api/user/register`
 - `GET /api/user/me`
-
-职责：
-
-- 登录。
-- 注册。
-- 密码哈希。
-- JWT 签发。
-- 当前用户读取。
 
 ### 7.3 users
 
-接口：
-
+管理员分页查看用户、启用和禁用用户。
 - `GET /api/user/page`
 - `PUT /api/user/:id/status`
 
-职责：
-
-- 管理员分页查看用户。
-- 启用和禁用用户。
-- 角色控制。
-
 ### 7.4 knowledge
 
-接口：
-
+知识分类与文章管理、管理员审核和上下线。
 - `GET /api/knowledge/category/tree`
 - `GET /api/knowledge/article/page`
 - `POST /api/knowledge/article`
@@ -359,160 +266,65 @@ AI 分析结果统一表。
 - `DELETE /api/knowledge/article/:id`
 - `PUT /api/knowledge/article/:id/status`
 
-职责：
+### 7.5 client-article
 
-- 后台知识分类与文章管理。
-- 管理员文章审核和上下线。
-- 兼容当前前端管理端页面。
-
-### 7.5 client article
-
-接口：
-
+普通用户创建草稿、提交审核、查看投稿状态。
 - `GET /api/client/article/page`
 - `POST /api/client/article`
 - `PUT /api/client/article/:id`
 - `PUT /api/client/article/:id/submit`
 
-职责：
-
-- 普通用户创建文章草稿。
-- 提交审核。
-- 查看自己的投稿状态。
-
 ### 7.6 chat
 
-接口：
-
+管理端查询咨询记录，用户端 AI 对话（SSE 流式）。
 - `GET /api/psychological-chat/sessions`
 - `GET /api/psychological-chat/sessions/:sessionId`
 - `GET /api/psychological-chat/sessions/:sessionId/messages`
 - `GET /api/psychological-chat/session/:sessionId/emotion`
 - `POST /api/chat/send`
 
-职责：
+### 7.7 emotion-diary
 
-- 管理端查询咨询记录。
-- 用户端 AI 对话。
-- SSE 流式输出。
-- 会话和消息自动落库。
-
-### 7.7 emotion diary
-
-接口：
-
+管理端查看和删除情绪日记，用户端创建和查看自己的日记。
 - `GET /api/emotion-diary/admin/page`
 - `DELETE /api/emotion-diary/admin/:id`
 - `POST /api/emotion-diary`
 - `GET /api/emotion-diary/my/page`
 
-职责：
-
-- 管理端查看情绪日记。
-- 用户端创建和查看自己的情绪日记。
-
 ### 7.8 analysis
 
-接口：
-
-- `POST /api/analysis/emotion-diary/:id`
-- `GET /api/analysis/emotion-diary/:id`
-- `POST /api/analysis/chat-session/:id`
-- `GET /api/analysis/chat-session/:id`
-
-职责：
-
-- 触发 AI 分析。
-- 查询分析结果。
-- 失败兜底。
-- 结果落库。
+触发和查询 AI 分析结果（情绪日记 / 咨询会话），失败不阻塞业务。
+- `POST/GET /api/analysis/emotion-diary/:id`
+- `POST/GET /api/analysis/chat-session/:id`
 
 ### 7.9 analytics
 
-接口：
-
+Dashboard 统计。
 - `GET /api/data-analytics/overview`
-
-职责：
-
-- Dashboard 统计。
-- 文章数、用户数、会话数、日记数、风险等级分布。
 
 ### 7.10 upload
 
-接口：
-
+封面和附件上传，限制文件大小和类型。
 - `POST /api/file/upload`
 
-职责：
-
-- 封面和附件上传。
-- 限制文件大小、类型和存储目录。
-
-## 8. 前端改造计划
-
-### 8.1 认证状态统一
-
-新增：
-
-- `src/store/useAuthStore.js`
-
-职责：
-
-- 保存 token。
-- 保存用户信息和角色。
-- 登录后按角色跳转。
-- 退出登录时清理状态。
-- 路由守卫读取统一状态。
-
-### 8.2 路由结构
+## 8. 前端路由
 
 ```text
-/auth
-  /auth/login
-  /auth/register
+/auth/login
+/auth/register
 
-/client
-  /client/chat
-  /client/articles
-  /client/articles/create
-  /client/articles/:id/edit
+/client/chat
+/client/articles
+/client/articles/create
+/client/articles/:id/edit
 
-/back
-  /back/dashboard
-  /back/knowledge
-  /back/consultations
-  /back/logs
-  /back/users
+/back/dashboard
+/back/knowledge
+/back/article-review
+/back/consultations
+/back/emotion-diary
+/back/users
 ```
-
-### 8.3 新增页面和组件
-
-新增页面：
-
-- `src/views/ClientChat.vue`
-- `src/views/ClientArticles.vue`
-- `src/views/ClientArticleCreate.vue`
-- `src/views/Users.vue`
-
-新增组件：
-
-- `src/components/ClientLayout.vue`
-- `src/components/ChatMessageBubble.vue`
-- `src/components/StreamingText.vue`
-
-新增工具：
-
-- `src/api/client.js`
-- `src/utils/sse.js`
-
-### 8.4 前端工程优化
-
-- 将 wangEditor 相关页面懒加载，降低 chunk 体积。
-- 统一空状态、错误状态、加载状态。
-- 所有页面避免直接拼接接口路径，统一走 api 层。
-- SSE 解析逻辑放到 `src/utils/sse.js`。
-- 逐步将关键 API 响应类型从后端 OpenAPI 生成，减少字段漂移。
 
 ## 9. DeepSeek 接入方案
 
@@ -540,7 +352,6 @@ ClientChat.vue
 ### 9.3 心理健康安全边界
 
 系统提示词必须包含：
-
 - 不做医疗诊断。
 - 不提供处方和治疗方案。
 - 对自伤、自杀等高风险内容给出寻求专业帮助和紧急服务的建议。
@@ -555,7 +366,7 @@ ClientChat.vue
 - 分析结果写入 `ai_analysis_results`。
 - 列表页只读数据库，不批量实时调用模型。
 
-## 10. 文章投稿审核流程
+## 10. 文章审核流程
 
 状态机：
 
@@ -569,234 +380,223 @@ published -> offline -> published
 
 | 操作 | 普通用户 | 管理员 |
 | --- | --- | --- |
-| 创建草稿 | 可以 | 可以 |
+| 创建草稿 | 可以 | 可以（直接发布） |
 | 编辑自己的草稿 | 可以 | 可以 |
-| 提交审核 | 可以 | 可以 |
+| 提交审核 | 可以 | 不需要 |
 | 审核通过 | 不可以 | 可以 |
 | 驳回 | 不可以 | 可以 |
 | 下线 | 不可以 | 可以 |
 | 删除文章 | 仅自己的草稿 | 可以 |
 | 查看全部文章 | 不可以 | 可以 |
 
-## 11. 开源化准备清单
+## 11. 分阶段交付
 
-必须新增或完善：
+### Phase 0：TS 后端脚手架 ✅
 
-- `LICENSE`：建议 MIT。
-- `CONTRIBUTING.md`：贡献指南。
-- `CHANGELOG.md`：变更记录。
-- `.gitattributes`：统一换行和编码。
-- `.env.example`：前端、server、DeepSeek 配置模板。
-- `scripts/start.ps1`：Windows 一键启动。
-- `scripts/start.sh`：macOS/Linux 一键启动。
-- `scripts/seed-demo`：初始化演示数据。
-- README 截图或 GIF。
-- 安全说明：不要提交 `.env`、数据库文件、上传文件和 API Key。
+NestJS + Prisma + SQLite，7 实体 migration + seed，统一响应/异常过滤/JWT，健康检查/登录/注册。
 
-## 12. 分阶段交付计划
+### Phase 1：管理端页面真实化 ✅
 
-### Phase 0：开源化基础与 TS 后端脚手架
+知识文章 CRUD + 分类树、咨询记录 + 消息列表、情绪日记 + 删除、Dashboard 统计。全部接入 NestJS 后端。
 
-✅ **已完成（2026-05-08）**
+### Phase 2：用户体系 + 用户端基础 ✅
 
-目标：
-- 新建 `server/` NestJS 项目。
-- 配置 Prisma、环境变量、统一响应、异常过滤、Swagger。
-- 建立 users 模型、migration、seed。
-- 实现健康检查、登录、注册、当前用户接口。
-- 保持 `/api/user/login` 兼容当前前端。
-- README、CONTRIBUTING、CHANGELOG、LICENSE、`.gitattributes`、启动脚本初版。
+`useAuthStore` + 角色守卫 + 登录按角色跳转、`ClientLayout`、`ClientChat`（SSE）、`ClientDiary`、用户端文章投稿。
 
-验收：
-- `npm run build` 前端通过。
-- `server` 可以启动。
-- Prisma migration 可以创建 users 表。
-- seed 可以创建管理员账号。
-- 前端登录页可通过 TS 后端登录并进入 `/back/dashboard`。
+### Phase 3：DeepSeek 聊天 ✅
 
-### Phase 1：管理端已有页面真实化
+`POST /api/chat/send` SSE 流式输出，消息自动落库，mock AI 模式。
 
-✅ **已完成（2026-05-08）**
+### Phase 4：AI 分析 ✅
 
-目标：
-- 实现知识分类和文章 CRUD。
-- 实现文件上传。
-- 实现咨询记录分页、详情、消息列表。
-- 实现情绪日记分页、详情和删除。
-- 实现 Dashboard 统计接口。
-- 管理端页面全部接入 TS 后端真实接口。
+情绪日记和会话分析，结果落库 + 缓存，失败不阻塞业务，前端展示分析结果。
 
-验收：
-- 知识文章页面可新增、编辑、删除、上下线。
-- 咨询记录页面可打开详情并展示消息。
-- 情绪日记页面可筛选、查看、删除。
-- Dashboard 展示真实统计。
+### Phase 5：文章审核闭环 ✅
 
-### Phase 2：用户体系与用户端基础
+`ArticleReview.vue` 审核页面，通过/驳回+原因，状态机完整，用户端驳回编辑重新提交。
 
-✅ **已完成（2026-05-09）**
+### Phase 6：开源化准备 + 工程提效 ✅
 
-目标：
-- 完善注册、登录、退出登录。
-- 新增 `useAuthStore`。
-- 新增角色路由守卫。
-- 新增 ClientLayout。
-- 新增用户文章列表、写文章页面。
+LICENSE、CONTRIBUTING、CHANGELOG、启动脚本、Swagger、E2E 测试、Seed 增强、README。
 
-验收：
-- 普通用户不能访问 `/back/*`。
-- 管理员可以访问 `/back/*`。
-- 登录用户可以访问 `/client/*`。
-- 用户可以创建文章草稿并提交审核。
+## 12. 后续工作优先级
 
-### Phase 3：DeepSeek 聊天与会话落库
+### P0 — 速率限制与安全加固 ✅
 
-✅ **已完成**
+已接入 `@nestjs/throttler` 全局限流（120 req/min）、登录（5/min）、注册（3/min）、AI 聊天（20/min）、上传（10/min）。文件上传类型白名单 + 10MB 限制。
 
-目标：
-- 实现 `POST /api/chat/send` SSE。
-- 对接 DeepSeek stream。
-- 保存用户消息和 AI 回复。
-- 更新会话摘要字段的基础数据。
-- 新增 ClientChat 页面。
-- 支持 mock AI 模式。
+### P1 — MySQL 迁移 ✅
 
-验收：
-- 用户可以实时看到 AI 流式回复。
-- 会话和消息自动落库。
-- 管理员能在咨询记录看到会话。
-- 无 DeepSeek Key 时 mock 模式可演示。
+`prisma/mysql/schema.prisma` 已创建，包含完整的 MySQL 类型注解（`@db.VarChar`、`@db.Text`、`@db.LongText`）、索引优化。`.env.production` 生产环境模板就绪。使用 `--schema` 标志切换 SQLite（dev）/ MySQL（prod）。
 
-### Phase 4：AI 分析与风险兜底
+### P2 — Docker Compose 部署 ✅
 
-🟡 **待完成 — 后端已完成，前端集成缺失**
+| 文件 | 说明 |
+|------|------|
+| `server/Dockerfile` | NestJS multi-stage 构建 + 入口脚本自动迁移 |
+| `Dockerfile`（根目录） | Vue3 / Vite 构建 + Nginx 静态服务 |
+| `docker-compose.yml` | MySQL 8.0 + 后端 + 前端三容器编排 |
+| `nginx.conf` | 前端 SPA + API 反向代理 + SSE 支持 |
+| `.dockerignore` | 前端/后端构建上下文排除 |
 
-目标：
-- 实现 AI 分析结果表。
-- 实现情绪日记分析。
-- 实现会话摘要和风险等级分析。
-- 分析失败不影响列表和详情打开。
-- 管理端详情展示分析结果。
+### P3 — 构建优化 ✅
 
-当前状态：后端 `AnalysisController` + `AnalysisService` 已实现（含 mock AI），但前端 `EmotionDiaryDetailDialog` 和 `SessionDetailDialog` 未调用分析接口。
+`ArticleEditor`（wangEditor）已通过 `defineAsyncComponent` 动态导入实现代码分割，独立 chunk（~801kB）不阻塞首屏加载。wangEditor 已设为中文界面（`i18nChangeLanguage('zh-CN')`）。
 
-验收：
-- 情绪日记详情展示主情绪、强度、风险等级和建议。
-- 咨询记录展示情绪标签、摘要和风险等级。
-- 分析结果重复打开不重复调用模型。
+### P4 — 审核结果通知 ✅
 
-### Phase 5：文章审核闭环
+| 层 | 实现 |
+|------|------|
+| 后端 | `Notification` 模型 + 迁移 + `notification` 模块（CRUD + 未读计数） |
+| 后端 | `KnowledgeService.updateArticleStatus` 审核时自动创建通知 |
+| 前端 | `NotificationBell.vue` 组件（铃铛图标 + 未读徽标 + 下拉面板） |
+| 前端 | `ClientLayout` 头部集成通知铃铛，每 30 秒轮询未读数量 |
+| API | `GET/PUT /api/notification/*` 支持列表、标记已读、全部已读 |
 
-🟡 **待完成 — 基础状态机可用，缺审核队列页**
+### P5 — 用户端聊天历史管理 ✅
 
-目标：
-- 完整实现文章状态机。
-- 管理端新增审核队列。
-- 支持通过、驳回、下线、重新发布。
-- 用户端可查看投稿状态和驳回原因。
+| 层 | 实现 |
+|------|------|
+| 后端 | `GET /api/chat/sessions/my` — 用户端会话列表（带最后消息预览） |
+| 后端 | `DELETE /api/chat/session/:sessionId` — 级联删除会话/消息/分析结果 |
+| 后端 | `GET /api/chat/session/:sessionId/export` — 导出会话为 JSON |
+| 后端 | 校验用户归属，越权返回 404 |
+| 前端 | `ClientChat.vue` 新增 280px 侧边栏，显示 50 条最近会话 |
+| 前端 | 每个会话项悬停显示删除/导出按钮 |
+| 前端 | 删除确认弹窗，导出使用浏览器原生 download API |
+| 迁移 | Prisma 新增 `ChatMessage[sessionId]`、`ChatSession[userId]` 索引 |
+| 测试 | E2E 覆盖会话列表/导出/删除/越权拒绝 |
 
-当前状态：用户端可提交审核（`draft → pending_review`），管理员可通过 `/knowledge/article/page?status=pending_review` + 状态接口操作。缺少专用审核队列页面。
+### P5 — 用户端聊天历史管理 ✅
 
-验收：
-- 用户投稿后进入待审核。
-- 管理员审核通过后文章进入知识库。
-- 驳回后用户可编辑并再次提交。
+**目标**：用户端缺少对聊天会话的自主管理能力。实现删除和导出功能。
 
-### Phase 6：演示数据、文档和发布准备
+**实现方案**：
+1. 后端：`DELETE /api/chat/session/:sessionId` — 删除会话（Prisma 事务级联删除消息 + 分析结果）
+2. 后端：`GET /api/chat/session/:sessionId/export` — 导出会话（返回 JSON 格式）
+3. 后端：`GET /api/chat/sessions/my` — 用户端自己的会话列表（分页 + 最近消息预览）
+4. 前端：`ClientChat.vue` 侧边栏会话列表（280px）+ 删除确认弹窗 + 导出下载按钮
+5. 使用浏览器原生 download API 实现文件导出，不引入额外 npm 包
 
-❌ **未开始**
+**边界**：
+- 不引入额外前端构建工具或状态管理库
+- 不修改现有消息流或 SSE 聊天逻辑
+- 删除仅限用户自己的会话，后端校验 `userId` 归属
+- 导出格式为 JSON（含完整消息和时间戳）
 
-目标：
-- 演示数据 seed：文章、用户、会话、消息、日记、分析结果。
-- README 增加截图和完整快速开始。
-- 增加 API 文档说明。
-- 增加部署说明。
+**迁移辅助**：
+- Prisma 索引新增：`ChatMessage[sessionId]`、`ChatSession[userId]`
+- E2E 测试覆盖：会话列表 / 导出 / 删除 / 越权拒绝
 
-目标：
+---
 
-- 演示数据 seed：文章、用户、会话、消息、日记、分析结果。
-- README 增加截图和完整快速开始。
-- 增加 API 文档说明。
-- 增加部署说明。
-- 清理 legacy FastAPI 后端或移动到归档目录。
+## 15. v2.0 收口阶段 ✅
 
-验收：
+**目标达成**：从"功能完整"进入"质量可信"。
 
-- 新贡献者 clone 后可按 README 启动。
-- 一条命令可初始化演示数据。
-- 构建无错误。
-- 项目文档不再出现互相矛盾的后端技术路线。
+| 优先级 | 内容 | 状态 |
+|--------|------|------|
+| P0 — XSS 安全修复 | marked + DOMPurify 替代正则渲染 | ✅ 完成 |
+| P1 — 代码杂音清理 | emotional.vue 字段收敛、logger.js 统一异常通道 | ✅ 完成 |
+| P2 — 测试骨架搭建 | Vitest + 4 个测试文件、33 用例 | ✅ 完成 |
+| P3 — 体验统一 | el-empty 空状态、catch 日志输出 | ✅ 完成 |
 
-## 13. 验证策略
+---
 
-每阶段必须验证：
+## 16. Phase 7 — 生产就绪 + 产品体验 ✅
+
+**目标**：从"质量可信"进入"可展示、可部署、可维护"。
+
+| 优先级 | 内容 | 状态 |
+|--------|------|------|
+| P0 | Dashboard 图表增强：ECharts 趋势图（情绪月均/咨询量/文章发布） | ✅ 完成 |
+| P1 | GitHub Actions CI：push/PR 自动 lint + build + test | ✅ 完成 |
+| P2 | 后端测试深化：notification + analysis 单元测试（15 用例） | ✅ 完成 |
+| P3 | 生产部署文档：Docker + SSL + 备份 + 安全组 | ✅ 完成 |
+| P4 | 遗留 console.error 迁移：9 文件 15+ 处替换为 logger.error | ✅ 完成 |
+
+## 17. Phase 8 — 体验完善 + 质量深化 ✅
+
+**目标达成**：从"功能可部署"进入"体验可推荐"。
+
+| 优先级 | 内容 | 状态 |
+|--------|------|------|
+| P0 | 前端组件测试覆盖：DashboardCharts、NotificationBell、TableSearch（8 用例） | ✅ 完成 |
+| P1 | 后端测试深化：chat + emotion-diary 模块（27 新用例） | ✅ 完成 |
+| P2 | Playwright E2E 骨架：3 冒烟测试 | ✅ 完成 |
+| P3 | 管理端搜索/筛选体验统一：emotional.vue 新增搜索 + logs.vue 统一为 TableSearch | ✅ 完成 |
+
+### 测试综合
+
+| 层级 | 测试类型 | 数量 |
+|------|---------|------|
+| 前端 | Vitest 单元测试 | 41 用例（4 utils + 3 组件） |
+| 后端 | Jest 单元测试 | 52 用例（5 模块） |
+| E2E | Playwright 冒烟测试 | 3 用例 |
+
+### Phase 8 交付物
+
+- **P0**: DashboardCharts.test.js（3 用例）、NotificationBell.test.js（2 用例）、TableSearch.test.js（3 用例），新增 vitest config（css: true + deps.inline element-plus）
+- **P1**: chat.service.spec.ts（14 用例）、emotion-diary.service.spec.ts（13 用例），mock Prisma 测试模式
+- **P2**: playwright.config.ts（双 webServer、独立端口） + e2e/smoke.spec.ts（3 冒烟测试）
+- **P3**: emotional.vue 新增用户名搜索；logs.vue 手写搜索迁移至 TableSearch 组件
+
+---
+
+## 19. 待后续窗口 — 技术债务与架构优化
+
+以下项目来自 v2.3.1 独立复查，不阻塞当前功能闭环，安排到后续窗口按优先级处理。
+
+### P0 — 核心稳定性
+
+| 项目 | 说明 | 影响 |
+|------|------|------|
+| SessionDetailDialog XSS 统一 | 自定义正则过滤 → DOMPurify | 安全一致性 |
+| UploadService 异步化 | `writeFileSync` → `fs.promises.writeFile` | 上传 I/O 不阻塞事件循环 |
+| 异常过滤 HTTP 日志 | `AllExceptionsFilter` 对 HttpException 增加 `logger.warn` | 调试可观测性 |
+| 通知 DTO 校验 | `@Query('page')` 原始参数 → PaginationDto | 参数边界校验 |
+
+### P1 — 数据一致性与性能
+
+| 项目 | 说明 | 影响 |
+|------|------|------|
+| 管理端咨询列表 N+1 消除 | emotional.vue `fillSessionRows` 对每行发独立请求 | 管理端列表首屏加载性能 |
+| 分析结果事务保护 | `analysis.service.ts` AI 分析回写 session + 创建结果在事务外 | 数据一致性 |
+| `emotionTags` 序列化统一 | JSON 字符串 vs 数组在各端解析路径不一致 | 可维护性 |
+
+### P2 — 架构长期可维护
+
+| 项目 | 说明 |
+|------|------|
+| 用户端情绪日记删除 API | 当前 `ClientDiary.vue` 动态 import 管理端 API，应拆出独立用户端接口 + 后端所有权校验 |
+| SQLite 原始 SQL 迁移兼容 | `analytics.service.ts` 使用 `strftime`/`DATE` SQLite 特有函数，MySQL 不兼容 |
+| 路由守卫 token 读取源统一 | `router/index.js` 直接读 localStorage vs store 状态不同步风险 |
+
+## 18. 验证策略
 
 ```powershell
+# 前端构建
 npm run build
-```
 
-TypeScript 后端：
-
-```powershell
+# 后端
 cd server
-npm run lint
 npm run build
 npm run test
 npx prisma migrate status
 ```
 
-接口验证：
-
-- `GET /api/health`
-- `POST /api/user/login`
-- `POST /api/user/register`
-- `GET /api/user/me`
-
 关键手动流程：
-
 - 注册 -> 登录 -> 进入用户端。
 - 管理员登录 -> 进入后台。
 - 用户聊天 -> 会话落库 -> 后台咨询记录可见。
 - 用户投稿 -> 管理员审核 -> 知识库展示。
 - 创建情绪日记 -> 触发分析 -> 详情展示分析结果。
 
-## 14. 风险与控制
+## 19. 风险与控制
 
-### 范围膨胀
-
-控制方式：每个 Phase 都必须有可运行验收结果，不跨阶段堆半成品。
-
-### API 契约漂移
-
-控制方式：后端优先兼容 `src/api/admin.js`，新增用户端 API 先写请求和响应示例，再开发页面。
-
-### 数据迁移混乱
-
-控制方式：从 TS 后端第一天开始使用 Prisma migration，不再依赖自动建表。
-
-### AI 成本和稳定性
-
-控制方式：AI 结果落库、列表页只读数据库、支持 mock 模式、超时降级。
-
-### 心理健康合规风险
-
-控制方式：系统提示词、前端提示和高风险内容处理必须明确“不提供医疗诊断”。
-
-### 开源安全风险
-
-控制方式：提交前检查 `.env`、数据库文件、上传文件和 API Key；README 明确安全注意事项。
-
-## 15. 立即执行顺序
-
-下一步直接从 Phase 0 开始：
-
-1. 新建 `server/` NestJS 项目。
-2. 配置 Prisma 和环境模板。
-3. 实现统一响应、异常过滤、健康检查。
-4. 实现 users schema、migration、seed。
-5. 实现登录、注册、当前用户接口。
-6. 切换 Vite 代理到 TS 后端。
-7. 验证前端登录闭环。
-8. 新增开源化基础文件。
-
-完成 Phase 0 后，再进入管理端已有页面真实化，不再继续扩展 FastAPI 后端。
+- **范围膨胀**：每个 Phase 必须有可运行验收结果。
+- **API 契约漂移**：后端优先兼容 `src/api/admin.js` 已有接口。
+- **数据迁移混乱**：始终使用 Prisma migration。
+- **AI 成本**：结果落库、列表只读、mock 模式兜底。
+- **心理健康合规**：系统提示词 + 前端提示明确"不提供医疗诊断"。
+- **开源安全**：提交前检查 `.env`、数据库文件、API Key。

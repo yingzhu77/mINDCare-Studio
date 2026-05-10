@@ -109,8 +109,9 @@ const uploadHeaders = computed(() => ({
 
 const coverUrl = computed(() => {
   if (!form.coverImage) return ''
+  // 后端返回的 url 已是 /uploads/xxx 格式
   if (form.coverImage.startsWith('http')) return form.coverImage
-  return `/uploads/${form.coverImage}`
+  return form.coverImage
 })
 
 const categories = ref([])

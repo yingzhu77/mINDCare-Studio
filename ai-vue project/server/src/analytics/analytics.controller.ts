@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -13,5 +13,10 @@ export class AnalyticsController {
   @Get('overview')
   overview() {
     return this.analyticsService.getOverview();
+  }
+
+  @Get('trends')
+  trends(@Query('type') type: string) {
+    return this.analyticsService.getTrends(type);
   }
 }

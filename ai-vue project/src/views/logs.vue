@@ -4,34 +4,7 @@
       <h2 class="section-title">情绪日志</h2>
     </div>
 
-    <el-card class="search-card" shadow="never">
-      <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="用户名称">
-          <el-input
-            v-model="searchForm.userName"
-            placeholder="请输入用户名称"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-
-        <el-form-item label="情绪评分">
-          <el-select v-model="searchForm.scoreRange" placeholder="请选择评分范围" clearable>
-            <el-option
-              v-for="item in scoreOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+    <TableSearch :form="searchForm" :config="searchConfig" @search="handleSearch" @reset="handleReset" />
 
     <EmotionDiaryTable
       :loading="loading"
@@ -61,6 +34,7 @@ import {
 } from '@/api/admin'
 import EmotionDiaryDetailDialog from '@/components/EmotionDiaryDetailDialog.vue'
 import EmotionDiaryTable from '@/components/EmotionDiaryTable.vue'
+import { logger } from '@/utils/logger'
 
 const searchForm = reactive({
   userName: '',
@@ -73,6 +47,11 @@ const scoreOptions = [
   { label: '5-6 分', value: '5-6' },
   { label: '7-8 分', value: '7-8' },
   { label: '9-10 分', value: '9-10' },
+]
+
+const searchConfig = [
+  { prop: 'userName', label: '用户名称', comp: 'input', placeholder: '请输入用户名称' },
+  { prop: 'scoreRange', label: '情绪评分', comp: 'select', options: scoreOptions, placeholder: '请选择评分范围' },
 ]
 
 const pagination = reactive({
@@ -144,7 +123,7 @@ const fetchDiaryPage = async () => {
   } catch (error) {
     tableData.value = []
     pagination.total = 0
-    console.error('查询情绪日志失败:', error)
+    logger.error('查询情绪日志失败:', error)
   } finally {
     loading.value = false
   }
@@ -206,7 +185,7 @@ const handleDelete = async (row) => {
   } catch (error) {
     // 用户取消时不提示错误。
     if (error !== 'cancel' && error !== 'close') {
-      console.error('删除情绪日志失败:', error)
+      logger.error('删除情绪日志失败:', error)
     }
   }
 }
@@ -224,48 +203,11 @@ onMounted(() => {
 
   .header-section {
     .section-title {
-      font-size: 32px;
-      transform: scale(0.5);
-      transform-origin: left center;
-      margin: -10px 0;
+      font-size: 20px;
       font-weight: 700;
       color: #303133;
     }
   }
 
-  .search-card {
-    border: none;
-    border-radius: 8px;
-
-    .search-form {
-      :deep(.el-form-item) {
-        margin-right: 24px;
-        margin-bottom: 0;
-      }
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .logs-container {
-    .search-card {
-      .search-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-
-        :deep(.el-form-item) {
-          margin-right: 0;
-          width: 100%;
-
-          .el-form-item__content,
-          .el-select,
-          .el-input {
-            width: 100%;
-          }
-        }
-      }
-    }
-  }
 }
 </style>

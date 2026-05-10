@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CreateArticleDto, UpdateArticleDto } from './dto/article.dto';
 
 @Injectable()
 export class KnowledgeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   // ================== 分类管理 ==================
 
@@ -79,7 +83,7 @@ export class KnowledgeService {
 
   async createArticle(dto: CreateArticleDto, authorId: number) {
     return this.prisma.knowledgeArticle.create({
-      data: { ...dto, authorId },
+      data: { ...dto, authorId, status: 'published', publishedAt: new Date() },
     });
   }
 
@@ -93,14 +97,33 @@ export class KnowledgeService {
     return this.prisma.knowledgeArticle.delete({ where: { id } });
   }
 
-  async updateArticleStatus(id: number, status: string, reviewerId?: number) {
-    await this.getArticleOrFail(id);
+  async updateArticleStatus(id: number, status: string, reviewerId?: number, rejectReason?: string) {
+    const article = await this.getArticleOrFail(id);
     const data: any = { status };
     if (status === 'published') {
       data.publishedAt = new Date();
       if (reviewerId) data.reviewerId = reviewerId;
     }
-    return this.prisma.knowledgeArticle.update({ where: { id }, data });
+    if (status === 'rejected' && rejectReason) {
+      data.rejectReason = rejectReason;
+    }
+    const result = await this.prisma.knowledgeArticle.update({ where: { id }, data });
+
+    // 文章审核结果通知
+    if ((status === 'published' || status === 'rejected') && article.authorId !== reviewerId) {
+      const isApproved = status === 'published';
+      await this.notificationService.create({
+        userId: article.authorId,
+        type: 'article_review',
+        title: isApproved ? '您的文章已通过审核' : '您的文章未通过审核',
+        content: isApproved
+          ? `文章「${article.title}」已通过审核并发布`
+          : `文章「${article.title}」未通过审核。原因：${rejectReason || '未提供'}`,
+        relatedId: id,
+      });
+    }
+
+    return result;
   }
 
   // ================== 私有方法 ==================

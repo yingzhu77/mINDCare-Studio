@@ -1,5 +1,42 @@
 <template>
   <div class="chat-view">
+    <div class="chat-sidebar">
+      <div class="sidebar-header">
+        <el-button type="primary" size="small" @click="startNewChat" class="new-chat-btn">
+          + 新对话
+        </el-button>
+      </div>
+      <div class="sidebar-list" v-loading="loadingSessions">
+        <div
+          v-for="session in sessions"
+          :key="session.sessionId"
+          class="session-item"
+          :class="{ active: session.sessionId === currentSessionId }"
+          @click="switchSession(session.sessionId)"
+        >
+          <div class="session-info">
+            <div class="session-preview">{{ session.lastMessage || '新对话' }}</div>
+            <div class="session-time">{{ formatTime(session.lastTime) }}</div>
+          </div>
+          <div class="session-actions">
+            <el-tooltip content="导出">
+              <el-button text size="small" class="action-btn" @click.stop="handleExport(session.sessionId)">
+                <el-icon><Download /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="删除">
+              <el-button text size="small" type="danger" class="action-btn" @click.stop="handleDelete(session.sessionId)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
+        </div>
+        <div v-if="sessions.length === 0 && !loadingSessions" class="empty-sessions">
+          暂无对话记录
+        </div>
+      </div>
+    </div>
+
     <el-card class="chat-card" shadow="never">
       <div class="chat-messages" ref="messagesRef">
         <div v-if="messages.length === 0" class="welcome-section">
@@ -59,10 +96,12 @@
 
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { ChatLineSquare } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { ChatLineSquare, Delete, Download } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/useAuthStore'
-import { mySessionPage } from '@/api/client'
+import { mySessionPage, sessionMessages, deleteSession, exportSession } from '@/api/client'
+import { renderMarkdown } from '@/utils/markdown'
+import { logger } from '@/utils/logger'
 
 const authStore = useAuthStore()
 const messagesRef = ref(null)
@@ -70,6 +109,10 @@ const inputText = ref('')
 const messages = ref([])
 const streaming = ref(false)
 const currentSessionId = ref(null)
+
+// 会话侧边栏
+const sessions = ref([])
+const loadingSessions = ref(false)
 
 const suggestions = [
   '最近总是感到焦虑，怎么办？',
@@ -86,19 +129,110 @@ const scrollToBottom = () => {
   })
 }
 
-// 简易 markdown 渲染（仅处理基本格式）
-const renderMarkdown = (text) => {
-  if (!text) return ''
-  let html = String(text)
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/### (.+)/g, '<h3>$1</h3>')
-    .replace(/## (.+)/g, '<h2>$1</h2>')
-    .replace(/# (.+)/g, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\n/g, '<br>')
-  return html
+// markdown 渲染（使用 marked + DOMPurify，见 src/utils/markdown.js）
+
+const formatTime = (time) => {
+  if (!time) return ''
+  const d = new Date(time)
+  const now = new Date()
+  const isToday = d.toDateString() === now.toDateString()
+  if (isToday) return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+}
+
+// 加载会话列表
+const loadSessions = async () => {
+  loadingSessions.value = true
+  try {
+    const res = await mySessionPage({ currentPage: 1, size: 50 })
+    sessions.value = res?.records || []
+  } catch (e) {
+    console.warn('加载会话列表失败:', e)
+  } finally {
+    loadingSessions.value = false
+  }
+}
+
+// 加载指定会话的消息
+const loadMessages = async (sessionId) => {
+  try {
+    const res = await sessionMessages(sessionId)
+    messages.value = res || []
+    scrollToBottom()
+  } catch {
+    ElMessage.error('加载消息失败')
+    messages.value = []
+  }
+}
+
+// 切换会话
+const switchSession = async (sessionId) => {
+  if (sessionId === currentSessionId.value) return
+  currentSessionId.value = sessionId
+  messages.value = []
+  await loadMessages(sessionId)
+}
+
+// 新对话
+const startNewChat = () => {
+  currentSessionId.value = null
+  messages.value = []
+  nextTick(scrollToBottom)
+}
+
+// 删除会话
+const handleDelete = async (sessionId) => {
+  try {
+    await ElMessageBox.confirm('确定要删除此对话吗？删除后不可恢复。', '删除确认', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+  } catch {
+    return // 取消删除
+  }
+
+  try {
+    await deleteSession(sessionId)
+    ElMessage.success('对话已删除')
+    // 如果删除的是当前会话，清空聊天区域
+    if (currentSessionId.value === sessionId) {
+      currentSessionId.value = null
+      messages.value = []
+    }
+    await loadSessions()
+  } catch {
+    ElMessage.error('删除失败')
+  }
+}
+
+// 导出会话
+const handleExport = async (sessionId) => {
+  try {
+    const data = await exportSession(sessionId)
+    const json = JSON.stringify(data, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `chat-${sessionId.slice(0, 8)}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    ElMessage.success('对话已导出')
+  } catch {
+    ElMessage.error('导出失败')
+  }
+}
+
+// 发送消息后更新侧边栏中的最新会话
+const updateSessionInList = (sessionId) => {
+  const idx = sessions.value.findIndex((s) => s.sessionId === sessionId)
+  if (idx === -1) {
+    // 新会话，重新加载列表
+    loadSessions()
+  }
 }
 
 const handleSend = async () => {
@@ -155,6 +289,7 @@ const handleSend = async () => {
             scrollToBottom()
           } else if (parsed.type === 'done') {
             currentSessionId.value = parsed.sessionId
+            updateSessionInList(parsed.sessionId)
             streaming.value = false
             scrollToBottom()
           } else if (parsed.type === 'error') {
@@ -169,7 +304,7 @@ const handleSend = async () => {
     }
   } catch (error) {
     clearTimeout(timeoutId)
-    console.error('Chat error:', error)
+    logger.error('Chat error:', error)
     if (error.name === 'AbortError') {
       assistantMsg.content = '请求超时，请稍后重试。'
       ElMessage.warning('连接超时')
@@ -189,14 +324,12 @@ const sendMessage = (text) => {
 }
 
 onMounted(async () => {
-  // 尝试恢复最近一次会话
-  try {
-    const res = await mySessionPage({ currentPage: 1, size: 1 })
-    if (res?.records?.length) {
-      currentSessionId.value = res.records[0].sessionId
-    }
-  } catch {
-    // 静默处理
+  await loadSessions()
+  // 自动选中最近一次会话
+  if (sessions.value.length > 0) {
+    const last = sessions.value[0]
+    currentSessionId.value = last.sessionId
+    await loadMessages(last.sessionId)
   }
 })
 </script>
@@ -205,6 +338,95 @@ onMounted(async () => {
 .chat-view {
   height: calc(100vh - 108px);
   display: flex;
+  gap: 16px;
+
+  .chat-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .sidebar-header {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-shrink: 0;
+
+      .new-chat-btn {
+        width: 100%;
+      }
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+
+      .session-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f5f5f5;
+        transition: background 0.2s;
+        gap: 8px;
+
+        &:hover {
+          background: #f5f7fa;
+
+          .session-actions {
+            opacity: 1;
+          }
+        }
+
+        &.active {
+          background: #ecf5ff;
+        }
+
+        .session-info {
+          flex: 1;
+          min-width: 0;
+
+          .session-preview {
+            font-size: 13px;
+            color: #303133;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4;
+          }
+
+          .session-time {
+            font-size: 11px;
+            color: #c0c4cc;
+            margin-top: 2px;
+          }
+        }
+
+        .session-actions {
+          display: flex;
+          gap: 2px;
+          opacity: 0;
+          transition: opacity 0.2s;
+          flex-shrink: 0;
+
+          .action-btn {
+            font-size: 14px;
+            padding: 2px;
+          }
+        }
+      }
+
+      .empty-sessions {
+        text-align: center;
+        padding: 40px 16px;
+        color: #c0c4cc;
+        font-size: 13px;
+      }
+    }
+  }
 
   .chat-card {
     flex: 1;

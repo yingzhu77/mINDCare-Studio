@@ -37,12 +37,16 @@
           <template #default="{ row }">
             <div class="tag-cell">
               <el-icon><PriceTag /></el-icon>
-              <span>{{ row.categoryName || '未分类' }}</span>
+              <span>{{ row.category?.categoryName || '未分类' }}</span>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="authorName" label="作者" width="120" />
+        <el-table-column prop="authorName" label="作者" width="120">
+          <template #default="{ row }">
+            {{ row.author?.username || '-' }}
+          </template>
+        </el-table-column>
 
         <!-- 阅读量：匹配接口返回的 readCount 字段 -->
         <el-table-column
@@ -52,8 +56,12 @@
           align="center"
         />
 
-        <!-- 发布时间：显示文章创建或更新的时间 -->
-        <el-table-column prop="publishedAt" label="发布时间" width="180" />
+        <!-- 创建时间 -->
+        <el-table-column label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.createdAt) }}
+          </template>
+        </el-table-column>
 
         <!-- 操作区域：根据文章当前状态显示对应的业务按钮 -->
         <el-table-column label="操作" width="220" fixed="right">
@@ -61,19 +69,22 @@
             <el-button link type="primary" @click="handleEdit(row)"
               >编辑</el-button
             >
-            <!-- 状态切换：1为已发布，显示下线；2为已下线，显示发布 -->
+            <!-- 状态切换：published为已发布，其余显示发布按钮 -->
             <el-button
               link
-              :type="row.status == '1' ? 'warning' : 'success'"
+              :type="row.status === 'published' ? 'warning' : 'success'"
               @click="handleStatusChange(row)"
             >
-              {{ row.status == '1' ? '下线' : '发布' }}
+              {{ row.status === 'published' ? '下线' : '发布' }}
             </el-button>
             <el-button link type="danger" @click="handleDelete(row)"
               >删除</el-button
             >
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty description="暂无文章" />
+        </template>
       </el-table>
 
       <!-- 分页区域：控制表格显示的页码和每页条数 -->
@@ -110,6 +121,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document, PriceTag } from '@element-plus/icons-vue'
 import TableSearch from '@/components/TableSearch.vue'
 import ArticleDialog from '@/components/ArticleDialog.vue'
+import { formatDate } from '@/utils/date'
+import { logger } from '@/utils/logger'
 import {
   categoryTree,
   articlePage,
@@ -136,9 +149,11 @@ const formItem = [
     label: '状态',
     placeholder: '请选择状态',
     options: [
-      { label: '草稿', value: '0' },
-      { label: '已发布', value: '1' },
-      { label: '已下线', value: '2' },
+      { label: '草稿', value: 'draft' },
+      { label: '待审核', value: 'pending_review' },
+      { label: '已发布', value: 'published' },
+      { label: '已驳回', value: 'rejected' },
+      { label: '已下线', value: 'offline' },
     ],
   },
 ]
@@ -177,7 +192,7 @@ const handleSearch = async () => {
     pagination.total = res.total || 0
   } catch (error) {
     // 如果请求失败，由 request.js 统一处理，这里仅做控制台输出记录
-    console.error('获取文章列表失败:', error)
+    logger.error('获取文章列表失败:', error)
   } finally {
     loading.value = false // 关闭加载遮罩
   }
@@ -220,9 +235,9 @@ const handleEdit = (row) => {
  * @param {Object} row 行数据
  */
 const handleStatusChange = async (row) => {
-  const isPublish = row.status != '1'
+  const isPublish = row.status !== 'published'
   const actionText = isPublish ? '发布' : '下线'
-  const targetStatus = isPublish ? '1' : '2'
+  const targetStatus = isPublish ? 'published' : 'offline'
 
   try {
     await ElMessageBox.confirm(
@@ -240,7 +255,7 @@ const handleStatusChange = async (row) => {
     handleSearch()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('更新状态失败:', error)
+      logger.error('更新状态失败:', error)
     }
   }
 }
@@ -266,7 +281,7 @@ const handleDelete = async (row) => {
     handleSearch()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('删除文章失败:', error)
+      logger.error('删除文章失败:', error)
     }
   }
 }
@@ -301,7 +316,7 @@ onMounted(async () => {
     // 2. 页面初始化完成，立即渲染首屏数据
     handleSearch()
   } catch (error) {
-    console.error('初始化分类数据失败:', error)
+    logger.error('初始化分类数据失败:', error)
   }
 })
 </script>

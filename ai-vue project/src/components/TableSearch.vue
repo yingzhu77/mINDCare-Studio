@@ -64,14 +64,26 @@ defineEmits(['search', 'reset'])
   border-radius: 8px;
   background-color: var(--card-bg);
   margin-bottom: var(--layout-padding);
+  overflow: visible;
 
   .search-form {
+    display: flex;
+    flex-wrap: wrap;
+
     :deep(.el-form-item) {
-      margin-bottom: 18px; // 增加底部边距，防止在换行显示时发生塌陷/重叠
+      margin-bottom: 18px;
       margin-right: 18px;
+      min-width: 160px;
 
       &:last-child {
         margin-right: 0;
+        min-width: auto;
+      }
+
+      .el-select,
+      .el-input {
+        width: 100%;
+        min-width: 140px;
       }
     }
   }

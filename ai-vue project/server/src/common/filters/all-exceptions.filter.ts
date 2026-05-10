@@ -40,6 +40,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else {
         message = exception.message;
       }
+      if (status >= 500) {
+        this.logger.error(`HttpException[${status}]: ${message}`, exception.stack);
+      } else {
+        this.logger.warn(`HttpException[${status}]: ${message}`);
+      }
     } else if (exception instanceof Error) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = '服务器内部错误';

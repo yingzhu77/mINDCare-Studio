@@ -154,12 +154,14 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import DOMPurify from 'dompurify'
 import { sessionDetail, sessionMessages, getChatSessionAnalysis, triggerChatSessionAnalysis } from '@/api/admin'
 import {
   getFirstUserMessageTime,
   normalizeMessages,
   resolveMessagesTotal,
 } from '@/utils/sessionMessage'
+import { logger } from '@/utils/logger'
 
 const visible = ref(false)
 const loading = ref(false)
@@ -251,7 +253,7 @@ const fetchDetail = async () => {
     // 拉取已有会话分析结果
     fetchExistingSessionAnalysis()
   } catch (err) {
-    console.error('拉取会话详情失败:', err)
+    logger.error('拉取会话详情失败:', err)
     error.value = true
   } finally {
     loading.value = false
@@ -301,18 +303,7 @@ const handleTriggerSessionAnalysis = async () => {
 
 const filterXSS = (html) => {
   if (!html) return ''
-
-  let clean = String(html)
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/on\w+="[^"]*"/gi, '')
-    .replace(/javascript:/gi, '')
-
-  clean = clean.replace(/<img\s+([^>]*)>/gi, (match, attrs) => {
-    if (attrs.includes('javascript:')) return ''
-    return `<img ${attrs} style="max-width: 100%; height: auto; border-radius: 4px; margin: 8px 0;" />`
-  })
-
-  return clean
+  return DOMPurify.sanitize(html)
 }
 
 const open = (id) => {

@@ -56,6 +56,8 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <DashboardCharts />
   </div>
 </template>
 
@@ -68,6 +70,8 @@ import {
   PieChart,
 } from '@element-plus/icons-vue'
 import { dataAnalyticsOverview } from '@/api/admin'
+import DashboardCharts from '@/components/DashboardCharts.vue'
+import { logger } from '@/utils/logger'
 
 const overviewData = reactive({
   userCount: 0,
@@ -109,7 +113,7 @@ const fetchOverview = async () => {
       { title: '活跃会话', value: formatNumber(data.activeSessionCount), icon: 'PieChart', color: 'purple' },
     ]
   } catch (error) {
-    console.error('获取Dashboard数据失败:', error)
+    logger.error('获取Dashboard数据失败:', error)
   }
 }
 

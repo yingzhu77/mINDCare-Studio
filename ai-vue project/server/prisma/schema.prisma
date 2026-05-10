@@ -23,6 +23,7 @@ model User {
   chatSessions    ChatSession[]
   emotionDiaries  EmotionDiary[]
   analysisResults AiAnalysisResult[]
+  notifications    Notification[]
 
   @@map("users")
 }
@@ -62,8 +63,10 @@ model KnowledgeArticle {
 
   category  KnowledgeCategory? @relation(fields: [categoryId], references: [id])
   author    User               @relation("ArticleAuthor", fields: [authorId], references: [id])
-  reviewer  User?               @relation("ArticleReviewer", fields: [reviewerId], references: [id])
+  reviewer  User?              @relation("ArticleReviewer", fields: [reviewerId], references: [id])
 
+  @@index([status])
+  @@index([authorId])
   @@map("knowledge_articles")
 }
 
@@ -86,6 +89,7 @@ model ChatSession {
   messages  ChatMessage[]
   analyses  AiAnalysisResult[]
 
+  @@index([userId])
   @@map("chat_sessions")
 }
 
@@ -100,6 +104,7 @@ model ChatMessage {
 
   session ChatSession @relation(fields: [sessionId], references: [sessionId])
 
+  @@index([sessionId])
   @@map("chat_messages")
 }
 
@@ -145,10 +150,27 @@ model AiAnalysisResult {
 
   user           User          @relation(fields: [userId], references: [id])
   userId         Int
-  emotionDiary   EmotionDiary?  @relation(fields: [emotionDiaryId], references: [id])
+  emotionDiary   EmotionDiary? @relation(fields: [emotionDiaryId], references: [id])
   emotionDiaryId Int?
-  chatSession    ChatSession?   @relation(fields: [chatSessionId], references: [id])
+  chatSession    ChatSession?  @relation(fields: [chatSessionId], references: [id])
   chatSessionId  Int?
 
+  @@index([bizType, bizId])
   @@map("ai_analysis_results")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   @default("article_review") // article_review | system
+  title     String
+  content   String?
+  relatedId Int?                               // 关联业务 ID（如文章ID）
+  isRead    Int      @default(0)               // 0=未读 1=已读
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
 }

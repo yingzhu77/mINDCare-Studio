@@ -42,6 +42,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '@/api/admin'
 import { useAuthStore } from '@/store/useAuthStore'
+import { logger } from '@/utils/logger'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -85,7 +86,7 @@ const handleLogin = async () => {
           ElMessage.warning('登录成功但未获取到有效 Token，请联系管理员')
         }
       } catch (error) {
-        console.error('Login Error:', error)
+        logger.error('Login Error:', error)
       } finally {
         loading.value = false
       }

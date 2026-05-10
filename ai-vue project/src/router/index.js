@@ -44,6 +44,15 @@ const backendRouterRoutes = [
         },
       },
       {
+        path: 'article-review',
+        component: () => import('@/views/ArticleReview.vue'),
+        meta: {
+          title: '文章审核',
+          icon: 'CircleCheck',
+          roles: ['admin'],
+        },
+      },
+      {
         path: 'consultations',
         component: () => import('@/views/emotional.vue'),
         meta: {
@@ -123,22 +132,20 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   ElMessage.closeAll()
 
-  const token = localStorage.getItem('token')
+  const { useAuthStore } = await import('@/store/useAuthStore')
+  const authStore = useAuthStore()
 
   // 需要登录才能访问的路径前缀
   const protectedPaths = ['/back', '/client']
 
   const needsAuth = protectedPaths.some((p) => to.path.startsWith(p))
   if (needsAuth) {
-    if (!token) {
+    if (!authStore.isLoggedIn) {
       return next('/auth/login')
     }
 
     // 已登录时尝试加载用户信息（页面刷新后恢复）
-    const { useAuthStore } = await import('@/store/useAuthStore')
-    const authStore = useAuthStore()
-
-    if (!authStore.user && token) {
+    if (!authStore.user) {
       await authStore.fetchUserInfo()
     }
 
