@@ -26,11 +26,8 @@
 
 | 类型 | 问题 | 影响 |
 |------|------|------|
-| 性能 | wangEditor chunk ~800kB（已代码分割） | 不影响首屏 |
-| 性能 | ECharts ~1.1MB 合入 Dashboard chunk | 仅影响管理端首屏加载 |
 | 缺失 | 真实 DeepSeek API Key 验证 | Mock 模式已可用，无需 Key |
 | 缺失 | i18n 国际化支持 | 仅中文界面 |
-| 待修复 | SSE 流式输出被 Vite 代理缓冲 | 开发环境逐 token 输出变一次性返回 |
 
 ## 当前不做什么
 
