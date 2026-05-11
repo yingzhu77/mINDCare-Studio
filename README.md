@@ -1,199 +1,297 @@
 # AI 心理健康管理平台
 
-[![Vue 3](https://img.shields.io/badge/Vue-3.4-4FC08D?logo=vue.js)](https://vuejs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite)](https://vitejs.dev/)
-[![NestJS](https://img.shields.io/badge/NestJS-10-EA2845?logo=nestjs)](https://nestjs.com/)
-[![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma)](https://www.prisma.io/)
-[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite)](https://www.sqlite.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+面向长期 Web SaaS 开源方向推进的 AI 心理健康管理平台。项目目标不是只做一个本地后台演示，而是建设一个可 clone、可启动、可贡献、可扩展的全栈开源项目。
 
-AI 驱动的心理健康管理平台。Vue 3 管理后台 + NestJS 后端 + Prisma ORM + DeepSeek AI 能力。
+## 项目状态
 
-> 📌 这是一个全栈 Web SaaS 练习项目，具备清晰的前后端边界、统一的类型契约和完整的业务闭环。
+**当前版本：v2.3.1 — Phase 0-8 全部完成，技术债务已解决**
 
----
+| 层级 | 状态 | 说明 |
+|------|------|------|
+| 前端 | ✅ 管理端完成 | 登录/Dashboard(含 ECharts 趋势图)/知识文章 CRUD+审核/咨询记录/情绪日志/用户管理 |
+| 前端 | ✅ 用户端完整 | ClientLayout + AI 聊天(SSE + 会话侧边栏+删除/导出) + 情绪日记 + 文章投稿 + 通知铃铛 |
+| 后端 | ✅ 全部完成 | NestJS + Prisma + 8 实体(含通知) + 认证 + 管理端/用户端接口 + AI 模块 + 审核通知 |
+| 数据库 | ✅ 主线完成 | Prisma migration 管理，SQLite 开发，可切换 MySQL |
+| AI | ✅ 骨架就绪 | DeepSeek 客户端 + mock AI 模式 + SSE 流式 + 分析结果落库+缓存 |
+| P5-P8 | ✅ 全部完成 | 聊天历史管理、Docker 部署、GitHub Actions CI、Playwright E2E、测试深化 |
 
-## 功能概览
+## 目标技术栈
 
-### 管理端
+**前端：**
 
-| 模块 | 功能 |
-|------|------|
-| 📊 数据概览 | Dashboard 统计面板，展示用户活跃度、咨询量、情绪趋势 |
-| 📝 知识文章 | 文章 CRUD、分类管理、审核队列（通过/驳回/原因填写） |
-| 💬 咨询记录 | 会话列表、消息详情、AI 摘要展示 |
-| 📖 情绪日记 | 日记列表查看、删除、AI 情绪分析结果展示 |
-| 🧠 AI 分析 | 情绪分析和会话摘要的触发与结果查看 |
+- Vue3
+- Vite
+- Element Plus
+- Axios + Pinia + Vue Router
+- wangEditor
 
-### 用户端
+**后端主线（server/）：**
 
-| 模块 | 功能 |
-|------|------|
-| 🤖 AI 聊天 | SSE 流式对话，消息自动落库 |
-| 📖 情绪日记 | 日记 CRUD、心情评分、睡眠质量记录 |
-| 📚 文章投稿 | 查看文章、创建/编辑草稿、提交审核、根据审核反馈修改 |
-| 👤 个人中心 | 个人资料管理 |
+- TypeScript
+- NestJS
+- Prisma
+- MySQL（开发期可用 SQLite）
+- JWT
+- Swagger / OpenAPI
 
-### 技术特点
+**AI 接入：**
 
-- **JWT 认证**，基于角色的路由守卫（admin / user）
-- **统一响应格式**：全局 TransformInterceptor + 异常过滤器
-- **AI Mock 模式**：未配置 API Key 时自动使用模拟数据
-- **缓存分析结果**：已分析的数据不再重复调用模型
-- **文章状态机**：`draft → pending_review → published / rejected → re-submit`
+- DeepSeek API（兼容 OpenAI 接口格式）
+- 后端代理调用 + SSE 流式响应
+- 分析结果落库 + mock AI 演示模式
 
----
+## 目录结构
 
-## 快速开始
+```text
+src/                       # Vue3 前端
+  api/
+    admin.ts               # 管理端 API 封装（TypeScript）
+    client.ts              # 用户端 API 封装（聊天、情绪日记）
+    types.ts               # 类型定义
+  components/              # 复用组件（侧边栏、弹窗、通知铃铛等）
+  router/                  # 路由与鉴权守卫（角色区分 admin/user）
+  store/                   # Pinia 状态管理（auth、menu）
+  utils/                   # 工具函数（请求封装、消息解析、日期格式化、日志）
+  views/                   # 页面级组件
+    AuthLayout.vue         # 登录/注册布局
+    Login.vue              # 登录页
+    Register.vue           # 注册页
+    Dashboard.vue          # 管理端仪表盘（ECharts 趋势图）
+    knowledge.vue          # 知识文章管理
+    emotional.vue          # 情绪日志管理
+    logs.vue               # 咨询记录
+    ArticleReview.vue      # 文章审核
+    ClientLayout.vue       # 用户端布局（顶部导航 + 通知铃铛）
+    ClientChat.vue         # AI 聊天（SSE 流式 + 会话侧边栏）
+    ClientDiary.vue        # 用户端情绪日记
+    ClientArticles.vue     # 用户端文章投稿列表
+    ClientArticleCreate.vue# 用户端投稿编辑
 
-### 前置要求
+server/                    # NestJS + Prisma 后端
+  prisma/
+    schema.prisma          # 8 个核心实体（含 notification）
+    seed.ts                # 管理员 + 测试用户 + 演示数据
+    migrations/
+  src/
+    main.ts
+    app.module.ts
+    common/                # 统一响应、异常过滤、Guard、装饰器
+    auth/                  # 认证模块
+    users/                 # 用户管理
+    knowledge/             # 知识文章 + 审核
+    chat/                  # 咨询会话 + AI 聊天 SSE
+    emotion-diary/         # 情绪日记
+    analysis/              # AI 分析（情绪分析、会话摘要）
+    analytics/             # Dashboard 数据概览 + 趋势
+    upload/                # 文件上传
+    ai/                    # DeepSeek 客户端 + mock 模式
+    notification/          # 审核通知
+    client-article/        # 用户端文章投稿
+  package.json
+  tsconfig.json
+  .env.example
 
-- Node.js >= 18
-- npm >= 9
-
-### 1. 克隆并安装
-
-```bash
-git clone <your-repo-url>
-cd ai-vue
-
-# 安装前端依赖
-cd "ai-vue project" && npm install && cd ..
-
-# 安装后端依赖
-cd server && npm install && cd ..
+docs/                      # 项目文档和计划书
+scripts/                   # 一键启动和演示数据脚本
+e2e/                       # Playwright E2E 测试
+public/                    # 静态资源（favicon、icons）
 ```
 
-### 2. 数据库初始化
-
-```bash
-cd server
-
-# 生成 Prisma Client
-npx prisma generate
-
-# 执行迁移（SQLite 自动创建）
-npx prisma db push
-
-# 填充示例数据
-npx prisma db seed
-
-cd ..
-```
-
-### 3. 启动开发服务
-
-**方式一：一键启动（推荐）**
-
-```powershell
-.\scripts\start-dev.ps1
-```
-
-**方式二：分别启动**
-
-```bash
-# 终端 1 — 前端
-cd "ai-vue project" && npm run dev
-
-# 终端 2 — 后端
-cd server && npm run start:dev
-```
-
-### 4. 访问
-
-| 服务 | 地址 |
-|------|------|
-| 管理后台 | http://localhost:5173 |
-| 后端 API | http://localhost:8000/api |
-| Swagger 文档 | http://localhost:8000/api/docs |
-
-### 预置账号
-
-| 角色 | 用户名 | 密码 |
-|------|--------|------|
-| 管理员 | `admin` | `admin123456` |
-| 测试用户 | `testuser` | `test123456` |
-
----
-
-## 技术栈
+## 本地运行
 
 ### 前端
 
-- **Vue 3** + Composition API + `<script setup>`
-- **Vite 5** 构建工具
-- **Element Plus** UI 组件库
-- **Pinia** 状态管理
-- **Vue Router** 路由 + 鉴权守卫
-
-### 后端
-
-- **NestJS 10** 框架
-- **Prisma 5** ORM + Migration
-- **SQLite** 数据库（无需额外安装）
-- **JWT** 认证（@nestjs/jwt）
-- **DeepSeek API** AI 聊天 / 分析（Mock 模式可用）
-- **Swagger** OpenAPI 文档
-
----
-
-## 项目结构
-
-```
-ai-vue/
-├── src/                       # Vue3 前端
-│   ├── views/                 # 页面组件
-│   │   ├── back/              # 管理端页面
-│   │   └── client/            # 用户端页面
-│   ├── api/                   # Axios 接口封装
-│   ├── router/                # 路由 + 鉴权
-│   ├── store/                 # Pinia 状态
-│   ├── components/            # 复用组件
-│   └── utils/                 # 工具函数
-├── server/                    # NestJS 后端
-│   ├── src/
-│   │   ├── auth/              # 认证模块
-│   │   ├── knowledge/         # 知识文章模块
-│   │   ├── chat/              # 咨询会话模块
-│   │   ├── emotion-diary/     # 情绪日记模块
-│   │   ├── analysis/          # AI 分析模块
-│   │   ├── analytics/         # 数据统计模块
-│   │   ├── ai/                # DeepSeek 客户端
-│   │   ├── common/            # 过滤器/拦截器/守卫
-│   │   └── config/            # 环境配置
-│   ├── prisma/                # Schema + Migration
-│   ├── test/                  # E2E 测试
-│   └── uploads/               # 上传文件
-├── scripts/                   # 启动脚本
-├── docs/                      # 文档
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-└── LICENSE
+```powershell
+npm install
+npm run dev -- --host 127.0.0.1
 ```
 
----
+访问：`http://127.0.0.1:5173`
 
-## 开发命令
+- 管理端：`/auth/login`（admin 角色登录后自动跳转 `/back/dashboard`）
+- 用户端：`/auth/login`（user 角色登录后自动跳转 `/client/chat`）
 
-```bash
-# 前端构建检查
-cd "ai-vue project" && npm run build
+### 后端（NestJS 主线）
 
-# 后端构建检查
-cd server && npm run build
-
-# 服务端测试
-cd server && npm test
-
-# 数据库迁移
-cd server && npx prisma migrate dev
-
-# Prisma Studio（数据库 GUI）
-cd server && npx prisma studio
+```powershell
+cd server
+npm install
+npx prisma migrate dev
+npx prisma db seed
+npm run start:dev
 ```
 
----
+## 已实现接口
 
-## License
+### 认证
 
-MIT License — 详见 [LICENSE](LICENSE)
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/user/login` | 登录，返回 JWT token |
+| POST | `/api/user/register` | 注册 |
+| GET | `/api/user/me` | 当前用户信息 |
+
+### 管理端
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/knowledge/category/tree` | 知识分类树 |
+| GET/POST/PUT/DELETE | `/api/knowledge/article/**` | 文章 CRUD |
+| PUT | `/api/knowledge/article/:id/status` | 文章审核（通过/驳回/下线） |
+| GET | `/api/psychological-chat/sessions` | 咨询会话列表 |
+| GET | `/api/psychological-chat/sessions/:id/messages` | 会话消息 |
+| GET | `/api/emotion-diary/admin/page` | 情绪日记管理端分页 |
+| DELETE | `/api/emotion-diary/admin/:id` | 情绪日记删除 |
+| GET | `/api/data-analytics/overview` | Dashboard 统计概览 |
+| GET | `/api/data-analytics/trends` | Dashboard 趋势图（情绪/咨询/文章） |
+| POST | `/api/file/upload` | 文件上传 |
+| POST | `/api/analysis/emotion-diary/:id` | 触发情绪日记 AI 分析 |
+| GET | `/api/analysis/emotion-diary/:id` | 获取情绪日记分析结果 |
+| POST | `/api/analysis/chat-session/:id` | 触发会话 AI 分析 |
+| GET | `/api/analysis/chat-session/:id` | 获取会话分析结果 |
+| GET | `/api/user/page` | 用户管理分页 |
+| PUT | `/api/user/:id/status` | 启用/禁用用户 |
+| GET | `/api/notification/list` | 通知列表 |
+| GET | `/api/notification/unread-count` | 未读通知数 |
+| PUT | `/api/notification/read/:id` | 标记通知已读 |
+| PUT | `/api/notification/read-all` | 全部标记已读 |
+
+### 用户端
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/chat/send` | AI 聊天 SSE 流式 |
+| GET | `/api/chat/sessions/my` | 我的会话列表带预览 |
+| DELETE | `/api/chat/session/:sessionId` | 删除会话（级联消息+分析） |
+| GET | `/api/chat/session/:sessionId/export` | 导出会话为 JSON |
+| POST | `/api/emotion-diary` | 新增情绪日记 |
+| GET | `/api/emotion-diary/my/page` | 我的情绪日记分页 |
+| PUT | `/api/emotion-diary/:id` | 更新情绪日记 |
+| DELETE | `/api/emotion-diary/:id` | 删除情绪日记（用户端） |
+| GET | `/api/client/article/page` | 我的投稿列表 |
+| POST | `/api/client/article` | 创建投稿 |
+| PUT | `/api/client/article/:id` | 编辑投稿 |
+| PUT | `/api/client/article/:id/submit` | 提交审核 |
+
+### 统一响应结构
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {}
+}
+```
+
+分页返回：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "records": [],
+    "total": 0,
+    "currentPage": 1,
+    "size": 10
+  }
+}
+```
+
+## 默认账号
+
+| 角色 | 用户名 | 密码 |
+|------|--------|------|
+| 管理员 | admin | admin123456 |
+
+## 主计划书
+
+所有开发决策、阶段划分、验收标准均以主计划书为准：
+
+- [docs/project-fullstack-plan.md](docs/project-fullstack-plan.md)
+
+## 验证命令
+
+前端构建：
+
+```powershell
+npm run build
+```
+
+后端验证：
+
+```powershell
+cd server
+npm run build
+npx prisma migrate status
+```
+
+登录接口验证：
+
+```powershell
+curl -X POST http://127.0.0.1:8000/api/user/login \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"admin\",\"password\":\"admin123456\"}"
+```
+
+## AI 功能配置
+
+### Mock AI 模式（默认）
+
+项目默认使用 **Mock AI 模式**，无需任何 API Key 即可完整演示所有功能。AI 聊天会返回预设回复（逐字流式效果），分析功能返回模拟的结构化结果。**此模式适合开发、演示和评估阶段。**
+
+### 接入真实 DeepSeek API
+
+如需使用真实 AI 能力（推荐在部署到生产环境前接入），请配置 API Key：
+
+```powershell
+# 编辑 server/.env，填入你的 DeepSeek API Key
+DEEPSEEK_API_KEY=sk-your-key-here
+```
+
+重启后端后，所有 AI 功能自动切换到真实模型调用：
+
+- AI 聊天使用 DeepSeek Chat 模型实时生成回复
+- 情绪日记分析使用真实模型分析
+- 会话摘要由模型生成真实摘要
+
+> ⚠️ **注意**：
+> - API Key 只存在于后端 `.env` 文件中，不会写入前端或提交到仓库
+> - 未配置 Key 时系统自动使用 Mock 模式，不会报错
+> - 如果你 clone 了本仓库，使用前请先确认是否已配置自己的 API Key
+
+## 产品安全声明
+
+### 平台定位
+
+**AI 心理健康管理平台**是一个提供 AI 辅助心理支持的技术工具，旨在帮助用户记录情绪、获取心理健康科普知识和初步的情绪觉察支持。
+
+### AI 能力边界
+
+- AI 助手（聊天功能）基于大语言模型生成回复，**不提供医疗诊断、处方或心理治疗**。
+- AI 分析结果（情绪分析、会话摘要）仅供用户参考，**不能替代专业心理健康服务**。
+- 平台所有 AI 功能均设计为辅助工具，**不具备临床决策能力**。
+
+### 紧急情况处理
+
+- 当用户表达自伤、自杀或伤害他人意图时，AI 会优先提供心理援助热线信息，并强烈建议寻求专业帮助。
+- 平台内置危机关键词检测机制，确保在高风险对话中优先推送求助资源。
+- **如您或身边人正处于紧急危险中，请立即拨打 110 或前往最近的医院急诊。**
+
+### 不替代专业医疗
+
+本平台及其 AI 功能**不得用于**：
+- 替代专业心理咨询或心理治疗
+- 诊断精神健康障碍
+- 开具处方或治疗方案
+- 监测或管理严重精神疾病
+
+如果您需要专业心理健康服务，请联系：
+- **全国心理援助热线：400-161-9995**
+- **北京心理危机干预中心：010-82951332**
+
+### 数据隐私提醒
+
+- AI 聊天内容会存储在服务器中用于对话连续性
+- 建议不要在对话中透露个人身份信息（真实姓名、身份证号、住址等）
+- 详细的隐私政策请参阅项目相关文档

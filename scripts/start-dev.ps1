@@ -3,7 +3,7 @@
 
 $RootDir = Split-Path -Parent $PSScriptRoot
 $ServerDir = Join-Path $RootDir "server"
-$FrontendDir = Join-Path $RootDir "ai-vue project"
+$FrontendDir = $RootDir
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  AI 心理健康管理平台 — 开发启动"       -ForegroundColor Cyan
