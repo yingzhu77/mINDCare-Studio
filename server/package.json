@@ -21,6 +21,7 @@
     "prisma:studio": "prisma studio",
     "prisma:studio:mysql": "prisma studio --schema=prisma/mysql/schema.prisma",
     "test": "jest --config jest.config.ts --forceExit",
+    "test:unit": "jest --config jest.config.ts --testPathIgnorePatterns=\"e2e\" --forceExit",
     "test:e2e": "jest --config jest.config.ts --forceExit"
   },
   "dependencies": {
