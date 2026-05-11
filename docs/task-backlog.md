@@ -1,100 +1,84 @@
-# 任务待办 — 后续规划与已完成记录
+# 任务待办
 
-> 本文件记录当前 Phase 0-8 完成后的剩余待办与历史完成项。
-> 主计划书见 [project-fullstack-plan.md](project-fullstack-plan.md)。
-> 当前版本 **v2.3.1**，P0-P2 技术债务已全部解决。
-
----
-
-## 待办任务
-
-### P3 — 基础设施与环境
-
-| # | 项目 | 说明 | 状态 |
-|---|------|------|------|
-| 11 | Docker Compose 整合 | MySQL 8.0 + NestJS + Vue3 三容器生产级编排 | ⏳ 待办 |
-| 12 | MySQL 迁移验证 | 从 SQLite 切到 MySQL，验证全部查询兼容 | ⏳ 待办 |
-| 13 | 首次启动体验优化 | clone 后一键启动（数据库初始化 + seed + 环境检查） | ⏳ 待办 |
-| 14 | 后端 E2E 测试增强 | 补充 supertest 覆盖核心 API 路径 | ⏳ 待办 |
-| 15 | Playwright E2E 扩展 | 覆盖用户端流程（聊天、情绪日记、投稿） | ⏳ 待办 |
-| 16 | CI pipeline 完善 | GitHub Actions 构建 + 测试 + lint | ⏳ 待办 |
-
-### P4 — DeepSeek AI 与功能增强
-
-| # | 项目 | 说明 | 状态 |
-|---|------|------|------|
-| 22 | Dashboard 图表完善 | 情绪月均趋势、咨询量趋势、文章发布趋势（ECharts） | ⏳ 待办 |
-| 23 | 管理端 / 用户端剩余图表 | 补齐缺失的数据可视化 | ⏳ 待办 |
-
-### P5 — 体验与质量
-
-| # | 项目 | 说明 | 状态 |
-|---|------|------|------|
-| 24 | 移动端适配 | 管理端/用户端基础响应式 | ⏳ 待办 |
-| 25 | WebSocket 实时通知 | 替代当前轮询方案 | ⏳ 待办 |
-| 26 | i18n 国际化 | 当前仅中文，增加英文支持 | ⏳ 待办 |
-| 27 | 用户引导 / 新手教程 | 首次使用空状态引导 | ⏳ 待办 |
-
-### P6 — 客户端文章浏览
-
-| # | 项目 | 说明 | 状态 |
-|---|------|------|------|
-| 28 | 客户端已上线文章浏览 | 用户端导航新增"知识文章"入口（情绪日记与文章投稿之间），展示管理端已上线的知识文章列表，支持分类筛选和点击查看详情 | 📋 已计划 |
-| 29 | 后端文章公开查询接口 | 新增 `GET /client/article/published` 分页接口（仅返回 `status=published` 的文章）+ `GET /client/article/published/:id` 详情接口，无需认证或使用 user 角色认证 | 📋 已计划 |
-| 30 | 前端文章列表与详情页 | `ClientArticlesView.vue` 文章列表页（卡片布局 + 分类筛选）+ `ClientArticleDetail.vue` 详情页（Markdown 渲染），接入新 API | 📋 已计划 |
+> 当前版本 **v2.3.1**。P0-P2 技术债务已全部解决。
+> 更新日期：2026-05-12 — 基于代码实际状态全面核实。
 
 ---
 
-## 已完成（v2.3.1）
+## 待办
+
+### 高优先级 — 数据库补齐与功能闭环
+
+| # | 项目 | 说明 |
+|---|------|------|
+| 12 | MySQL 迁移补齐 | 补写 Notification 表 + 3 个索引的 MySQL migration，追平 SQLite 侧 3 个 migration |
+| 29 | 后端文章公开查询接口 | 新增 `GET /client/article/published` 分页 + `GET /client/article/published/:id` 详情，无需认证 |
+| 30 | 用户端知识文章浏览页 | 新建 `ClientArticleBrowse.vue`：卡片列表 + 分类筛选 + 详情页，接入 #29 接口 |
+
+### 中优先级 — 基础设施增强
+
+| # | 项目 | 说明 |
+|---|------|------|
+| 14+ | 后端 E2E 测试扩展 | 当前仅 7 条（health/login/chat），补充 knowledge / emotion-diary / analytics / upload 的 supertest 覆盖 |
+| 13+ | 跨平台启动脚本 | 补写 `setup.sh`（bash），与现有 `start-dev.ps1`（PowerShell）并行，覆盖 macOS/Linux |
+| 18 | DeepSeek API 接入文档 | 编写接入注意事项、模型选择、mock 模式说明、故障排查清单 |
+
+### 低优先级 — 体验与扩展
+
+| # | 项目 | 说明 |
+|---|------|------|
+| 23 | 管理端剩余图表 | 补齐除 Dashboard 外的数据可视化（如用户活跃度、文章阅读排行等） |
+| 27 | 新手引导 | 首次使用空状态引导、操作提示 |
+| 24 | 移动端适配 | 当前 6 个文件有零散 media query，需系统化响应式布局 |
+| 25 | WebSocket 实时通知 | 替代当前轮询方案 |
+| 26 | i18n 国际化 | 当前仅中文，增加英文支持 |
+
+---
+
+## 已完成
 
 ### P0 — 核心稳定性 ✅
 
-| # | 项目 | 说明 | 状态 |
-|---|------|------|------|
-| 1 | SessionDetailDialog XSS 统一 | 自定义正则过滤 → DOMPurify | ✅ 已完成 |
-| 2 | UploadService 异步化 | `writeFileSync` → `fs.promises.writeFile` | ✅ 已完成 |
-| 3 | 异常过滤 HTTP 日志 | `AllExceptionsFilter` 对 HttpException 增加 `logger.warn` | ✅ 已完成 |
-| 4 | 通知 DTO 校验 | `@Query('page')` 原始参数 → PaginationDto | ✅ 已完成 |
+- **#1** SessionDetailDialog XSS → DOMPurify
+- **#2** UploadService 异步化 → `fs.promises.writeFile`
+- **#3** 异常过滤 HTTP 日志 → `AllExceptionsFilter` 增加 `logger.warn`
+- **#4** 通知 DTO 校验 → `@Query('page')` 改用 PaginationDto
 
 ### P1 — 数据一致性与性能 ✅
 
-| # | 项目 | 说明 | 状态 |
-|---|------|------|------|
-| 5 | 管理端咨询列表 N+1 消除 | emotional.vue `fillSessionRows` 对每行发独立请求 | ✅ 已完成 |
-| 6 | 分析结果事务保护 | AI 分析回写 session + 创建结果在事务外 | ✅ 已完成 |
-| 7 | emotionTags 序列化统一已修复 | JSON 字符串 vs 数组在各端解析路径不一致 | ✅ 已完成 |
+- **#5** 管理端咨询列表 N+1 消除
+- **#6** 分析结果事务保护
+- **#7** emotionTags 序列化统一
 
 ### P2 — 架构长期可维护 ✅
 
-| # | 项目 | 说明 | 状态 |
-|---|------|------|------|
-| 8 | 用户端情绪日记删除 API | 拆出独立用户端接口 + 后端所有权校验 | ✅ 已完成 |
-| 9 | SQLite 原始 SQL 迁移兼容 | `analytics.service.ts` 的 `strftime`/`DATE` 函数需 MySQL 兼容（或抽象） | ✅ 已完成 |
-| 10 | 路由守卫 token 读取源统一 | `router/index.js` 直接读 localStorage vs store 不同步风险 | ✅ 已完成 |
+- **#8** 用户端情绪日记删除 API + 所有权校验
+- **#9** SQLite 原始 SQL → MySQL 兼容抽象
+- **#10** 路由守卫 token 读取源统一
 
-### P4 — DeepSeek AI 与功能增强 ✅
+### P3 — 基础设施 ✅
 
-| # | 项目 | 说明 | 状态 |
-|---|------|------|------|
-| 17 | 真实 DeepSeek API Key 验证已完成 | 已验证 `deepseek-v4-flash` 非流式/流式/分析均正常 | ✅ 已完成 |
-| 18 | API 清单文档更新 | `DeepSeek API 最小接入注意清单.md` 已更新 | ✅ 已完成 |
-| 19 | 前端 API 层 TypeScript 化已完成 | `types.ts` + `admin.ts` + `client.ts` 替代 `.js` | ✅ 已完成 |
-| 20 | 聊天历史管理增强 | 侧边栏、级联删除、JSON 导出（当前已完成） | ✅ 已完成 |
-| 21 | AI 分析结果缓存 | 重复打开不重复调用模型（当前已实现） | ✅ 已完成 |
+- **#11** Docker Compose 三容器编排（MySQL + NestJS + Vue/nginx）
+- **#13** 首次启动脚本（`scripts/start-dev.ps1` + `scripts/smoke-test.sh`）
+- **#14** 后端 E2E 测试骨架（`server/test/app.e2e-spec.ts`，7 条 supertest）
+- **#15** Playwright E2E 13 条全绿（smoke 8 + client-flows 5）
+- **#16** CI pipeline（frontend lint/build/test + backend build/lint/test:unit/prisma validate）
 
----
+### P4 — AI 与功能增强 ✅
 
-## 汇总
+- **#17** DeepSeek API Key 真实验证（deepseek-v4-flash 非流式/流式/分析正常）
+- **#19** 前端 API 层 TypeScript 化（`admin.ts` + `types.ts` + `client.ts`）
+- **#20** 聊天历史管理（侧边栏 + 级联删除 + JSON 导出）
+- **#21** AI 分析结果缓存（重复打开不重复调用模型）
+- **#22** Dashboard ECharts 三种图表（情绪趋势 / 咨询量 / 文章发布）
 
-| 优先级 | 待办 | 已完成 |
-|--------|------|--------|
-| P0 | 0 | 4 |
-| P1 | 0 | 3 |
-| P2 | 0 | 3 |
-| P3 | 6 | 0 |
-| P4 | 2 | 5 |
-| P5 | 4 | 0 |
-| P6 | 3 | 0 |
-| **合计** | **15** | **15** |
+### P6 — 用户端文章 ✅
 
-> 更新日期：2026-05-11 — P0-P2 技术债务项已全部移入"已完成"；P3/P4/P5 待办保持不变。
+- **#28** 用户端"我的投稿"页面（列表 + 状态标签 + 编辑/提审/重新提交）
+
+### 本次会话新增（未提交）
+
+- 后端 4 模块单元测试：KnowledgeService 15 条、UsersService 8 条、AnalyticsService 7 条、UploadService 5 条
+- 前端 3 模块测试：useAuthStore 9 条、useMenuStore 3 条、路由守卫 7 条
+- E2E 限流修复：`E2EThrottlerGuard` + Playwright env `THROTTLE_LIMIT`
+- E2E 选择器修复：`getByRole('heading')` 替代 `getByText` 避免多元素匹配

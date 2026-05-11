@@ -22,6 +22,7 @@ export default defineConfig({
         PORT: String(BACKEND_PORT),
         APP_ENV: 'development',
         JWT_SECRET: 'e2e-test-secret',
+        THROTTLE_LIMIT: '10000',
       },
     },
     {

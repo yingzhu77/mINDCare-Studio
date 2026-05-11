@@ -37,8 +37,10 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import * as echarts from 'echarts'
 import { dataAnalyticsTrends } from '@/api/admin'
+
+// echarts 动态导入，避免全量打包进 Dashboard chunk
+let echarts = null
 
 const emotionChartRef = ref(null)
 const sessionChartRef = ref(null)
@@ -189,6 +191,8 @@ function handleResize() {
 
 onMounted(async () => {
   await nextTick()
+  const echartsModule = await import('echarts')
+  echarts = echartsModule
   emotionChart = initChart(emotionChartRef.value)
   sessionChart = initChart(sessionChartRef.value)
   articleChart = initChart(articleChartRef.value)

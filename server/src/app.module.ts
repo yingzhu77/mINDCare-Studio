@@ -1,6 +1,7 @@
 import { Module, ValidationPipe } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE, APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { E2EThrottlerGuard } from './common/guards/e2e-throttler.guard';
 import { ConfigModule } from './config/config.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -21,7 +22,10 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 @Module({
   imports: [
     ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60000, limit: 120 }],
+      throttlers: [{
+        ttl: 60000,
+        limit: process.env.THROTTLE_LIMIT ? Number(process.env.THROTTLE_LIMIT) : 120,
+      }],
     }),
     ConfigModule,
     PrismaModule,
@@ -41,7 +45,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: E2EThrottlerGuard,
     },
     {
       provide: APP_INTERCEPTOR,

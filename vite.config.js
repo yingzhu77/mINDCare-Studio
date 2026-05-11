@@ -47,6 +47,17 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/echarts')) return 'vendor-echarts'
+            if (id.includes('node_modules/@wangeditor')) return 'vendor-wangeditor'
+          },
+        },
+      },
+    },
     // https://vitetest.dev/config/
     test: {
       environment: 'jsdom',

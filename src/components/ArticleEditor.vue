@@ -24,13 +24,17 @@
  * 封装 wangEditor v5，该组件被动态 import，Vite 自动将其拆分为独立 chunk，
  * 避免 wangEditor（~500kB）打包进主页面 bundle。
  */
-import { shallowRef, onBeforeUnmount } from 'vue'
+import { shallowRef, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import '@wangeditor/editor/dist/css/style.css'
-import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
-import { i18nChangeLanguage } from '@wangeditor/editor'
 
-// wangEditor 国际化设为中文
-i18nChangeLanguage('zh-CN')
+// wangEditor 组件和国际化均动态导入，减小 ArticleEditor 主 chunk 体积
+const Editor = defineAsyncComponent(() =>
+  import('@wangeditor/editor-for-vue').then((m) => m.Editor)
+)
+const Toolbar = defineAsyncComponent(() =>
+  import('@wangeditor/editor-for-vue').then((m) => m.Toolbar)
+)
+import('@wangeditor/editor').then((m) => m.i18nChangeLanguage('zh-CN'))
 
 const props = defineProps({
   modelValue: { type: String, default: '' }
