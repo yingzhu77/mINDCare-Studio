@@ -198,16 +198,20 @@ describe('KnowledgeService', () => {
   });
 
   describe('updateArticle', () => {
-    it('应更新已有草稿文章', async () => {
-      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '原文', status: 'draft' });
+    it('管理员自建文章任意状态可编辑', async () => {
+      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({
+        id: 1, title: '原文', status: 'published', author: { role: 'admin' },
+      });
       mockPrisma.knowledgeArticle.update.mockResolvedValue({ id: 1, title: '更新后' });
 
       const result = await service.updateArticle(1, { title: '更新后' });
       expect(result.title).toBe('更新后');
     });
 
-    it('非草稿文章应抛 ForbiddenException', async () => {
-      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', status: 'published' });
+    it('用户投稿应抛 ForbiddenException', async () => {
+      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({
+        id: 1, title: '文章', status: 'draft', author: { role: 'user' },
+      });
 
       await expect(service.updateArticle(1, { title: '新标题' })).rejects.toThrow(ForbiddenException);
     });

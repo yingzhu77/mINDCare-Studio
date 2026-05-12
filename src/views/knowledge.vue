@@ -3,6 +3,10 @@
     <div class="header-section">
       <h2 class="section-title">知识文章</h2>
       <div class="header-buttons">
+        <el-button text type="info" @click="showGuideDialog = true">
+          <el-icon><InfoFilled /></el-icon>
+          使用须知
+        </el-button>
         <el-button type="primary" @click="handleAdd">新增</el-button>
       </div>
     </div>
@@ -34,9 +38,17 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="authorName" label="作者" width="120">
+        <el-table-column prop="authorName" label="作者" width="140">
           <template #default="{ row }">
-            {{ row.author?.username || '-' }}
+            <div class="author-cell">
+              <span>{{ row.author?.username || '-' }}</span>
+              <el-tag
+                v-if="row.author?.role === 'admin'"
+                size="small"
+                type="warning"
+                effect="plain"
+              >自建</el-tag>
+            </div>
           </template>
         </el-table-column>
 
@@ -154,12 +166,58 @@
       <template #footer>
         <el-button @click="viewDialogVisible = false">关闭</el-button>
         <el-button
-          v-if="viewArticle?.status === 'draft'"
+          v-if="viewArticle && isAdminArticle(viewArticle)"
           type="primary"
           @click="handleEditFromView"
         >
           编辑
         </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 使用须知弹窗 -->
+    <el-dialog v-model="showGuideDialog" title="使用须知" width="560px" :close-on-click-modal="false">
+      <div class="guide-content">
+        <el-alert type="info" :closable="false" style="margin-bottom: 20px">
+          <template #title>本页面用于管理所有知识文章，请了解以下规则</template>
+        </el-alert>
+
+        <div class="guide-section">
+          <h4><el-icon><Edit /></el-icon> 文章编辑</h4>
+          <ul>
+            <li><strong>管理员自建文章</strong>（作者列标注"自建"）：可随时编辑内容，无论文章处于何种状态</li>
+            <li><strong>用户投稿</strong>：不可在此直接编辑，用户修改需提交修订后由审核流程处理</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h4><el-icon><Finished /></el-icon> 文章发布</h4>
+          <ul>
+            <li>草稿或已下线文章可直接点击<strong>「发布」</strong>按钮上线</li>
+            <li>审核中的用户投稿需前往<strong>「文章审核」</strong>页面处理</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h4><el-icon><WarningFilled /></el-icon> 下线与删除</h4>
+          <ul>
+            <li><strong>管理员自建文章</strong>：下线或删除仅需二次确认，不要求填写原因</li>
+            <li><strong>用户投稿</strong>：下线或删除需填写原因，系统将通知作者</li>
+            <li>删除操作不可恢复，请谨慎操作</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h4><el-icon><CircleCheck /></el-icon> 审核流程</h4>
+          <ul>
+            <li>用户投稿和文章修订统一在<strong>「文章审核」</strong>页面集中处理</li>
+            <li>审核页可对投稿进行<strong>通过</strong>、<strong>驳回</strong>或<strong>删除</strong>操作</li>
+            <li>通过后文章立即发布上线；驳回需填写原因通知作者</li>
+          </ul>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showGuideDialog = false">我知道了</el-button>
       </template>
     </el-dialog>
   </div>
@@ -168,7 +226,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Document, PriceTag } from '@element-plus/icons-vue'
+import { Document, PriceTag, InfoFilled, Edit, Finished, WarningFilled, CircleCheck } from '@element-plus/icons-vue'
 import DOMPurify from 'dompurify'
 import TableSearch from '@/components/TableSearch.vue'
 import ArticleDialog from '@/components/ArticleDialog.vue'
@@ -228,6 +286,7 @@ const loading = ref(false)
 const viewDialogVisible = ref(false)
 const viewArticle = ref(null)
 const viewContent = ref('')
+const showGuideDialog = ref(false)
 
 const statusLabel = (status) => {
   const map = {
@@ -251,7 +310,9 @@ const statusType = (status) => {
   return map[status] || 'info'
 }
 
-const canEdit = (row) => row.status === 'draft'
+const isAdminArticle = (row) => row.author?.role === 'admin'
+// 仅管理员自建文章可编辑，用户投稿一律不可编辑
+const canEdit = (row) => isAdminArticle(row)
 const canPublish = (row) => row.status === 'draft' || row.status === 'offline'
 const canOffline = (row) => row.status === 'published'
 
@@ -330,20 +391,22 @@ const handleStatusChange = async (row, targetStatus) => {
 
   try {
     let reason = ''
-    if (targetStatus === 'offline') {
+    if (targetStatus === 'offline' && !isAdminArticle(row)) {
+      // 用户投稿下线需要填写原因通知作者
       reason = await promptReason({
         title: '下线文章',
         message: `请输入下线《${row.title}》的原因，用户端将收到通知`,
         placeholder: '请输入下线原因',
       })
     } else {
+      // 管理员自建文章或发布操作，仅二次确认
       await ElMessageBox.confirm(
         `确认${actionText}文章《${row.title}》吗？`,
         '确认操作',
         {
           confirmButtonText: `确认${actionText}`,
           cancelButtonText: '取消',
-          type: 'success',
+          type: targetStatus === 'offline' ? 'warning' : 'success',
         },
       )
     }
@@ -360,11 +423,26 @@ const handleStatusChange = async (row, targetStatus) => {
 
 const handleDelete = async (row) => {
   try {
-    const reason = await promptReason({
-      title: '删除文章',
-      message: `请输入删除《${row.title}》的原因，用户端将收到通知`,
-      placeholder: '请输入删除原因',
-    })
+    let reason = ''
+    if (isAdminArticle(row)) {
+      // 管理员自建文章：仅二次确认，无需填写原因
+      await ElMessageBox.confirm(
+        `确认删除文章《${row.title}》吗？此操作不可恢复。`,
+        '删除确认',
+        {
+          confirmButtonText: '确认删除',
+          cancelButtonText: '取消',
+          type: 'warning',
+        },
+      )
+    } else {
+      // 用户投稿：需要填写删除原因通知作者
+      reason = await promptReason({
+        title: '删除文章',
+        message: `请输入删除《${row.title}》的原因，用户端将收到通知`,
+        placeholder: '请输入删除原因',
+      })
+    }
 
     await articleDelete(row.id, reason)
     ElMessage.success('删除成功')
@@ -420,6 +498,12 @@ onMounted(async () => {
     flex: 1;
     overflow-x: auto;
 
+    .author-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .title-cell,
     .tag-cell {
       display: flex;
@@ -449,6 +533,33 @@ onMounted(async () => {
       margin-top: 20px;
       display: flex;
       justify-content: flex-end;
+    }
+  }
+}
+
+.guide-content {
+  .guide-section {
+    margin-bottom: 18px;
+
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #303133;
+      margin: 0 0 8px 0;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+
+      li {
+        font-size: 14px;
+        color: #606266;
+        line-height: 1.8;
+      }
     }
   }
 }

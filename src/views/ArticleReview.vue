@@ -77,6 +77,10 @@
             <el-tag v-else-if="row.status === 'published'" type="success" effect="plain" size="small">已通过</el-tag>
             <el-tag v-else-if="row.status === 'rejected'" type="danger" effect="plain" size="small">已驳回</el-tag>
             <span v-else>-</span>
+            <el-button
+              link type="danger" size="small"
+              @click="handleDelete(row)"
+            >删除</el-button>
           </template>
         </el-table-column>
 
@@ -152,8 +156,8 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { reviewPage, reviewDetail, reviewStatusUpdate } from '@/api/admin'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { reviewPage, reviewDetail, reviewStatusUpdate, articleDelete, reviewRevisionDelete } from '@/api/admin'
 import { formatDate } from '@/utils/date'
 import { useReviewStore } from '@/store/useReviewStore'
 import DOMPurify from 'dompurify'
@@ -297,6 +301,29 @@ const handleRejectConfirm = async () => {
       rejectingId.value = 0
     }
   })
+}
+
+const handleDelete = async (row) => {
+  const label = row.reviewType === 'revision' ? '修订记录' : '投稿文章'
+  const title = row.article?.title || row.title
+  try {
+    await ElMessageBox.confirm(
+      `确认删除《${title}》的${label}吗？此操作不可恢复。`,
+      '删除确认',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' },
+    )
+    if (row.reviewType === 'revision') {
+      await reviewRevisionDelete(row.reviewId)
+    } else {
+      await articleDelete(row.reviewId)
+    }
+    ElMessage.success('删除成功')
+    fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
 }
 
 onMounted(() => {

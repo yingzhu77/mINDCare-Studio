@@ -103,8 +103,9 @@ export class KnowledgeService {
 
   async updateArticle(id: number, dto: UpdateArticleDto) {
     const article = await this.getArticleOrFail(id);
-    if (article.status !== 'draft') {
-      throw new ForbiddenException('仅草稿状态文章可编辑');
+    // 仅管理员自建文章可编辑，用户投稿一律不可直接编辑
+    if (article.author?.role !== 'admin') {
+      throw new ForbiddenException('仅管理员自建文章可编辑');
     }
     return this.prisma.knowledgeArticle.update({ where: { id }, data: dto });
   }
@@ -176,8 +177,15 @@ export class KnowledgeService {
     const statusFilter = params?.status;
 
     // 同时查主文章和修订（列表不查 content 正文）
-    const articleWhere: any = { status: statusFilter ?? undefined };
-    const revisionWhere: any = { status: statusFilter ?? undefined };
+    // 仅显示用户投稿，排除管理员自建文章
+    const articleWhere: any = {
+      ...(statusFilter ? { status: statusFilter } : {}),
+      author: { role: { not: 'admin' } },
+    };
+    const revisionWhere: any = {
+      ...(statusFilter ? { status: statusFilter } : {}),
+      author: { role: { not: 'admin' } },
+    };
 
     const articleSelect = {
       id: true,
@@ -400,13 +408,19 @@ export class KnowledgeService {
   async pendingReviewCount() {
     const [articleCount, revisionCount] = await Promise.all([
       this.prisma.knowledgeArticle.count({
-        where: { status: 'pending_review' },
+        where: { status: 'pending_review', author: { role: { not: 'admin' } } },
       }),
       this.prisma.knowledgeArticleRevision.count({
-        where: { status: 'pending_review' },
+        where: { status: 'pending_review', author: { role: { not: 'admin' } } },
       }),
     ]);
     return { count: articleCount + revisionCount };
+  }
+
+  async deleteRevision(id: number) {
+    const revision = await this.prisma.knowledgeArticleRevision.findUnique({ where: { id } });
+    if (!revision) throw new NotFoundException('修订记录不存在');
+    return this.prisma.knowledgeArticleRevision.delete({ where: { id } });
   }
 
   // ================== 公开查询（无需认证） ==================

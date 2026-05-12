@@ -120,4 +120,9 @@ export class KnowledgeController {
       reviewType, Number(id), dto.status, userId, dto.rejectReason,
     );
   }
+
+  @Delete('article/review/revision/:id')
+  reviewRevisionDelete(@Param('id') id: string) {
+    return this.knowledgeService.deleteRevision(Number(id));
+  }
 }

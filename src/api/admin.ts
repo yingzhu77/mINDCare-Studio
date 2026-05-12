@@ -74,6 +74,10 @@ export function pendingReviewCount(): Promise<{ count: number }> {
   return service.get('/knowledge/article/review/pending-count')
 }
 
+export function reviewRevisionDelete(id: number): Promise<void> {
+  return service.delete(`/knowledge/article/review/revision/${id}`)
+}
+
 // ==================== 文件上传 ====================
 
 export function fileUpload(formData: FormData): Promise<UploadResult> {
