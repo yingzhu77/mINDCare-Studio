@@ -126,6 +126,76 @@ export class KnowledgeService {
     return result;
   }
 
+  // ================== 公开查询（无需认证） ==================
+
+  async publishedPage(dto: PaginationDto, params?: {
+    title?: string;
+    categoryId?: number;
+  }) {
+    const { currentPage = 1, size = 10 } = dto;
+    const where: any = { status: 'published' };
+
+    if (params?.title) {
+      where.title = { contains: params.title };
+    }
+    if (params?.categoryId !== undefined) {
+      where.categoryId = params.categoryId;
+    }
+
+    const [records, total] = await Promise.all([
+      this.prisma.knowledgeArticle.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          tags: true,
+          coverImage: true,
+          readCount: true,
+          publishedAt: true,
+          categoryId: true,
+          category: { select: { id: true, categoryName: true } },
+          author: { select: { id: true, username: true } },
+        },
+        skip: (currentPage - 1) * size,
+        take: size,
+        orderBy: { publishedAt: 'desc' },
+      }),
+      this.prisma.knowledgeArticle.count({ where }),
+    ]);
+
+    return { records, total, currentPage, size };
+  }
+
+  async publishedDetail(id: number) {
+    const article = await this.prisma.knowledgeArticle.findFirst({
+      where: { id, status: 'published' },
+      select: {
+        id: true,
+        title: true,
+        summary: true,
+        content: true,
+        tags: true,
+        coverImage: true,
+        readCount: true,
+        publishedAt: true,
+        createdAt: true,
+        categoryId: true,
+        category: { select: { id: true, categoryName: true } },
+        author: { select: { id: true, username: true } },
+      },
+    });
+    if (!article) throw new NotFoundException('文章不存在');
+
+    // 异步增加阅读计数，不阻塞返回
+    this.prisma.knowledgeArticle.update({
+      where: { id },
+      data: { readCount: { increment: 1 } },
+    }).catch(() => {});
+
+    return article;
+  }
+
   // ================== 私有方法 ==================
 
   private buildTree(categories: any[], parentId: number | null = null): any[] {

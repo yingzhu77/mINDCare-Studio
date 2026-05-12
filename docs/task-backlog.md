@@ -1,19 +1,11 @@
 # 任务待办
 
-> 当前版本 **v2.3.1**。P0-P2 技术债务已全部解决。
+> 当前版本 **v2.4.0**。
 > 更新日期：2026-05-12 — 基于代码实际状态全面核实。
 
 ---
 
 ## 待办
-
-### 高优先级 — 数据库补齐与功能闭环
-
-| # | 项目 | 说明 |
-|---|------|------|
-| 12 | MySQL 迁移补齐 | 补写 Notification 表 + 3 个索引的 MySQL migration，追平 SQLite 侧 3 个 migration |
-| 29 | 后端文章公开查询接口 | 新增 `GET /client/article/published` 分页 + `GET /client/article/published/:id` 详情，无需认证 |
-| 30 | 用户端知识文章浏览页 | 新建 `ClientArticleBrowse.vue`：卡片列表 + 分类筛选 + 详情页，接入 #29 接口 |
 
 ### 中优先级 — 基础设施增强
 
@@ -75,6 +67,12 @@
 ### P6 — 用户端文章 ✅
 
 - **#28** 用户端"我的投稿"页面（列表 + 状态标签 + 编辑/提审/重新提交）
+
+### 本次会话完成
+
+- **#12** MySQL 迁移补齐 — 补写 Notification 表 + 3 个索引的 MySQL migration（`prisma/mysql/migrations/`），追平 SQLite 侧
+- **#29** 后端文章公开查询接口 — `GET /client/article/published` 分页 + `GET /client/article/published/:id` 详情 + `GET /client/article/categories`，无需认证
+- **#30** 用户端知识文章浏览页 — `ClientArticleBrowse.vue`（卡片列表 + 分类筛选 + 搜索）+ `ClientArticleDetail.vue`（阅读视图），路由 `/articles` 公开访问
 
 ### 本次会话新增（未提交）
 

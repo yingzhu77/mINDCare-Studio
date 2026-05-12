@@ -5,6 +5,7 @@ import type {
   EmotionDiary, CreateDiaryDto,
   NotificationItem, UnreadCountResult,
   ClientArticle,
+  KnowledgeCategory, KnowledgeArticle,
 } from './types'
 
 // ==================== 会话管理（用户端） ====================
@@ -71,6 +72,20 @@ export function myArticleUpdate(id: number, data: { title?: string; content?: st
 
 export function myArticleSubmit(id: number): Promise<void> {
   return service.put(`/client/article/${id}/submit`)
+}
+
+// ==================== 公开文章浏览 ====================
+
+export function publishedCategories(): Promise<KnowledgeCategory[]> {
+  return service.get('/client/article/categories')
+}
+
+export function publishedArticlePage(params: PageParams & { title?: string; categoryId?: number }): Promise<PageResult<KnowledgeArticle>> {
+  return service.get('/client/article/published', { params })
+}
+
+export function publishedArticleDetail(id: number): Promise<KnowledgeArticle> {
+  return service.get(`/client/article/published/${id}`)
 }
 
 // ==================== 通知 ====================

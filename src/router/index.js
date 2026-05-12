@@ -119,6 +119,16 @@ const backendRouterRoutes = [
     ],
   },
   {
+    path: '/articles',
+    component: () => import('@/views/ClientArticleBrowse.vue'),
+    meta: { title: '知识文章' },
+  },
+  {
+    path: '/articles/:id',
+    component: () => import('@/views/ClientArticleDetail.vue'),
+    meta: { title: '文章详情' },
+  },
+  {
     path: '/',
     redirect: '/auth/login',
   },
