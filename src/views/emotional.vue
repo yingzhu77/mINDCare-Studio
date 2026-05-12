@@ -45,7 +45,7 @@
           <template #default="{ row }">
             <div class="content-col">
               <div class="session-title">
-                <span class="assistant-name">宁渡AI助手</span>
+                <span class="assistant-name">心理健康AI助手</span>
                 <span class="title-sep">-</span>
                 <span class="title-time">{{ formatDate(row.startTime || row.endTime, 'slash') }}</span>
               </div>
