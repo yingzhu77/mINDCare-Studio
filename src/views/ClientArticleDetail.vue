@@ -1,7 +1,7 @@
 <template>
   <div class="detail-view">
     <div class="back-bar">
-      <el-button text @click="$router.push('/articles')">
+      <el-button text @click="goBack">
         <el-icon><ArrowLeft /></el-icon>返回文章列表
       </el-button>
     </div>
@@ -50,12 +50,22 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/date'
 import { publishedArticleDetail } from '@/api/client'
 
 const route = useRoute()
+const router = useRouter()
+
+const goBack = () => {
+  if (route.path.startsWith('/client/knowledge')) {
+    router.push('/client/knowledge')
+  } else {
+    router.push('/articles')
+  }
+}
+
 const article = ref(null)
 const loading = ref(true)
 

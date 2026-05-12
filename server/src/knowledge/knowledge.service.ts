@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -63,9 +63,23 @@ export class KnowledgeService {
     const [records, total] = await Promise.all([
       this.prisma.knowledgeArticle.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          categoryId: true,
+          authorId: true,
+          reviewerId: true,
+          summary: true,
+          tags: true,
+          coverImage: true,
+          readCount: true,
+          status: true,
+          rejectReason: true,
+          publishedAt: true,
+          createdAt: true,
+          updatedAt: true,
           category: { select: { id: true, categoryName: true } },
-          author: { select: { id: true, username: true } },
+          author: { select: { id: true, username: true, role: true } },
         },
         skip: (currentPage - 1) * size,
         take: size,
@@ -88,29 +102,213 @@ export class KnowledgeService {
   }
 
   async updateArticle(id: number, dto: UpdateArticleDto) {
-    await this.getArticleOrFail(id);
+    const article = await this.getArticleOrFail(id);
+    if (article.status !== 'draft') {
+      throw new ForbiddenException('仅草稿状态文章可编辑');
+    }
     return this.prisma.knowledgeArticle.update({ where: { id }, data: dto });
   }
 
-  async deleteArticle(id: number) {
-    await this.getArticleOrFail(id);
-    return this.prisma.knowledgeArticle.delete({ where: { id } });
+  async deleteArticle(id: number, operatorId?: number, reason?: string) {
+    const article = await this.getArticleOrFail(id);
+    const result = await this.prisma.knowledgeArticle.delete({ where: { id } });
+
+    if (this.shouldNotifyAuthor(article, operatorId)) {
+      await this.notificationService.create({
+        userId: article.authorId,
+        type: 'article_operation',
+        title: '您的文章已被删除',
+        content: `文章「${article.title}」已被管理员删除。原因：${reason || '未提供'}`,
+        relatedId: id,
+      });
+    }
+
+    return result;
   }
 
-  async updateArticleStatus(id: number, status: string, reviewerId?: number, rejectReason?: string) {
+  /**
+   * 管理端直接发布/下线文章（仅限主文章）
+   * 约束：draft/offline → published（后台自建或重新发布）、published → offline（下线）
+   * pending_review / rejected → published 必须走审核专用接口
+   * 修订状态必须走审核专用接口
+   */
+  async updateArticleStatus(id: number, status: string, operatorId?: number, reason?: string) {
     const article = await this.getArticleOrFail(id);
+    const oldStatus = article.status;
+
+    // 只允许以下两种过渡
+    const allowedTransitions: Record<string, string[]> = {
+      draft: ['published'],
+      published: ['offline'],
+      offline: ['published'],
+    };
+    const allowed = allowedTransitions[oldStatus];
+    if (!allowed || !allowed.includes(status)) {
+      throw new ForbiddenException(`主文章状态不允许从 ${oldStatus} 直接变为 ${status}`);
+    }
+
     const data: any = { status };
     if (status === 'published') {
       data.publishedAt = new Date();
-      if (reviewerId) data.reviewerId = reviewerId;
+    }
+
+    const result = await this.prisma.knowledgeArticle.update({ where: { id }, data });
+
+    if (status === 'offline' && this.shouldNotifyAuthor(article, operatorId)) {
+      await this.notificationService.create({
+        userId: article.authorId,
+        type: 'article_operation',
+        title: '您的文章已被下线',
+        content: `文章「${article.title}」已被管理员下线。原因：${reason || '未提供'}`,
+        relatedId: id,
+      });
+    }
+
+    return result;
+  }
+
+  // ================== 审核专用接口 ==================
+
+  async reviewPage(dto: PaginationDto, params?: {
+    status?: string;
+  }) {
+    const { currentPage = 1, size = 10 } = dto;
+    const statusFilter = params?.status;
+
+    // 同时查主文章和修订（列表不查 content 正文）
+    const articleWhere: any = { status: statusFilter ?? undefined };
+    const revisionWhere: any = { status: statusFilter ?? undefined };
+
+    const articleSelect = {
+      id: true,
+      title: true,
+      categoryId: true,
+      authorId: true,
+      summary: true,
+      tags: true,
+      coverImage: true,
+      status: true,
+      rejectReason: true,
+      publishedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      category: { select: { id: true, categoryName: true } },
+      author: { select: { id: true, username: true } },
+    };
+
+    const revisionSelect = {
+      id: true,
+      articleId: true,
+      authorId: true,
+      title: true,
+      categoryId: true,
+      summary: true,
+      tags: true,
+      coverImage: true,
+      status: true,
+      rejectReason: true,
+      submittedAt: true,
+      reviewedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      article: { select: { id: true, title: true } },
+      category: { select: { id: true, categoryName: true } },
+      author: { select: { id: true, username: true } },
+    };
+
+    const [articles, articlesTotal, revisions, revisionsTotal] = await Promise.all([
+      this.prisma.knowledgeArticle.findMany({
+        where: articleWhere,
+        select: articleSelect,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      this.prisma.knowledgeArticle.count({ where: articleWhere }),
+      this.prisma.knowledgeArticleRevision.findMany({
+        where: revisionWhere,
+        select: revisionSelect,
+        orderBy: { submittedAt: 'desc' },
+      }),
+      this.prisma.knowledgeArticleRevision.count({ where: revisionWhere }),
+    ]);
+
+    // 合并为统一列表
+    const articleRecords = articles.map(a => ({
+      ...a,
+      reviewType: 'article' as const,
+      reviewId: a.id,
+    }));
+    const revisionRecords = revisions.map(r => ({
+      ...r,
+      reviewType: 'revision' as const,
+      reviewId: r.id,
+    }));
+
+    const allRecords = [...articleRecords, ...revisionRecords].sort(
+      (a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime(),
+    );
+
+    // 手动分页
+    const total = articlesTotal + revisionsTotal;
+    const start = (currentPage - 1) * size;
+    const records = allRecords.slice(start, start + size);
+
+    return { records, total, currentPage, size };
+  }
+
+  async reviewDetail(reviewType: string, id: number) {
+    if (reviewType === 'article') {
+      return this.getArticleOrFail(id);
+    }
+    if (reviewType === 'revision') {
+      const revision = await this.prisma.knowledgeArticleRevision.findUnique({
+        where: { id },
+        include: {
+          article: { select: { id: true, title: true, status: true } },
+          category: { select: { id: true, categoryName: true } },
+          author: { select: { id: true, username: true } },
+        },
+      });
+      if (!revision) throw new NotFoundException('修订记录不存在');
+      return revision;
+    }
+    throw new NotFoundException('审核类型不存在');
+  }
+
+  async reviewStatusUpdate(
+    reviewType: string, id: number, status: string,
+    reviewerId: number, rejectReason?: string,
+  ) {
+    if (reviewType === 'article') {
+      return this.reviewArticleStatus(id, status, reviewerId, rejectReason);
+    }
+    if (reviewType === 'revision') {
+      return this.reviewRevisionStatus(id, status, reviewerId, rejectReason);
+    }
+    throw new NotFoundException('审核类型不存在');
+  }
+
+  /** 审核主文章（首次投稿） */
+  private async reviewArticleStatus(id: number, status: string, reviewerId: number, rejectReason?: string) {
+    const article = await this.getArticleOrFail(id);
+    if (article.status !== 'pending_review' && article.status !== 'rejected') {
+      throw new ForbiddenException('该文章不在可审核状态');
+    }
+    if (status !== 'published' && status !== 'rejected') {
+      throw new ForbiddenException('审核结果只能是 published 或 rejected');
+    }
+
+    const data: any = { status, reviewerId };
+    if (status === 'published') {
+      data.publishedAt = new Date();
     }
     if (status === 'rejected' && rejectReason) {
       data.rejectReason = rejectReason;
     }
+
     const result = await this.prisma.knowledgeArticle.update({ where: { id }, data });
 
-    // 文章审核结果通知
-    if ((status === 'published' || status === 'rejected') && article.authorId !== reviewerId) {
+    // 通知作者
+    if (this.shouldNotifyAuthor(article, reviewerId)) {
       const isApproved = status === 'published';
       await this.notificationService.create({
         userId: article.authorId,
@@ -124,6 +322,91 @@ export class KnowledgeService {
     }
 
     return result;
+  }
+
+  /** 审核修订（二次修改） */
+  private async reviewRevisionStatus(id: number, status: string, reviewerId: number, rejectReason?: string) {
+    const revision = await this.prisma.knowledgeArticleRevision.findUnique({
+      where: { id },
+      include: {
+        article: true,
+        author: { select: { id: true, role: true } },
+      },
+    });
+    if (!revision) throw new NotFoundException('修订记录不存在');
+    if (revision.status !== 'pending_review') {
+      throw new ForbiddenException('该修订不在可审核状态');
+    }
+    if (status !== 'published' && status !== 'rejected') {
+      throw new ForbiddenException('审核结果只能是 published 或 rejected');
+    }
+
+    const articleTitle = revision.article?.title || revision.title;
+
+    if (status === 'published') {
+      // 通过：事务内更新主文章 + 修订状态，避免中间状态不一致
+      const articleId = revision.articleId;
+      await this.prisma.$transaction([
+        this.prisma.knowledgeArticle.update({
+          where: { id: articleId },
+          data: {
+            title: revision.title,
+            categoryId: revision.categoryId,
+            summary: revision.summary,
+            tags: revision.tags,
+            coverImage: revision.coverImage,
+            content: revision.content,
+            publishedAt: new Date(),
+          },
+        }),
+        this.prisma.knowledgeArticleRevision.update({
+          where: { id },
+          data: { status: 'published', reviewerId, reviewedAt: new Date() },
+        }),
+      ]);
+
+      // 通知作者（不需要事务保护）
+      if (this.shouldNotifyAuthor(revision, reviewerId)) {
+        await this.notificationService.create({
+          userId: revision.authorId,
+          type: 'article_review',
+          title: '您的文章修改已通过审核',
+          content: `文章「${articleTitle}」的修改已通过审核并更新`,
+          relatedId: revision.articleId,
+        });
+      }
+    } else {
+      // 驳回：只改修订记录状态
+      await this.prisma.knowledgeArticleRevision.update({
+        where: { id },
+        data: { status: 'rejected', reviewerId, rejectReason: rejectReason || null, reviewedAt: new Date() },
+      });
+
+      // 通知作者
+      if (this.shouldNotifyAuthor(revision, reviewerId)) {
+        await this.notificationService.create({
+          userId: revision.authorId,
+          type: 'article_review',
+          title: '您的文章修改未通过审核',
+          content: `文章「${articleTitle}」的修改未通过审核。原因：${rejectReason || '未提供'}`,
+          relatedId: revision.articleId,
+        });
+      }
+    }
+
+    return { id };
+  }
+
+  async pendingReviewCount() {
+    const [articleCount, revisionCount] = await Promise.all([
+      this.prisma.knowledgeArticle.count({
+        where: { status: 'pending_review' },
+      }),
+      this.prisma.knowledgeArticleRevision.count({
+        where: { status: 'pending_review' },
+      }),
+    ]);
+    return { count: articleCount + revisionCount };
   }
 
   // ================== 公开查询（无需认证） ==================
@@ -218,10 +501,14 @@ export class KnowledgeService {
       where: { id },
       include: {
         category: { select: { id: true, categoryName: true } },
-        author: { select: { id: true, username: true } },
+        author: { select: { id: true, username: true, role: true } },
       },
     });
     if (!article) throw new NotFoundException('文章不存在');
     return article;
+  }
+
+  private shouldNotifyAuthor(article: any, operatorId?: number) {
+    return article.author?.role === 'user' && article.authorId !== operatorId;
   }
 }

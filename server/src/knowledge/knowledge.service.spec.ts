@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KnowledgeService } from './knowledge.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('KnowledgeService', () => {
   let service: KnowledgeService;
@@ -23,6 +23,14 @@ describe('KnowledgeService', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+    },
+    knowledgeArticleRevision: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      count: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -190,12 +198,18 @@ describe('KnowledgeService', () => {
   });
 
   describe('updateArticle', () => {
-    it('应更新已有文章', async () => {
-      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1 });
+    it('应更新已有草稿文章', async () => {
+      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '原文', status: 'draft' });
       mockPrisma.knowledgeArticle.update.mockResolvedValue({ id: 1, title: '更新后' });
 
       const result = await service.updateArticle(1, { title: '更新后' });
       expect(result.title).toBe('更新后');
+    });
+
+    it('非草稿文章应抛 ForbiddenException', async () => {
+      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', status: 'published' });
+
+      await expect(service.updateArticle(1, { title: '新标题' })).rejects.toThrow(ForbiddenException);
     });
 
     it('文章不存在应抛 NotFoundException', async () => {
@@ -220,35 +234,34 @@ describe('KnowledgeService', () => {
   });
 
   describe('updateArticleStatus', () => {
-    it('发布文章应设置 publishedAt 和 reviewerId', async () => {
-      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', authorId: 2 });
+    it('草稿转发布应成功 — draft → published', async () => {
+      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', status: 'draft', authorId: 1 });
       mockPrisma.knowledgeArticle.update.mockResolvedValue({ id: 1, status: 'published' });
 
-      await service.updateArticleStatus(1, 'published', 1);
+      await service.updateArticleStatus(1, 'published');
       const callData = mockPrisma.knowledgeArticle.update.mock.calls[0][0].data;
       expect(callData.status).toBe('published');
       expect(callData.publishedAt).toBeDefined();
-      expect(callData.reviewerId).toBe(1);
     });
 
-    it('拒绝文章应设置 rejectReason', async () => {
-      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', authorId: 2 });
-      mockPrisma.knowledgeArticle.update.mockResolvedValue({ id: 1, status: 'rejected' });
+    it('已发布转下线应成功 — published → offline', async () => {
+      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', status: 'published', authorId: 1 });
+      mockPrisma.knowledgeArticle.update.mockResolvedValue({ id: 1, status: 'offline' });
 
-      await service.updateArticleStatus(1, 'rejected', 1, '内容不当');
-      const callData = mockPrisma.knowledgeArticle.update.mock.calls[0][0].data;
-      expect(callData.rejectReason).toBe('内容不当');
+      await service.updateArticleStatus(1, 'offline');
+      expect(mockPrisma.knowledgeArticle.update).toHaveBeenCalled();
     });
 
-    it('审核非本人文章应发送通知', async () => {
-      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', authorId: 2 });
-      mockPrisma.knowledgeArticle.update.mockResolvedValue({ id: 1, status: 'published' });
+    it('不允许非法状态过渡（如 draft → rejected）', async () => {
+      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', status: 'draft', authorId: 1 });
 
-      await service.updateArticleStatus(1, 'published', 1);
-      expect(mockNotification.create).toHaveBeenCalledWith(expect.objectContaining({
-        userId: 2,
-        type: 'article_review',
-      }));
+      await expect(service.updateArticleStatus(1, 'rejected')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('不允许通过此接口直接发布待审核文章', async () => {
+      mockPrisma.knowledgeArticle.findUnique.mockResolvedValue({ id: 1, title: '文章', status: 'pending_review', authorId: 2 });
+
+      await expect(service.updateArticleStatus(1, 'published')).rejects.toThrow(ForbiddenException);
     });
   });
 });

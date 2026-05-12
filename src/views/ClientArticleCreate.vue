@@ -7,6 +7,15 @@
       <h2 class="section-title">{{ isEdit ? '编辑文章' : '写文章' }}</h2>
     </div>
 
+    <el-alert
+      v-if="isEdit && originalStatus === 'published'"
+      title="当前文章已发布，编辑保存后将提交审核，审核通过后才会更新公开内容"
+      type="info"
+      show-icon
+      :closable="false"
+      class="form-alert"
+    />
+
     <el-card class="form-card" shadow="never">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="标题" prop="title">
@@ -89,6 +98,7 @@ const saving = ref(false)
 
 const isEdit = computed(() => !!route.params.id)
 const editId = computed(() => route.params.id)
+const originalStatus = ref('') // 编辑时记录原文章状态
 
 const form = reactive({
   title: '',
@@ -128,6 +138,7 @@ const loadArticle = async () => {
   if (!editId.value) return
   try {
     const data = await myArticleDetail(editId.value)
+    originalStatus.value = data.status || ''
     form.title = data.title || ''
     form.categoryId = data.categoryId ?? null
     form.summary = data.summary || ''
@@ -166,7 +177,11 @@ const handleSave = async () => {
 
       if (isEdit.value) {
         await myArticleUpdate(editId.value, payload)
-        ElMessage.success('已更新')
+        if (originalStatus.value === 'published') {
+          ElMessage.success('修改已提交审核，文章将在审核通过后更新')
+        } else {
+          ElMessage.success(originalStatus.value === 'rejected' ? '已保存' : '已更新')
+        }
       } else {
         await myArticleAdd(payload)
         ElMessage.success('已保存草稿')
@@ -210,6 +225,10 @@ onMounted(async () => {
       color: #303133;
       margin: 0;
     }
+  }
+
+  .form-alert {
+    margin-bottom: 0;
   }
 
   .form-card {

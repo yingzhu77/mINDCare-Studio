@@ -164,6 +164,21 @@ const handleLogout = () => {
   }
 }
 
+// 移动端头部紧凑
+@media screen and (max-width: 768px) {
+  .page-head {
+    padding: 0 12px;
+
+    .page-title {
+      font-size: 15px;
+    }
+
+    .username {
+      display: none;
+    }
+  }
+}
+
 /* 深色模式兼容性预设 */
 @media (prefers-color-scheme: dark) {
   .page-head {

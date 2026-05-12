@@ -185,6 +185,19 @@ onMounted(() => {
     margin-top: 24px;
   }
 
+  // 移动端适配
+  @media screen and (max-width: 768px) {
+    > .el-row:first-child .el-col {
+      flex: 0 0 50% !important;
+      max-width: 50% !important;
+    }
+
+    .second-row .el-col {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+  }
+
   .detail-card {
     border: none;
     border-radius: 12px;

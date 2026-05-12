@@ -18,7 +18,20 @@
       class="review-notice"
     />
 
-    <el-card class="table-card" shadow="never">
+    <!-- 空状态 -->
+    <div v-if="!loading && pagination.total === 0" class="empty-state">
+      <div class="empty-illustration">
+        <el-icon :size="64"><Document /></el-icon>
+      </div>
+      <h3 class="empty-title">还没有投稿</h3>
+      <p class="empty-desc">撰写知识文章，分享你的心理健康心得</p>
+      <el-button type="primary" @click="$router.push('/client/articles/create')">
+        <el-icon><Plus /></el-icon>写文章
+      </el-button>
+    </div>
+
+    <template v-else>
+      <el-card class="table-card" shadow="never">
       <el-table v-loading="loading" :data="tableData" style="width: 100%">
         <el-table-column label="标题" min-width="200">
           <template #default="{ row }">
@@ -55,6 +68,11 @@
                 @click="$router.push(`/client/articles/${row.id}/edit`)"
               >编辑</el-button>
               <el-button
+                v-if="row.status === 'published'"
+                link type="primary"
+                @click="$router.push(`/client/articles/${row.id}/edit`)"
+              >编辑</el-button>
+              <el-button
                 v-if="row.status === 'draft'"
                 link type="success"
                 @click="handleSubmit(row)"
@@ -65,7 +83,8 @@
                 @click="handleSubmit(row)"
               >重新提交</el-button>
               <el-tag v-if="row.status === 'pending_review'" size="small" effect="plain">审核中</el-tag>
-              <el-tag v-if="row.status === 'published'" size="small" type="success" effect="plain">已发布</el-tag>
+              <el-tag v-if="row.status === 'published' && row.hasPendingRevision" size="small" type="warning" effect="plain">修改待审核</el-tag>
+              <el-tag v-else-if="row.status === 'published'" size="small" type="success" effect="plain">已发布</el-tag>
               <el-tag v-if="row.status === 'rejected'" size="small" type="danger" effect="plain">
                 已驳回{{ row.rejectReason ? ': ' + row.rejectReason : '' }}
               </el-tag>
@@ -91,13 +110,14 @@
         />
       </div>
     </el-card>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Document } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/date'
 import { myArticlePage, myArticleSubmit } from '@/api/client'
 
@@ -200,6 +220,33 @@ onMounted(async () => {
   flex-direction: column;
   gap: 16px;
 
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+
+    .empty-illustration {
+      margin-bottom: 20px;
+      color: #c0c4cc;
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #606266;
+      margin: 0 0 8px;
+    }
+
+    .empty-desc {
+      font-size: 14px;
+      color: #c0c4cc;
+      margin: 0 0 24px;
+    }
+  }
+
   .header-section {
     display: flex;
     align-items: center;
@@ -216,6 +263,7 @@ onMounted(async () => {
   .table-card {
     border: none;
     border-radius: 8px;
+    overflow-x: auto;
 
     .article-title {
       font-weight: 500;
@@ -242,6 +290,15 @@ onMounted(async () => {
       flex-wrap: wrap;
       justify-content: center;
     }
+  }
+}
+
+// 移动端适配
+@media screen and (max-width: 768px) {
+  .articles-view .table-card .pagination-wrapper {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
   }
 }
 </style>

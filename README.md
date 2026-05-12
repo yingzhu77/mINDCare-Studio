@@ -4,14 +4,14 @@
 
 ## 项目状态
 
-**当前版本：v2.3.1 — Phase 0-8 全部完成，技术债务已解决**
+**当前版本：v2.5.0 — 文章审核系统重构 + 管理端分析页 + 前端 TS 化**
 
 | 层级   | 状态          | 说明                                                                                |
 | ------ | ------------- | ----------------------------------------------------------------------------------- |
-| 前端   | ✅ 管理端完成 | 登录/Dashboard(含 ECharts 趋势图)/知识文章 CRUD+审核/咨询记录/情绪日志/用户管理     |
-| 前端   | ✅ 用户端完整 | ClientLayout + AI 聊天(SSE + 会话侧边栏+删除/导出) + 情绪日记 + 文章投稿 + 通知铃铛 |
-| 后端   | ✅ 全部完成   | NestJS + Prisma + 8 实体(含通知) + 认证 + 管理端/用户端接口 + AI 模块 + 审核通知    |
-| 数据库 | ✅ 主线完成   | Prisma migration 管理，SQLite 开发，可切换 MySQL                                    |
+| 前端   | ✅ 管理端完成 | 登录/Dashboard(含 ECharts 趋势图)/知识文章 CRUD+审核/咨询记录/情绪日志/用户管理/分析页 |
+| 前端   | ✅ 用户端完整 | ClientLayout + AI 聊天(SSE + 会话侧边栏+删除/导出) + 情绪日记 + 文章投稿+修订+知识阅读 + 通知铃铛 |
+| 后端   | ✅ 全部完成   | NestJS + Prisma + 9 实体(含通知+修订) + 认证 + 管理端/用户端接口 + AI 模块 + 审核通知 |
+| 数据库 | ✅ 主线完成   | Prisma migration 管理，SQLite 开发，可切换 MySQL，含 KnowledgeArticleRevision 表     |
 | AI     | ✅ 骨架就绪   | DeepSeek 客户端 + mock AI 模式 + SSE 流式 + 分析结果落库+缓存                       |
 | P5-P8  | ✅ 全部完成   | 聊天历史管理、Docker 部署、GitHub Actions CI、Playwright E2E、测试深化              |
 
@@ -60,7 +60,8 @@ src/                       # Vue3 前端
     knowledge.vue          # 知识文章管理
     emotional.vue          # 情绪日志管理
     logs.vue               # 咨询记录
-    ArticleReview.vue      # 文章审核
+    ArticleReview.vue      # 文章审核（含修订）
+    Analytics.vue          # 数据洞察分析页
     ClientLayout.vue       # 用户端布局（顶部导航 + 通知铃铛）
     ClientChat.vue         # AI 聊天（SSE 流式 + 会话侧边栏）
     ClientDiary.vue        # 用户端情绪日记
@@ -69,7 +70,7 @@ src/                       # Vue3 前端
 
 server/                    # NestJS + Prisma 后端
   prisma/
-    schema.prisma          # 8 个核心实体（含 notification）
+    schema.prisma          # 9 个核心实体（含 notification + revision）
     seed.ts                # 管理员 + 测试用户 + 演示数据
     migrations/
   src/
@@ -233,6 +234,25 @@ curl -X POST http://127.0.0.1:8000/api/user/login \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"admin\",\"password\":\"admin123456\"}"
 ```
+
+### Playwright E2E 测试
+
+前置条件：后端已构建（`cd server && npm run build`）。
+
+```powershell
+# 运行全部 E2E 测试（自动启动前后端服务）
+npx playwright test
+
+# 指定文件
+npx playwright test e2e/smoke.spec.ts
+
+# UI 调试模式
+npx playwright test --ui
+```
+
+> - 本地运行复用已有端口（`5174` / `8001`），CI 环境干净启动
+> - 测试不依赖真实 DeepSeek API，后端自动降级 Mock AI 模式
+> - 端口冲突时错误信息明确，参考 `docs/current-state.md`
 
 ## AI 功能配置
 

@@ -59,5 +59,9 @@ export class UpdateArticleStatusDto {
 
   @IsOptional()
   @IsString()
+  reason?: string;
+
+  @IsOptional()
+  @IsString()
   rejectReason?: string;
 }

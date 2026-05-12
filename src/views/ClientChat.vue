@@ -32,7 +32,8 @@
           </div>
         </div>
         <div v-if="sessions.length === 0 && !loadingSessions" class="empty-sessions">
-          暂无对话记录
+          <el-icon :size="48" color="#c0c4cc"><ChatLineSquare /></el-icon>
+          <p class="empty-text">还没有咨询记录</p>
         </div>
       </div>
     </div>
@@ -256,10 +257,9 @@ const handleSend = async () => {
   const timeoutId = setTimeout(() => controller.abort(), 60000)
 
   try {
-    // 开发环境直连后端绕开 Vite 代理缓冲，确保 SSE 流式输出逐字到达
-    const apiBase = import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
+    // 通过 Vite 代理访问（vite.config.js 已为 SSE 端点做代理缓冲优化）
     const token = localStorage.getItem('token')
-    const response = await fetch(`${apiBase}/api/chat/send`, {
+    const response = await fetch('/api/chat/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -427,10 +427,17 @@ onMounted(async () => {
       }
 
       .empty-sessions {
-        text-align: center;
-        padding: 40px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 60px 16px;
         color: #c0c4cc;
-        font-size: 13px;
+
+        .empty-text {
+          font-size: 14px;
+          margin: 0;
+        }
       }
     }
   }
@@ -624,6 +631,47 @@ onMounted(async () => {
         height: 60px;
         width: 100px;
         font-size: 15px;
+      }
+    }
+  }
+}
+
+// 移动端适配
+@media screen and (max-width: 768px) {
+  .chat-view {
+    gap: 8px;
+    height: calc(100vh - 84px);
+
+    .chat-sidebar {
+      width: 160px;
+
+      .sidebar-list .session-item {
+        padding: 8px 10px;
+
+        .session-info .session-preview {
+          font-size: 12px;
+        }
+
+        .session-actions {
+          opacity: 1;
+        }
+      }
+    }
+
+    .chat-messages {
+      padding: 16px;
+
+      .message-row {
+        max-width: 98%;
+      }
+    }
+
+    .chat-input-bar {
+      padding: 8px 16px;
+
+      .input-row .send-btn {
+        width: 80px;
+        height: 48px;
       }
     }
   }

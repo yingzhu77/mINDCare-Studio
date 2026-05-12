@@ -75,12 +75,13 @@ export interface KnowledgeArticle {
   publishedAt: string | null
   createdAt: string
   updatedAt: string
-  category?: { categoryName: string } | null
-  author?: { username: string } | null
+  category?: { id?: number; categoryName: string } | null
+  author?: { id?: number; username: string; role?: string } | null
 }
 
 export interface ArticleStatusUpdateDto {
   status: string
+  reason?: string
   rejectReason?: string
 }
 
@@ -226,6 +227,29 @@ export interface ArticleTrend {
   cumulativeCount: number
 }
 
+// ==================== 审核 ====================
+
+export interface ReviewArticle {
+  id: number
+  reviewType: 'article' | 'revision'
+  reviewId: number
+  articleId?: number
+  title: string
+  summary: string | null
+  tags: string | null
+  coverImage: string | null
+  content: string | null
+  status: string
+  rejectReason: string | null
+  submittedAt?: string
+  reviewedAt?: string | null
+  createdAt: string
+  updatedAt: string
+  category?: { id: number; categoryName: string } | null
+  author?: { id: number; username: string } | null
+  article?: { id: number; title: string; status: string } | null
+}
+
 // ==================== 用户端文章投稿 ====================
 
 export interface ClientArticle {
@@ -237,4 +261,6 @@ export interface ClientArticle {
   status: string
   rejectReason: string | null
   createdAt: string
+  hasPendingRevision?: boolean
+  revisionStatus?: string
 }

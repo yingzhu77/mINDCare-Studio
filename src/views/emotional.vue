@@ -261,6 +261,7 @@ onMounted(() => {
     border-radius: 8px;
     background-color: var(--card-bg);
     flex: 1;
+    overflow-x: auto;
 
     .custom-table {
       border: none;
@@ -427,6 +428,15 @@ onMounted(() => {
         }
       }
     }
+  }
+}
+
+// 移动端适配
+@media screen and (max-width: 768px) {
+  .emotional-container .table-card .pagination-wrapper {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
   }
 }
 

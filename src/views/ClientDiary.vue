@@ -7,8 +7,21 @@
       </el-button>
     </div>
 
+    <!-- 空状态 -->
+    <div v-if="!loading && pagination.total === 0" class="empty-state">
+      <div class="empty-illustration">
+        <el-icon :size="64"><EditPen /></el-icon>
+      </div>
+      <h3 class="empty-title">还没有情绪日记</h3>
+      <p class="empty-desc">记录每天的情绪变化，发现自己的心理规律</p>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon>开始记录第一条情绪日记
+      </el-button>
+    </div>
+
     <!-- 日记列表 -->
-    <el-card class="table-card" shadow="never">
+    <template v-else>
+      <el-card class="table-card" shadow="never">
       <el-table
         v-loading="loading"
         :data="tableData"
@@ -90,6 +103,7 @@
         />
       </div>
     </el-card>
+    </template>
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog
@@ -208,7 +222,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, EditPen } from '@element-plus/icons-vue'
 import { myDiaryPage, diaryAdd, diaryUpdate, diaryDelete } from '@/api/client'
 import { logger } from '@/utils/logger'
 
@@ -346,7 +360,7 @@ const handleSubmit = async () => {
         sleepQuality: form.sleepQuality,
         stressLevel: form.stressLevel,
         dominantEmotion: form.dominantEmotion,
-        emotionTriggers: form.emotionTriggers,
+        emotionTriggers: Array.isArray(form.emotionTriggers) ? form.emotionTriggers.join(',') : form.emotionTriggers,
         diaryContent: form.diaryContent,
       }
 
@@ -423,6 +437,47 @@ onMounted(() => {
       .total-info {
         color: #909399;
         font-size: 14px;
+      }
+    }
+  }
+}
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+
+    .empty-illustration {
+      margin-bottom: 20px;
+      color: #c0c4cc;
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #606266;
+      margin: 0 0 8px;
+    }
+
+    .empty-desc {
+      font-size: 14px;
+      color: #c0c4cc;
+      margin: 0 0 24px;
+    }
+  }
+
+// 移动端适配
+@media screen and (max-width: 768px) {
+  .diary-view {
+    .table-card {
+      overflow-x: auto;
+
+      .pagination-wrapper {
+        flex-wrap: wrap;
+        justify-content: center;
       }
     }
   }

@@ -17,11 +17,13 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  articles        KnowledgeArticle[]  @relation("ArticleAuthor")
-  reviewedArticles KnowledgeArticle[] @relation("ArticleReviewer")
-  chatSessions    ChatSession[]
-  emotionDiaries  EmotionDiary[]
-  analysisResults AiAnalysisResult[]
+  articles         KnowledgeArticle[]           @relation("ArticleAuthor")
+  reviewedArticles KnowledgeArticle[]           @relation("ArticleReviewer")
+  revisionAuthor   KnowledgeArticleRevision[]   @relation("RevisionAuthor")
+  revisionReviewer KnowledgeArticleRevision[]   @relation("RevisionReviewer")
+  chatSessions     ChatSession[]
+  emotionDiaries   EmotionDiary[]
+  analysisResults  AiAnalysisResult[]
   notifications    Notification[]
 
   @@map("users")
@@ -36,9 +38,10 @@ model KnowledgeCategory {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  parent   KnowledgeCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
-  children KnowledgeCategory[] @relation("CategoryTree")
+  parent   KnowledgeCategory?          @relation("CategoryTree", fields: [parentId], references: [id])
+  children KnowledgeCategory[]         @relation("CategoryTree")
   articles KnowledgeArticle[]
+  revisions KnowledgeArticleRevision[]
 
   @@map("knowledge_categories")
 }
@@ -63,10 +66,39 @@ model KnowledgeArticle {
   category KnowledgeCategory? @relation(fields: [categoryId], references: [id])
   author   User               @relation("ArticleAuthor", fields: [authorId], references: [id])
   reviewer User?              @relation("ArticleReviewer", fields: [reviewerId], references: [id])
+  revisions KnowledgeArticleRevision[]
 
   @@index([status])
   @@index([authorId])
   @@map("knowledge_articles")
+}
+
+model KnowledgeArticleRevision {
+  id           Int       @id @default(autoincrement())
+  articleId    Int
+  authorId     Int
+  reviewerId   Int?
+  title        String    @db.VarChar(200)
+  categoryId   Int?
+  summary      String?   @db.Text
+  tags         String?   @db.VarChar(500)
+  coverImage   String?   @db.VarChar(500)
+  content      String?   @db.LongText
+  status       String    @default("pending_review") @db.VarChar(20) // pending_review | published | rejected
+  rejectReason String?   @db.Text
+  submittedAt  DateTime  @default(now())
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  article  KnowledgeArticle?  @relation(fields: [articleId], references: [id])
+  category KnowledgeCategory? @relation(fields: [categoryId], references: [id])
+  author   User               @relation("RevisionAuthor", fields: [authorId], references: [id])
+  reviewer User?              @relation("RevisionReviewer", fields: [reviewerId], references: [id])
+
+  @@index([status])
+  @@index([articleId, status])
+  @@map("knowledge_article_revisions")
 }
 
 model ChatSession {

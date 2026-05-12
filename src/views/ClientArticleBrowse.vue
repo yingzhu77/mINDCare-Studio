@@ -45,7 +45,7 @@
           :key="article.id"
           shadow="hover"
           class="article-card"
-          @click="$router.push(`/articles/${article.id}`)"
+          @click="goToArticle(article.id)"
         >
           <div class="card-body">
             <div class="card-content">
@@ -88,9 +88,21 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/date'
 import { publishedArticlePage, publishedCategories } from '@/api/client'
+
+const route = useRoute()
+const router = useRouter()
+
+const goToArticle = (id) => {
+  if (route.path.startsWith('/client/knowledge')) {
+    router.push(`/client/knowledge/${id}`)
+  } else {
+    router.push(`/articles/${id}`)
+  }
+}
 
 const articles = ref([])
 const categories = ref([])

@@ -13,6 +13,7 @@
         >
           <el-menu-item index="/client/chat">AI 咨询</el-menu-item>
           <el-menu-item index="/client/diary">情绪日记</el-menu-item>
+          <el-menu-item index="/client/knowledge">知识阅读</el-menu-item>
           <el-menu-item index="/client/articles">文章投稿</el-menu-item>
         </el-menu>
       </div>
@@ -85,6 +86,7 @@ const handleLogout = () => {
       display: flex;
       align-items: center;
       gap: 32px;
+      min-width: 0;
 
       .logo-link {
         text-decoration: none;
@@ -99,6 +101,7 @@ const handleLogout = () => {
 
       .client-menu {
         border-bottom: none;
+        overflow: hidden;
 
         :deep(.el-menu-item) {
           height: 60px;
@@ -169,6 +172,47 @@ const handleLogout = () => {
     background: #fff;
     border-top: 1px solid #f0f0f0;
     line-height: 1.5;
+  }
+}
+
+// 全局客户端布局移动端适配
+@media screen and (max-width: 768px) {
+  .client-layout {
+    .client-header {
+      padding: 0 12px;
+
+      .header-left {
+        gap: 8px;
+
+        .logo-text {
+          font-size: 16px;
+        }
+
+        .client-menu {
+          overflow-x: auto;
+          flex-shrink: 1;
+          white-space: nowrap;
+          -webkit-overflow-scrolling: touch;
+
+          &::-webkit-scrollbar {
+            display: none;
+          }
+
+          :deep(.el-menu-item) {
+            padding: 0 10px;
+            font-size: 13px;
+          }
+        }
+      }
+
+      .header-right .username {
+        display: none;
+      }
+    }
+
+    .client-main {
+      padding: 12px;
+    }
   }
 }
 

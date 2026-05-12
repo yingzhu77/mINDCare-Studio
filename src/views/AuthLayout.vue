@@ -129,6 +129,21 @@ import { ArrowLeft } from '@element-plus/icons-vue'
   }
 }
 
+@media screen and (max-width: 768px) {
+  .auth-layout .auth-right {
+    .form-container {
+      max-width: 100%;
+
+      .back-home {
+        position: static;
+        margin-bottom: 16px;
+        top: auto;
+        left: auto;
+      }
+    }
+  }
+}
+
 .fade-transform-enter-active,
 .fade-transform-leave-active {
   transition: all 0.3s;

@@ -69,8 +69,12 @@ export class KnowledgeController {
   }
 
   @Delete('article/:id')
-  articleDelete(@Param('id') id: string) {
-    return this.knowledgeService.deleteArticle(Number(id));
+  articleDelete(
+    @Param('id') id: string,
+    @Body('reason') reason: string | undefined,
+    @CurrentUser('sub') userId: number,
+  ) {
+    return this.knowledgeService.deleteArticle(Number(id), userId, reason);
   }
 
   @Put('article/:id/status')
@@ -79,6 +83,41 @@ export class KnowledgeController {
     @Body() dto: UpdateArticleStatusDto,
     @CurrentUser('sub') userId: number,
   ) {
-    return this.knowledgeService.updateArticleStatus(Number(id), dto.status, userId, dto.rejectReason);
+    return this.knowledgeService.updateArticleStatus(Number(id), dto.status, userId, dto.reason);
+  }
+
+  // ================== 审核专用接口 ==================
+
+  @Get('article/review/page')
+  reviewPage(
+    @Query() dto: PaginationDto,
+    @Query('status') status?: string,
+  ) {
+    return this.knowledgeService.reviewPage(dto, { status });
+  }
+
+  @Get('article/review/pending-count')
+  pendingReviewCount() {
+    return this.knowledgeService.pendingReviewCount();
+  }
+
+  @Get('article/review/:reviewType/:id')
+  reviewDetail(
+    @Param('reviewType') reviewType: string,
+    @Param('id') id: string,
+  ) {
+    return this.knowledgeService.reviewDetail(reviewType, Number(id));
+  }
+
+  @Put('article/review/:reviewType/:id/status')
+  reviewStatusUpdate(
+    @Param('reviewType') reviewType: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateArticleStatusDto,
+    @CurrentUser('sub') userId: number,
+  ) {
+    return this.knowledgeService.reviewStatusUpdate(
+      reviewType, Number(id), dto.status, userId, dto.rejectReason,
+    );
   }
 }

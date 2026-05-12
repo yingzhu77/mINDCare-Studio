@@ -8,14 +8,14 @@
       :rules="rules"
       ref="loginFormRef"
       label-position="top"
-      autocomplete="off"
+      autocomplete="on"
       @submit.prevent="handleLogin"
     >
       <el-form-item label="用户名或邮箱" prop="username">
         <el-input
           v-model="loginForm.username"
           name="username"
-          autocomplete="off"
+          autocomplete="username"
           placeholder="请输入用户名或邮箱"
           size="large"
         />
@@ -26,10 +26,9 @@
           v-model="loginForm.password"
           type="password"
           name="password"
-          autocomplete="new-password"
+          autocomplete="current-password"
           placeholder="请输入密码"
           size="large"
-          @keyup.enter="handleLogin"
         />
       </el-form-item>
 
@@ -39,7 +38,6 @@
         class="login-btn"
         :loading="loading"
         native-type="submit"
-        @click="handleLogin"
       >
         登录账户
       </el-button>
@@ -75,6 +73,7 @@ const rules = {
 }
 
 const handleLogin = async () => {
+  if (loading.value) return
   if (!loginFormRef.value) return
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {
@@ -93,9 +92,9 @@ const handleLogin = async () => {
           ElMessage.success('登录成功')
           const role = res.user?.role || ''
           if (role === 'admin') {
-            router.push('/back/dashboard')
+            await router.replace('/back/dashboard')
           } else {
-            router.push('/client/chat')
+            await router.replace('/client/chat')
           }
         } else {
           ElMessage.warning('登录成功但未获取到有效 Token，请联系管理员')

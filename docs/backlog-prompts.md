@@ -1,336 +1,267 @@
-# 后续待办推进提示词
+# 后续待办队列
 
-> 本文件包含每个待办任务的推进提示词，可复制到新 Claude Code 窗口中执行。
-> 每条提示词包含：**边界**（不乱动的范围）、**目标**（要做什么）、**验收标准**（怎么算做完）。
-
----
-
-## #14+ 后端 E2E 测试扩展
-
-### 边界
-- 只修改 `server/test/app.e2e-spec.ts`，不动任何源代码、Prisma schema、migration
-- 不新增测试配置文件，不修改 CI pipeline
-- 不涉及 Playwright 前端 E2E
-
-### 目标
-将后端 E2E 测试从当前 7 条（health/login/chat）扩展到覆盖 knowledge / emotion-diary / analytics / upload / client-article 模块。
-
-### 验收标准
-1. knowledge 模块覆盖：分类树、文章分页、文章详情、文章创建/更新/删除、文章状态审核
-2. emotion-diary 模块覆盖：admin 分页、admin 删除
-3. analytics 模块覆盖：overview、trends（三种类型）
-4. upload 模块覆盖：文件上传（模拟文件）
-5. client-article 模块覆盖：公开分类树、公开文章分页、公开文章详情（新增的 #29 接口）
-6. 总用例数 ≥ 25 条
-7. 运行 `cd server && npm run test:e2e` 全部通过
-8. 不破坏已有 7 条测试
-
-### 提示词（可复制）
-
-```
-在后端 E2E 测试文件 server/test/app.e2e-spec.ts 中扩展测试覆盖。
-
-当前已有 7 条测试（health/login/chat/chat-messages）。
-请追加以下模块的测试用例（每个模块用独立的 describe 块）：
-
-1. knowledge — 分类树、文章分页、文章详情、文章 CRUD、状态审核（需要先通过 login 获取 token）
-2. emotion-diary — admin 分页、admin 删除
-3. analytics — overview、trends?type=emotion/session/article
-4. upload — 模拟文件上传（使用 supertest 的 attach）
-5. client-article — 公开分类树、公开文章分页、公开文章详情（无需 token）
-6. 新增文章公开查询接口的测试（GET /api/client/article/categories, /published, /published/:id）
-
-约束：
-- 不修改任何源代码
-- 使用已有的 admin 登录流程获取 token
-- 所有 describe 块放在 app e2e 测试套件内
-- 运行 cd server && npm run test:e2e 全部通过
-- 总用例数 >= 25 条
-```
+> 每个窗口独立可执行，只做一个任务。复制提示词到新会话即可开工。
 
 ---
 
-## #13+ 跨平台启动脚本 setup.sh
+## 待办任务
 
-### 边界
-- 只新建 `scripts/setup.sh`，不动已有的 `scripts/start-dev.ps1`、`docker-compose.yml`、Dockerfile
-- 不修改任何源代码、配置文件
-- 不需要覆盖 Windows（PowerShell 已有）
+### Window 1 — 新手引导
 
-### 目标
-macOS/Linux 用户能通过 `bash scripts/setup.sh` 一键完成环境检测 → 依赖安装 → 数据库初始化 → 启动开发服务器。
+**边界**
 
-### 验收标准
-1. 检测 node/npm 是否安装，未安装时给出明确指引
-2. 自动执行根目录 `npm install`
-3. 自动执行 `cd server && npm install`
-4. 自动执行 `cd server && npx prisma migrate dev`
-5. 自动执行 `cd server && npx prisma db seed`
-6. 同时启动前端（`npm run dev`）和后端（`cd server && npm run start:dev`）开发服务器
-7. 输出清晰的启动日志和访问地址
-8. 脚本有 `set -e` 安全保护，失败时停止
+- 只修改前端组件：空状态提示、首次使用引导、操作提示气泡
+- 不修改后端接口、不修改 Prisma schema
+- 不修改已有业务逻辑，只补充空状态/首次使用时的 UI 反馈
 
-### 提示词（可复制）
+**目标**
 
-```
-在 scripts/setup.sh 新建跨平台启动脚本（bash），用于 macOS/Linux 一键启动开发环境。
+用户首次进入以下页面时能看到友好引导或空状态说明，而不是白屏或空表格：
+- 情绪日记（无记录时显示"还没有记录，开始记录第一条"）
+- 我的投稿（无投稿时显示"还没有投稿"）
+- 咨询记录（无会话时显示"还没有咨询记录"）
+- 知识文章列表（无文章时提示管理员去创建）
 
-要求：
-1. 首先检测 node / npm 是否已安装
-2. 执行 cd .. && npm install（安装前端依赖）
-3. 执行 cd server && npm install（安装后端依赖）
-4. 执行 cd server && npx prisma migrate dev（数据库迁移）
-5. 执行 cd server && npx prisma db seed（种子数据）
-6. 并行启动前端（npm run dev）和后端（cd server && npm run start:dev）
-7. 输出清晰的日志前缀 [frontend] / [backend]
-8. 启动后打印访问地址：前端 http://localhost:5173，后端 http://localhost:8000
-9. 脚本顶部 set -e，出错即停
+**验收标准**
 
-约束：
-- 只创建 scripts/setup.sh，不动其他文件
-- 不涉及 Docker
-- 参考 scripts/start-dev.ps1 的逻辑，但用 bash 语法重写
+- 清空数据库后登录，每个列表页显示对应的空状态提示，而不是空白区域
+- 空状态提示包含引导操作按钮或文案（如"写第一篇日记"）
+- 有数据时正常显示列表，不出现空状态
+- `npm run build` 通过
+
+**提示词**
+
+```text
+请为以下页面添加新手引导和空状态提示。
+
+边界：
+- 只修改 src/views/ 下的前端组件
+- 不修改后端、不修改数据库、不修改路由
+- 不做新手教程弹窗轮播，只做元素级空状态提示
+
+目标：
+1. 情绪日记页（ClientDiary.vue）：无记录时显示空状态插图和"开始记录第一条情绪日记"按钮
+2. 我的投稿页（ClientArticles.vue）：无投稿时显示"还没有投稿"和"写文章"按钮
+3. 咨询记录页（咨询列表所在组件）：无会话时显示"还没有咨询记录"
+4. 知识文章页（管理端 knowledge.vue）：无文章时提示管理员"去创建第一篇知识文章"
+5. 管理端 Dashboard：无数据时图表区域显示"暂无数据"占位
+
+验收：
+- 清空数据后每个页面显示对应的空状态
+- 有数据时正常渲染，互不干扰
+- npm run build 通过
 ```
 
 ---
 
-## #18 DeepSeek API 接入文档
+### Window 2 — 移动端适配
 
-### 边界
-- 只新建 `docs/deepseek-integration.md`，不涉及任何代码修改
-- 不暴露任何真实 API Key
+**边界**
 
-### 目标
-为开发者提供完整的 DeepSeek API 接入说明，包括配置方式、模型选择、mock 模式、故障排查。
+- 只修改前端 Vue 组件和 CSS
+- 不修改后端接口
+- 不改变桌面端布局和交互
+- 不做独立的移动端路由或 PWA
 
-### 验收标准
-1. 包含 API Key 获取和配置说明（后端 `.env` 方式）
-2. 包含模型选择建议（deepseek-chat / deepseek-v4-flash 等）
-3. 包含流式调用和非流式调用的链路说明
-4. 包含 Mock 模式说明（未配置 Key 时如何降级）
-5. 包含常见故障排查清单（401、超时、限流等）
-6. 包含 AI 分析结果落库流程说明
-7. 文档格式清晰，中文章节标题
+**目标**
 
-### 提示词（可复制）
+当前 6 个文件有零散 media query，需系统化补充响应式布局，确保核心页面在 375px～768px 宽度下可用。
 
-```
-在 docs/deepseek-integration.md 编写 DeepSeek API 接入文档。
+**验收标准**
 
-内容要求：
-1. 环境配置 — 如何获取和配置 DeepSeek API Key
-2. 模型选择 — deepseek-chat / deepseek-v4-flash 的区别和建议
-3. 调用方式 — 流式（chat/send 接口）和非流式说明，前端→后端→DeepSeek 的完整链路
-4. Mock 模式 — 未配置 API Key 时如何自动降级返回模拟结果
-5. AI 分析流程 — 情绪日记分析和咨询会话摘要的输入→输出→落库流程
-6. 故障排查 — 常见错误（401 认证失败、超时、限流 hit RateLimitError、无效模型名）的排查步骤
-7. 不暴露任何真实 API Key
+- 登录页在手机宽度下表单居中、不溢出
+- 管理端侧边栏在窄屏下可折叠为汉堡菜单
+- 用户端导航栏在窄屏下不换行错位
+- 表格类页面（文章列表、咨询记录）在窄屏下有横向滚动或卡片式降级
+- 聊天页面输入框和消息气泡在窄屏下不变形
+- `npm run build` 通过
 
-参考代码位置：
-- server/src/ai/ 下的 ai.service.ts 和 ai.module.ts
-- server/src/analysis/ 下的 analysis.service.ts
-- server/.env 中的 DEEPSEEK_* 配置项
-```
+**提示词**
 
----
+```text
+请为以下页面补充移动端响应式适配，目标宽度 375px～768px。
 
-## #23 管理端剩余图表
+边界：
+- 只修改 src/views/ 和 src/components/ 下的 .vue 文件中的样式
+- 不修改后端、不修改路由、不修改逻辑
+- 不改变桌面端现有布局
 
-### 边界
-- 不动已有的 Dashboard.vue 和 ECharts 配置
-- 不新增第三方图表库，只使用已有的 ECharts
-- 不修改后端 analytics 接口返回结构
+目标：
+1. 登录/注册页（AuthLayout.vue）：窄屏下表单宽度 100%，上下间距紧凑
+2. 管理端布局：侧边栏折叠为汉堡菜单或底部 tab
+3. 用户端布局（ClientLayout.vue）：顶部导航换行改为横向滚动或下拉菜单
+4. 文章列表/咨询记录等表格页：窄屏下使用卡片布局替代表格，或支持横向滚动
+5. 聊天页（ClientChat.vue）：输入框和消息气泡宽度自适应
+6. Dashboard 图表：ECharts 容器宽度自适应
 
-### 目标
-在管理端新增数据可视化页面/组件，展示用户活跃度、文章阅读排行等指标。
-
-### 验收标准
-1. 新增页面或组件可正常渲染 ECharts 图表
-2. 图表数据来自现有的 `/api/data-analytics/*` 接口
-3. 至少包含 2 种新图表视图
-4. 与现有 Dashboard 风格一致
-
-### 提示词（可复制）
-
-```
-在管理端新增数据可视化图表。当前 Dashboard.vue 已有情绪趋势/咨询量/文章发布三种图表。
-
-约束：
-- 不修改 Dashboard.vue 已有代码
-- 不新增第三方图表库（ECharts 已引入）
-- 不修改后端 analytics 接口
-
-可选择的方向：
-1. 在 Dashboard 新增卡片行：用户活跃度（日/周活跃用户数柱状图）
-2. 新增独立页面：文章阅读排行（基于 knowledge_articles.readCount 排序展示）
-3. 使用 admin.ts 中的已有 analytics 接口获取数据
-
-实现要求：
-- 图表数据为空时有友好的空状态提示
-- 保持现有 ECharts 主题和配色风格
-- 页面路由放到 /back/dashboard 扩展或新建 /back/analytics
+验收：
+- 浏览器 DevTools 切换到 375px 宽度，核心流程可操作
+- 桌面端 1920px 下无样式回归
+- npm run build 通过
 ```
 
 ---
 
-## #27 新手引导
+### Window 3 — WebSocket 实时通知
 
-### 边界
-- 不改变登录/注册流程
-- 不修改路由守卫逻辑
-- 不引入第三方引导库
+**边界**
 
-### 目标
-用户在首次使用各功能模块时能看到空状态引导和操作提示。
+- 后端新增 WebSocket 网关，前端新增 WebSocket 客户端连接
+- 不修改现有 REST API 的轮询接口
+- 保留 REST 轮询作为降级方案
 
-### 验收标准
-1. 管理端各页面在无数据时显示引导文案和操作按钮
-2. 用户端（ClientChat / ClientDiary / ClientArticles）在无数据时显示引导文案
-3. 引导文案简洁有用，指向明确的下一个操作
+**目标**
 
-### 提示词（可复制）
+当前通知通过 `GET /api/notification/unread-count` 轮询获取，改为 WebSocket 推送未读计数变更，减少冗余请求。
 
-```
-为用户端和管理端的空状态页面添加新手引导。
+**验收标准**
 
-需要修改的文件：
-- src/views/ClientChat.vue — 无会话历史时显示"开始第一次 AI 咨询"引导
-- src/views/ClientDiary.vue — 无日记时显示"写下第一篇情绪日记"引导
-- src/views/ClientArticles.vue — 无投稿时引导"写第一篇文章"
-- src/views/Dashboard.vue — 数据为空时显示引导文案
+- 后端 WebSocket 网关在 `/ws/notifications` 路径上可用
+- 前端连接后接收到未读计数推送
+- 审核文章通过/驳回时，通知计数实时更新
+- WebSocket 断线后自动重连
+- REST 轮询作为降级方案保留
+- `npm run build` 和 `cd server && npm run build` 通过
 
-实现要求：
-- 使用 Element Plus 的 el-empty 组件（已有使用）
-- 引导文案包含下一步操作按钮
-- 不改动页面已有数据加载后的布局
-```
+**提示词**
 
----
+```text
+请实现 WebSocket 实时通知推送，替换当前前端轮询。
 
-## #24 移动端适配
+边界：
+- 后端新增 WebSocket 网关，不修改现有 REST 通知接口
+- 前端新增 WS 客户端连接，保留轮询作为降级
+- 不修改审核业务逻辑，只在审核完成后触发推送事件
 
-### 边界
-- 不做系统化响应式重构，只补充关键页面的 media query
-- 不引入新的 CSS 框架
-- 不改动后端
+目标：
+1. 后端 server/src/notification/ 下新增 NotificationGateway（@WebSocketGateway）
+2. 网关监听 /ws/notifications，通过用户 ID room 定向推送
+3. 在审核通过/驳回文章的 service 方法中 emit 未读计数变更事件
+4. 前端新增 useNotificationSocket composable，连接 WS 并更新 store 中的 unreadCount
+5. WS 断线自动重连（间隔 3s，最多 10 次），重连失败回落轮询
+6. 前端连接时携带 JWT token 做身份认证
 
-### 目标
-关键的前端页面在 375px 宽度移动设备上可浏览和基本操作。
-
-### 验收标准
-1. 管理端布局（BackendLayout）在窄屏下侧栏可收起
-2. 用户端布局（ClientLayout）在窄屏下导航可适配
-3. 表格页面出现水平滚动提示或响应式降级
-4. 表单页面在窄屏下输入框可操作
-5. 不破坏现有桌面端布局
-
-### 提示词（可复制）
-
-```
-为关键前端页面补充移动端（375px 宽度）适配样式。
-
-约束：
-- 不使用新的 CSS 框架或库
-- 只使用 media query 补充样式覆盖
-- 不重构现有布局结构
-
-需要适配的页面和文件：
-1. src/components/BackendLayout.vue — 侧栏在窄屏时自动折叠为图标模式
-2. src/views/ClientLayout.vue — 顶部导航在窄屏时使用 el-menu 折叠模式
-3. 所有表格页面 — 添加水平滚动支持（overflow-x: auto）
-4. 弹窗/对话框 — 窄屏时宽度调整为 90vw
-
-实现要求：
-- 断点使用 max-width: 768px
-- 保持功能完整，不隐藏关键操作按钮
+验收：
+- 管理端审核文章后，用户端通知铃铛未读计数实时更新（不刷新页面）
+- WebSocket 断开后自动重连
+- 后端和前端构建通过
+- 保留的 REST 轮询在 WS 不可用时仍能工作
 ```
 
 ---
 
-## #25 WebSocket 实时通知
+### Window 4 — i18n 国际化
 
-### 边界
-- 不引入第三方推送服务
-- 后端使用 NestJS WebSocket Gateway（@nestjs/websockets）
-- 前端保留现有轮询作为兜底
+**边界**
 
-### 目标
-将通知模块从定时轮询改为 WebSocket 实时推送。
+- 只修改前端代码，不修改后端
+- 当前仅中文，目标增加英文支持
+- 不做用户语言偏好持久化（首次检测浏览器语言即可）
 
-### 验收标准
-1. 后端新增 WebSocket Gateway，在通知创建时推送事件
-2. 前端建立 WebSocket 连接，接收通知后更新未读数
-3. 连接断开时自动重连
-4. 页面不可见时暂停重连以减少资源占用
-5. 现有轮询机制作为降级兜底
+**目标**
 
-### 提示词（可复制）
+前端支持中/英文切换，默认跟随浏览器语言。核心页面（登录、导航、聊天、日记）的静态文本外部化。
 
-```
-为通知模块引入 WebSocket 实时推送。
+**验收标准**
 
-后端：
-1. 在 server/src/notification/ 下新增 notification.gateway.ts
-2. 使用 @WebSocketGateway 建立 WebSocket 服务
-3. 用户连接时根据 JWT token 进行身份认证
-4. NotificationService.create 方法中在创建通知后向对应用户推送事件
-5. 端口复用在现有 HTTP 服务上（无需新端口）
+- 浏览器设置为英文时，登录页、导航菜单、聊天页、日记页显示英文
+- 浏览器设置为中文时，显示中文
+- 语言切换按钮在导航栏上可用
+- `npm run build` 通过
 
-前端：
-1. 在 src/utils/ 下新增 websocket.ts 工具
-2. 建立 WebSocket 连接，连接地址从环境变量获取
-3. 收到通知事件时更新 store 中的未读数
-4. 自动重连机制（2s/4s/8s 指数退避，最大 30s）
-5. 页面不可见时断开连接，可见时重连
-6. 保留现有轮询作为降级（WebSocket 失败时自动切回轮询）
+**提示词**
 
-约束：
-- 不修改通知的数据库结构和 API 接口
-- 不引入第三方 WebSocket 库（使用原生 WebSocket API）
-- 后端不新增端口
+```text
+请为前端添加 i18n 国际化支持，中/英文切换。
+
+边界：
+- 只修改前端 src/ 下的文件，不修改后端
+- 不做用户语言偏好持久化
+- 图表中的中文文案（ECharts）暂不处理
+
+目标：
+1. 安装 vue-i18n，在 src/i18n/ 下创建 index.js、zh.js、en.js
+2. 外部化以下页面的静态文本：登录/注册、管理端导航菜单、用户端导航菜单、聊天页、情绪日记页
+3. 在 ClientLayout.vue 和 AdminLayout 导航栏添加语言切换下拉按钮
+4. 初始化时检测 navigator.language 设置默认语言
+5. 管理端表格操作列（编辑/删除/审核）保持中文，不强制翻译
+
+验收：
+- 切换浏览器语言到 en-US 后刷新，核心页面显示英文
+- 语言切换按钮可实时切换
+- npm run build 通过
 ```
 
 ---
 
-## #26 i18n 国际化
+## 已完成归档
 
-### 边界
-- 只支持中英文切换，不涉及其他语言
-- 核心页面覆盖，不做 100% 全覆盖
-- 不改变项目已有的语言选择逻辑
+### Window A — 验收收口与测试可信化
 
-### 目标
-引入 vue-i18n，实现核心管理端和用户端页面的中英文切换。
+**状态**：✅ 已完成（v2.4.1 会话）
 
-### 验收标准
-1. 安装 vue-i18n 并配置
-2. 创建中文和英文语言包（覆盖核心页面）
-3. 语言切换组件放在用户头像下拉菜单中
-4. 切换后刷新页面保持语言选择
-5. 英文作为 fallback 语言
+**摘要**：修复后端 E2E 依赖本地 seed 数据的问题，修正 docs 中与真实测试结果不一致的数量。
 
-### 提示词（可复制）
+**产出**
+- `server/test/app.e2e-spec.ts` — E2E 测试从 7 条扩展到 32 条，覆盖 7 个模块
+- `docs/current-state.md` — 测试数量与命令输出一致
+- `.claude/CLAUDE.md` — 清理已删除文件的引用
 
-```
-为前端引入 vue-i18n 实现中英文国际化。
+---
 
-步骤：
-1. npm install vue-i18n
-2. 创建 src/lang/zh-CN.js 和 src/lang/en-US.js 语言包
-3. 在 src/main.js 中初始化 vue-i18n 实例并注册到 app
-4. 创建 src/lang/index.js 统一导出
-5. 语言切换按钮放在 ClientLayout 和 BackendLayout 的用户下拉菜单中
-6. 使用 localStorage 保存用户语言偏好
+### Window B — 客户端知识阅读入口
 
-覆盖范围（至少）：
-- 登录/注册页面的所有文本
-- 管理端侧栏菜单名称
-- 用户端顶栏导航名称
-- 通知相关文案
-- 所有页面的标题
+**状态**：✅ 已完成（v2.4.1 会话）
 
-约束：
-- 不一次性将所有 .vue 文件的硬编码中文替换为 $t
-- 核心页面覆盖即可，后续可增量补充
-- 英语包可以暂用英文占位（非完美翻译也可接受）
-```
+**摘要**：将已有文章阅读页接入客户端主导航，新增 `/client/knowledge` 和 `/client/knowledge/:id`。
+
+**产出**
+- `src/router/index.js` — 新增 `/client/knowledge` 和 `/client/knowledge/:id` 路由
+- `src/views/ClientLayout.vue` — 导航栏加入"知识阅读"
+- `src/views/ClientArticleBrowse.vue` / `ClientArticleDetail.vue` — 路由感知跳转
+- `e2e/client-flows.spec.ts` — 新增文章列表和详情 E2E 用例
+
+---
+
+### Window C — Playwright 稳定性与端口治理
+
+**状态**：✅ 已完成（2026-05-12 会话）
+
+**摘要**：处理 5174/8001 端口残留，本地可复用已有服务，CI 保持干净启动。
+
+**产出**
+- `playwright.config.ts` — `--strictPort`、`reuseExistingServer: !CI`、Mock AI 注释
+- `docs/current-state.md` — 新增 Playwright 本地运行说明章节
+- `README.md` — 验证章节新增 Playwright E2E 测试指引
+
+---
+
+## Test Plan
+
+### 单窗口验收（每次执行一个 Window 后验证）
+
+| 检查项 | 命令 |
+|--------|------|
+| 前端构建 | `npm run build` |
+| 后端构建 | `cd server && npm run build` |
+| 前端单元测试 | `npm run test` |
+| 后端单元测试 | `cd server && npm run test:unit` |
+| 后端 E2E 测试 | `cd server && npm run test:e2e` |
+| Playwright E2E | `npx playwright test` |
+| API Key 泄露检查 | `git grep -n "DEEPSEEK_API_KEY=sk-"` 不应返回真实密钥 |
+
+### 全局回归（全部 Window 完成后）
+
+1. 克隆新目录，执行 `scripts/setup.sh` 或 `scripts/start-dev.ps1` 确认一键启动正常
+2. 管理端全流程：登录 → Dashboard → 文章管理 → 审核 → 通知
+3. 用户端全流程：登录 → AI 聊天 → 情绪日记 → 文章投稿 → 知识阅读
+4. 权限隔离：user 角色无法访问管理端路由；未登录自动跳转登录页
+5. 构建产物：`npm run build` + `cd server && npm run build` 无报错
+
+---
+
+## Assumptions
+
+- 每个 Window 完成后应由人工验收 Test Plan 中的对应项，再进入下一个 Window
+- "一个窗口一个任务"原则：任何 Window 如果发现需要顺手修复的问题，记入 backlog 而不是现场扩范围
+- 后续任务追加同样遵循此格式：边界、目标、验收标准、提示词

@@ -62,6 +62,15 @@ const backendRouterRoutes = [
         },
       },
       {
+        path: 'analytics',
+        component: () => import('@/views/Analytics.vue'),
+        meta: {
+          title: '数据洞察',
+          icon: 'DataAnalysis',
+          roles: ['admin'],
+        },
+      },
+      {
         path: 'logs',
         component: () => import('@/views/logs.vue'),
         meta: {
@@ -89,6 +98,22 @@ const backendRouterRoutes = [
         component: () => import('@/views/ClientDiary.vue'),
         meta: {
           title: '情绪日记',
+          roles: ['admin', 'user'],
+        },
+      },
+      {
+        path: 'knowledge',
+        component: () => import('@/views/ClientArticleBrowse.vue'),
+        meta: {
+          title: '知识阅读',
+          roles: ['admin', 'user'],
+        },
+      },
+      {
+        path: 'knowledge/:id',
+        component: () => import('@/views/ClientArticleDetail.vue'),
+        meta: {
+          title: '文章详情',
           roles: ['admin', 'user'],
         },
       },
@@ -177,17 +202,6 @@ router.beforeEach(async (to, from, next) => {
   }
 
   next()
-})
-
-// 非阻塞预加载：导航完成后后台拉取其它路由组件，减少首次切换感知延迟
-router.afterEach((to) => {
-  if (!to.path.startsWith('/client') && !to.path.startsWith('/back')) return
-  for (const route of router.getRoutes()) {
-    if (route.path.startsWith(to.path.startsWith('/client') ? '/client' : '/back')) {
-      const factory = route.components?.default
-      if (typeof factory === 'function') factory().catch(() => {})
-    }
-  }
 })
 
 export default router

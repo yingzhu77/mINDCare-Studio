@@ -24,7 +24,23 @@ export class ClientArticleService {
       this.prisma.knowledgeArticle.count({ where }),
     ]);
 
-    return { records, total, currentPage, size };
+    // 批量查询 hasPendingRevision — 避免 N+1
+    const articleIds = records.map(r => r.id);
+    const pendingRevisions = articleIds.length > 0
+      ? await this.prisma.knowledgeArticleRevision.findMany({
+          where: { articleId: { in: articleIds }, status: 'pending_review' },
+          select: { articleId: true },
+        })
+      : [];
+    const pendingSet = new Set(pendingRevisions.map(r => r.articleId));
+
+    const recordsWithRevision = records.map(r => ({
+      ...r,
+      hasPendingRevision: pendingSet.has(r.id),
+      revisionStatus: pendingSet.has(r.id) ? 'pending_review' : undefined,
+    }));
+
+    return { records: recordsWithRevision, total, currentPage, size };
   }
 
   async create(dto: CreateClientArticleDto, userId: number) {
@@ -44,6 +60,37 @@ export class ClientArticleService {
 
   async update(id: number, dto: UpdateClientArticleDto, userId: number) {
     const article = await this.getMyArticleOrFail(id, userId);
+
+    // 已发布文章 → 创建/更新修订记录，不直接改主文章
+    if (article.status === 'published') {
+      const existingRevision = await this.prisma.knowledgeArticleRevision.findFirst({
+        where: { articleId: id, status: 'pending_review' },
+      });
+
+      const revisionData = {
+        articleId: id,
+        authorId: userId,
+        title: dto.title ?? article.title,
+        categoryId: dto.categoryId !== undefined ? dto.categoryId : article.categoryId,
+        summary: dto.summary !== undefined ? dto.summary : article.summary,
+        tags: dto.tags !== undefined ? dto.tags : article.tags,
+        coverImage: dto.coverImage !== undefined ? dto.coverImage : article.coverImage,
+        content: dto.content !== undefined ? dto.content : article.content,
+      };
+
+      if (existingRevision) {
+        await this.prisma.knowledgeArticleRevision.update({
+          where: { id: existingRevision.id },
+          data: revisionData,
+        });
+      } else {
+        await this.prisma.knowledgeArticleRevision.create({ data: revisionData });
+      }
+
+      return article; // 返回原文章，提示用户已提交审核
+    }
+
+    // 非已发布状态：直接修改主文章
     return this.prisma.knowledgeArticle.update({
       where: { id },
       data: {
@@ -71,7 +118,32 @@ export class ClientArticleService {
   }
 
   async detail(id: number, userId: number) {
-    return this.getMyArticleOrFail(id, userId);
+    const article = await this.getMyArticleOrFail(id, userId);
+
+    // 已发布文章：检查是否有待审修订，有则返回修订内容
+    if (article.status === 'published') {
+      const pendingRevision = await this.prisma.knowledgeArticleRevision.findFirst({
+        where: { articleId: id, status: 'pending_review' },
+      });
+      if (pendingRevision) {
+        // 返回修订版内容，编辑页将看到待审的修改
+        return {
+          ...article,
+          hasPendingRevision: true,
+          revisionStatus: 'pending_review',
+          // 覆盖为修订版内容，让编辑表单加载用户之前已修改的内容
+          title: pendingRevision.title,
+          categoryId: pendingRevision.categoryId ?? article.categoryId,
+          summary: pendingRevision.summary ?? article.summary,
+          tags: pendingRevision.tags ?? article.tags,
+          coverImage: pendingRevision.coverImage ?? article.coverImage,
+          content: pendingRevision.content ?? article.content,
+        };
+      }
+      return { ...article, hasPendingRevision: false };
+    }
+
+    return article;
   }
 
   private async getMyArticleOrFail(id: number, userId: number) {

@@ -9,6 +9,7 @@ import type {
   DataOverview, EmotionTrend, SessionTrend, ArticleTrend,
   UploadResult,
   UserManagementItem,
+  ReviewArticle,
 } from './types'
 
 // ==================== 认证 ====================
@@ -47,12 +48,30 @@ export function articleDetail(id: number): Promise<KnowledgeArticle> {
   return service.get(`/knowledge/article/${id}`)
 }
 
-export function articleDelete(id: number): Promise<void> {
-  return service.delete(`/knowledge/article/${id}`)
+export function articleDelete(id: number, reason?: string): Promise<void> {
+  return service.delete(`/knowledge/article/${id}`, { data: { reason } })
 }
 
-export function articleStatusUpdate(id: number, status: string, rejectReason?: string): Promise<void> {
-  return service.put(`/knowledge/article/${id}/status`, { status, rejectReason })
+export function articleStatusUpdate(id: number, status: string, reason?: string): Promise<void> {
+  return service.put(`/knowledge/article/${id}/status`, { status, reason })
+}
+
+// ==================== 文章审核 ====================
+
+export function reviewPage(params: PageParams & { status?: string }): Promise<PageResult<ReviewArticle>> {
+  return service.get('/knowledge/article/review/page', { params })
+}
+
+export function reviewDetail(reviewType: string, id: number): Promise<ReviewArticle> {
+  return service.get(`/knowledge/article/review/${reviewType}/${id}`)
+}
+
+export function reviewStatusUpdate(reviewType: string, id: number, status: string, rejectReason?: string): Promise<void> {
+  return service.put(`/knowledge/article/review/${reviewType}/${id}/status`, { status, rejectReason })
+}
+
+export function pendingReviewCount(): Promise<{ count: number }> {
+  return service.get('/knowledge/article/review/pending-count')
 }
 
 // ==================== 文件上传 ====================

@@ -8,7 +8,10 @@
               <span>情绪趋势（月均评分）</span>
             </div>
           </template>
-          <div ref="emotionChartRef" class="chart-box"></div>
+          <div class="chart-box-wrapper">
+            <div ref="emotionChartRef" class="chart-box"></div>
+            <div v-if="emotionEmpty" class="chart-empty">暂无数据</div>
+          </div>
         </el-card>
       </el-col>
       <el-col :span="8">
@@ -18,7 +21,10 @@
               <span>咨询量趋势（每日会话数）</span>
             </div>
           </template>
-          <div ref="sessionChartRef" class="chart-box"></div>
+          <div class="chart-box-wrapper">
+            <div ref="sessionChartRef" class="chart-box"></div>
+            <div v-if="sessionEmpty" class="chart-empty">暂无数据</div>
+          </div>
         </el-card>
       </el-col>
       <el-col :span="8">
@@ -28,7 +34,10 @@
               <span>文章发布趋势（累计）</span>
             </div>
           </template>
-          <div ref="articleChartRef" class="chart-box"></div>
+          <div class="chart-box-wrapper">
+            <div ref="articleChartRef" class="chart-box"></div>
+            <div v-if="articleEmpty" class="chart-empty">暂无数据</div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -45,6 +54,10 @@ let echarts = null
 const emotionChartRef = ref(null)
 const sessionChartRef = ref(null)
 const articleChartRef = ref(null)
+
+const emotionEmpty = ref(true)
+const sessionEmpty = ref(true)
+const articleEmpty = ref(true)
 
 let emotionChart = null
 let sessionChart = null
@@ -175,9 +188,12 @@ async function fetchAllTrends() {
       dataAnalyticsTrends('session'),
       dataAnalyticsTrends('article'),
     ])
-    renderEmotionChart(emotionData)
-    renderSessionChart(sessionData)
-    renderArticleChart(articleData)
+    emotionEmpty.value = !emotionData || emotionData.length === 0
+    sessionEmpty.value = !sessionData || sessionData.length === 0
+    articleEmpty.value = !articleData || articleData.length === 0
+    if (!emotionEmpty.value) renderEmotionChart(emotionData)
+    if (!sessionEmpty.value) renderSessionChart(sessionData)
+    if (!articleEmpty.value) renderArticleChart(articleData)
   } catch (error) {
     // handled silently — charts stay empty if data fails
   }
@@ -227,5 +243,30 @@ onBeforeUnmount(() => {
 
 .chart-box {
   height: 260px;
+}
+
+/* 移动端图表竖向堆叠 */
+@media screen and (max-width: 768px) {
+  .dashboard-charts .el-col {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+.chart-box-wrapper {
+  position: relative;
+  height: 260px;
+}
+
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c0c4cc;
+  font-size: 14px;
+  background: var(--card-bg);
 }
 </style>

@@ -17,27 +17,29 @@
     <!-- 文章列表 -->
     <el-card class="table-card" shadow="never">
       <el-table v-loading="loading" :data="tableData" style="width: 100%">
-        <el-table-column label="标题" min-width="220">
+        <el-table-column label="标题" min-width="180">
           <template #default="{ row }">
             <div class="title-cell">
-              <span class="article-title">{{ row.title }}</span>
+              <span class="article-title">{{ row.article?.title || row.title }}</span>
+              <el-tag v-if="row.reviewType === 'revision'" size="small" type="warning" effect="light">修改</el-tag>
+              <el-tag v-else size="small" type="info" effect="light">首次</el-tag>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column label="作者" width="120">
+        <el-table-column label="作者" width="100">
           <template #default="{ row }">
             {{ row.author?.username || '未知' }}
           </template>
         </el-table-column>
 
-        <el-table-column label="分类" width="120">
+        <el-table-column label="分类" width="100">
           <template #default="{ row }">
             {{ row.category?.categoryName || '未分类' }}
           </template>
         </el-table-column>
 
-        <el-table-column label="状态" width="110" align="center">
+        <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="statusType(row.status)" effect="light" size="small">
               {{ statusLabel(row.status) }}
@@ -63,12 +65,12 @@
             <template v-if="row.status === 'pending_review'">
               <el-button
                 type="success" size="small"
-                :loading="approvingId === row.id"
+                :loading="approvingId === row.reviewId"
                 @click="handleApprove(row)"
               >通过</el-button>
               <el-button
                 type="danger" size="small"
-                :loading="rejectingId === row.id"
+                :loading="rejectingId === row.reviewId"
                 @click="handleRejectClick(row)"
               >驳回</el-button>
             </template>
@@ -121,13 +123,15 @@
     </el-dialog>
 
     <!-- 文章内容预览弹窗 -->
-    <el-dialog v-model="previewVisible" title="文章预览" width="720px" top="5vh" :close-on-click-modal="false">
+    <el-dialog v-model="previewVisible" :title="previewArticle?.title || '文章预览'" width="900px" top="5vh" :close-on-click-modal="false">
       <template v-if="previewArticle">
         <div class="preview-header">
+          <img v-if="previewArticle.coverImage" :src="previewArticle.coverImage" class="preview-cover" alt="封面" />
           <h2 class="preview-title">{{ previewArticle.title }}</h2>
           <div class="preview-meta">
             <span>作者：{{ previewArticle.author?.username || '未知' }}</span>
             <span>分类：{{ previewArticle.category?.categoryName || '未分类' }}</span>
+            <el-tag v-if="previewArticle.reviewType === 'revision'" type="warning" effect="light" size="small">修改审核</el-tag>
             <span>状态：
               <el-tag :type="statusType(previewArticle.status)" effect="light" size="small">
                 {{ statusLabel(previewArticle.status) }}
@@ -140,7 +144,7 @@
           </div>
           <el-divider />
         </div>
-        <div class="preview-content" v-html="previewContent"></div>
+        <div class="article-content" v-html="previewContent"></div>
       </template>
     </el-dialog>
   </div>
@@ -149,9 +153,12 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { articlePage, articleStatusUpdate, articleDetail } from '@/api/admin'
+import { reviewPage, reviewDetail, reviewStatusUpdate } from '@/api/admin'
 import { formatDate } from '@/utils/date'
+import { useReviewStore } from '@/store/useReviewStore'
+import DOMPurify from 'dompurify'
 
+const reviewStore = useReviewStore()
 const activeTab = ref('')
 const tableData = ref([])
 const loading = ref(false)
@@ -170,8 +177,21 @@ const previewArticle = ref(null)
 const previewContent = ref('')
 
 const handleView = async (row) => {
-  previewArticle.value = row
-  previewContent.value = row.content || '（无内容）'
+  // 先设置基本数据
+  previewArticle.value = { ...row }
+  // 没有完整内容或内容太少时，从详情接口加载
+  if (!row.content || row.content.length < 50) {
+    try {
+      const detail = await reviewDetail(row.reviewType, row.reviewId)
+      // 合并保留 reviewType 等列表字段
+      previewArticle.value = { ...row, ...detail }
+      previewContent.value = DOMPurify.sanitize(detail.content || '（无内容）')
+    } catch {
+      previewContent.value = DOMPurify.sanitize(row.content || '（无内容）')
+    }
+  } else {
+    previewContent.value = DOMPurify.sanitize(row.content)
+  }
   previewVisible.value = true
 }
 
@@ -210,7 +230,7 @@ const fetchData = async () => {
     if (activeTab.value) {
       params.status = activeTab.value
     }
-    const res = await articlePage(params)
+    const res = await reviewPage(params)
     tableData.value = res?.records || []
     pagination.total = res?.total || 0
   } catch {
@@ -238,11 +258,12 @@ const handleCurrentChange = (val) => {
 }
 
 const handleApprove = async (row) => {
-  approvingId.value = row.id
+  approvingId.value = row.reviewId
   try {
-    await articleStatusUpdate(row.id, 'published')
-    ElMessage.success(`已通过《${row.title}》`)
-    fetchData()
+    await reviewStatusUpdate(row.reviewType, row.reviewId, 'published')
+    const title = row.article?.title || row.title
+    ElMessage.success(`已通过《${title}》`)
+    await Promise.all([fetchData(), reviewStore.refreshPendingCount()])
   } catch {
     // 错误由 request.js 统一处理
   } finally {
@@ -262,13 +283,14 @@ const handleRejectConfirm = async () => {
     if (!valid) return
     if (!rejectTarget.value) return
     const row = rejectTarget.value
-    rejectingId.value = row.id
+    rejectingId.value = row.reviewId
     try {
-      await articleStatusUpdate(row.id, 'rejected', rejectForm.reason)
-      ElMessage.success(`已驳回《${row.title}》`)
+      await reviewStatusUpdate(row.reviewType, row.reviewId, 'rejected', rejectForm.reason)
+      const title = row.article?.title || row.title
+      ElMessage.success(`已驳回《${title}》`)
       rejectDialogVisible.value = false
       rejectTarget.value = null
-      fetchData()
+      await Promise.all([fetchData(), reviewStore.refreshPendingCount()])
     } catch {
       // 错误由 request.js 统一处理
     } finally {
@@ -318,6 +340,7 @@ onMounted(() => {
   .table-card {
     border: none;
     border-radius: 8px;
+    overflow-x: auto;
 
     .title-cell {
       display: flex;
@@ -356,6 +379,13 @@ onMounted(() => {
 }
 
 .preview-header {
+  .preview-cover {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
   .preview-title {
     font-size: 20px;
     font-weight: 600;
@@ -370,10 +400,27 @@ onMounted(() => {
     margin-bottom: 4px;
   }
 }
-.preview-content {
+.article-content {
   line-height: 1.8;
   font-size: 15px;
   color: #303133;
-  white-space: pre-wrap;
+
+  img { max-width: 100%; border-radius: 4px; }
+  pre { background: #f5f7fa; padding: 16px; border-radius: 6px; overflow-x: auto; }
+  blockquote { border-left: 4px solid #409eff; padding-left: 16px; color: #909399; margin: 16px 0; }
+}
+
+// 移动端适配
+@media screen and (max-width: 768px) {
+  .review-container .table-card .pagination-wrapper {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .preview-header .preview-meta {
+    flex-direction: column;
+    gap: 4px;
+  }
 }
 </style>

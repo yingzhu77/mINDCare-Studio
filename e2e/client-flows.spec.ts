@@ -45,6 +45,20 @@ test.describe('客户端核心流程', () => {
     await expect(page.getByText('我的投稿')).toBeVisible({ timeout: 10000 })
   })
 
+  test('用户登录 → 知识阅读列表加载', async ({ page }) => {
+    await loginAndGo(page, TEST_USERNAME, TEST_PASSWORD, '/client/knowledge')
+    await expect(page.getByText('知识文章')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText('精选心理健康知识')).toBeVisible()
+  })
+
+  test('用户登录 → 知识阅读文章详情', async ({ page }) => {
+    await loginAndGo(page, TEST_USERNAME, TEST_PASSWORD, '/client/knowledge')
+    await expect(page.locator('.article-card').first()).toBeVisible({ timeout: 10000 })
+    await page.locator('.article-card').first().click()
+    await expect(page).toHaveURL(/\/client\/knowledge\/\d+/)
+    await expect(page.getByText('返回文章列表')).toBeVisible()
+  })
+
   test('注册用户可登录访问客户端页面', async ({ page }) => {
     const uniqueName = `e2e_login_${Date.now()}`
     const uniqueEmail = `${uniqueName}@test.com`

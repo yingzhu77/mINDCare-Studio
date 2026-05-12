@@ -29,7 +29,16 @@
       >
         <el-icon><component :is="item.meta.icon" /></el-icon>
         <template #title>
-          <span>{{ item.meta.title }}</span>
+          <el-badge
+            v-if="item.path === 'article-review'"
+            :hidden="pendingCount === 0"
+            :value="pendingCount"
+            :max="99"
+            class="review-badge"
+          >
+            <span>{{ item.meta.title }}</span>
+          </el-badge>
+          <span v-else>{{ item.meta.title }}</span>
         </template>
       </el-menu-item>
     </el-menu>
@@ -37,19 +46,27 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMenuStore } from '@/store/useMenuStore'
+import { useReviewStore } from '@/store/useReviewStore'
 
-/**
- * Sidebar 组件：实现响应式侧边菜单
- * 逻辑：
- * 1. 响应式：监听 Pinia store 中的 isCollapsed 状态，动态修改 el-aside 宽度
- * 2. 菜单生成：从 Vue Router 路由表中自动提取菜单项，实现配置驱动 UI
- */
 const route = useRoute()
 const router = useRouter()
 const menuStore = useMenuStore()
+const reviewStore = useReviewStore()
+
+const pendingCount = computed(() => reviewStore.pendingCount)
+let pollTimer = null
+
+onMounted(() => {
+  reviewStore.refreshPendingCount()
+  pollTimer = setInterval(reviewStore.refreshPendingCount, 60000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
+})
 
 // 过滤出 /back 路由下的所有子路由作为菜单项列表
 const menuList = computed(() => {
@@ -172,6 +189,22 @@ const activeMenu = computed(() => route.path)
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+// 移动端：侧边栏浮动为覆盖层
+@media screen and (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    z-index: 1001;
+  }
+}
+
+// 审核红点 badge 样式
+.review-badge {
+  :deep(.el-badge__content) {
+    top: 8px;
+    right: -4px;
+  }
 }
 
 // 文字溢出隐藏辅助类

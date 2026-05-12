@@ -62,6 +62,13 @@ import PageHead from './PageHead.vue'
   }
 }
 
+// 移动端主体区域紧凑
+@media screen and (max-width: 768px) {
+  .main-content {
+    padding: 12px;
+  }
+}
+
 /* 页面切换动画：淡入并带有轻微的位移效果 */
 .fade-transform-enter-active,
 .fade-transform-leave-active {
