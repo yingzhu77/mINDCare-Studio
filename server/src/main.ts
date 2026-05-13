@@ -13,7 +13,8 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   // 静态文件服务（上传文件）
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  const uploadsDir = process.env.UPLOADS_DIR || join(__dirname, '..', 'uploads');
+  app.useStaticAssets(uploadsDir, {
     prefix: '/uploads',
   });
 
@@ -45,6 +46,22 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
+
+  // 桌面模式：serve Vue 前端静态文件 + SPA fallback
+  if (process.env.APP_MODE === 'desktop') {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const express = require('express');
+    const expressApp = app.getHttpAdapter().getInstance();
+    const vueDist = join(__dirname, '..', '..', 'dist');
+    expressApp.use(express.static(vueDist));
+    expressApp.get('*', (req, res, next) => {
+      // 跳过 API 路由、健康检查和上传文件
+      if (req.path.startsWith('/api/') || req.path === '/health' || req.path.startsWith('/uploads/')) {
+        return next();
+      }
+      res.sendFile(join(vueDist, 'index.html'));
+    });
+  }
 
   await app.listen(config.port);
   console.log(`[${config.appName}] 启动成功: http://127.0.0.1:${config.port}`);

@@ -32,6 +32,13 @@ server/dev.db
 server/dist
 server/node_modules
 server/uploads/*
+server/prisma/prisma/
+
+# Electron packaging staging/output
+desktop/.runtime/
+desktop/dist-electron*/
+desktop/electron-test/
+desktop/test-tmp/
 
 # Editor directories and files
 .vscode/*

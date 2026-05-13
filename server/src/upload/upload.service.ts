@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class UploadService {
-  private readonly uploadDir = join(__dirname, '..', '..', 'uploads');
+  private readonly uploadDir = process.env.UPLOADS_DIR || join(__dirname, '..', '..', 'uploads');
   private readonly allowedTypes = /\.(jpg|jpeg|png|gif|webp|svg|bmp|pdf|doc|docx)$/i;
   private readonly maxSize = 10 * 1024 * 1024; // 10MB
 

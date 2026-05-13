@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { parseJsonArray } from '../common/utils/json-helper';
@@ -143,7 +143,13 @@ export class AnalysisService {
 
   // ================== 查询分析结果 ==================
 
-  async getEmotionDiaryAnalysis(diaryId: number) {
+  async getEmotionDiaryAnalysis(diaryId: number, user?: { sub?: number; role?: string }) {
+    const diary = await this.prisma.emotionDiary.findUnique({ where: { id: diaryId } });
+    if (!diary) throw new NotFoundException('情绪日记不存在');
+    if (user?.role !== 'admin' && diary.userId !== user?.sub) {
+      throw new ForbiddenException('无权查看该分析结果');
+    }
+
     const result = await this.prisma.aiAnalysisResult.findFirst({
       where: { bizType: 'emotion_diary', bizId: diaryId },
       orderBy: { createdAt: 'desc' },
@@ -152,9 +158,12 @@ export class AnalysisService {
     return { ...result, emotionTags: parseJsonArray(result.emotionTags) };
   }
 
-  async getChatSessionAnalysis(sessionId: string) {
+  async getChatSessionAnalysis(sessionId: string, user?: { sub?: number; role?: string }) {
     const session = await this.prisma.chatSession.findUnique({ where: { sessionId } });
     if (!session) throw new NotFoundException('会话不存在');
+    if (user?.role !== 'admin' && session.userId !== user?.sub) {
+      throw new ForbiddenException('无权查看该分析结果');
+    }
 
     const result = await this.prisma.aiAnalysisResult.findFirst({
       where: { bizType: 'chat_session', bizId: session.id },

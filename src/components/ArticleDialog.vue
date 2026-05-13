@@ -308,14 +308,17 @@ const handleSubmit = async () => {
       try {
         // 数据适配：将标签数组转为逗号分隔字符串，符合后端 JSON 字段要求
         const submitData = {
-          ...form,
+          title: form.title,
+          categoryId: form.categoryId || undefined,
+          summary: form.summary || undefined,
           tags: form.tags.join(','),
+          coverImage: form.coverImage || undefined,
           content: form.content
         }
         
         if (form.id) {
           // 编辑模式下调用更新接口
-          await articleUpdate(submitData)
+          await articleUpdate({ id: form.id, ...submitData })
           ElMessage.success('文章已更新')
         } else {
           // 新增模式下调用发布接口

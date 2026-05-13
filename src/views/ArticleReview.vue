@@ -303,19 +303,36 @@ const handleRejectConfirm = async () => {
   })
 }
 
+const promptDeleteReason = async (title) => {
+  const result = await ElMessageBox.prompt(
+    `请输入删除《${title}》的原因，用户端将收到通知。`,
+    '删除原因',
+    {
+      confirmButtonText: '确认删除',
+      cancelButtonText: '取消',
+      inputType: 'textarea',
+      inputPlaceholder: '请输入删除原因',
+      inputValidator: (value) => value?.trim() ? true : '请填写删除原因',
+    },
+  )
+  return result.value.trim()
+}
+
 const handleDelete = async (row) => {
   const label = row.reviewType === 'revision' ? '修订记录' : '投稿文章'
   const title = row.article?.title || row.title
   try {
-    await ElMessageBox.confirm(
-      `确认删除《${title}》的${label}吗？此操作不可恢复。`,
-      '删除确认',
-      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' },
-    )
+    let reason = ''
     if (row.reviewType === 'revision') {
+      await ElMessageBox.confirm(
+        `确认删除《${title}》的${label}吗？此操作不可恢复。`,
+        '删除确认',
+        { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' },
+      )
       await reviewRevisionDelete(row.reviewId)
     } else {
-      await articleDelete(row.reviewId)
+      reason = await promptDeleteReason(title)
+      await articleDelete(row.reviewId, reason)
     }
     ElMessage.success('删除成功')
     fetchData()

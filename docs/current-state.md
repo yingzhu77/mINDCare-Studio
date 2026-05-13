@@ -4,14 +4,16 @@
 
 ## 版本号
 
-**v2.5.2**（2026-05-13）— 用户端情绪洞察 + SSE 流式修复 + 文档收口，部署就绪。
+**v2.6.0**（2026-05-14）— 部署三阶段全线完成 + Electron 桌面版 + EXE 打包就绪。
 
 ## 部署计划
 
-双线推进规划详见 [docs/deployment-plan.md](deployment-plan.md)：
+**全部 Phase 1~3 已于 2026-05-14 完成验收。** 详见 [docs/deployment-plan.md](deployment-plan.md)（历史记录）。
 
-- **路线 A · 开源部署线** — Docker Compose 缺陷修复 + 统一配置 + 安全加固
-- **路线 B · Windows EXE 线** — Electron + SQLite + Mock AI 本地演示版
+实现成果：
+
+- **路线 A · 开源部署线** — Docker Compose 缺陷修复 + 统一配置 + README 三方式 + 构建测试全绿
+- **路线 B · Windows EXE 线** — Electron + SQLite + Mock AI + 设置弹窗 + 安全声明 + 打包产物就绪
 
 ## 测试综合
 
@@ -70,6 +72,13 @@ npx playwright test --ui
 - Claude Code 路径：`.claude/skills/ui-ux-pro-max/`
 - 依赖：Python 3.x（用于 `scripts/search.py` 检索设计数据库）
 - 校验：`python .codex/skills/ui-ux-pro-max/scripts/search.py "mental health dashboard" --design-system -p "AI心理健康助手"` 可正常返回设计系统建议
+
+## 新增功能（v2.6.0）— 部署三阶段全线完成 + Electron 桌面版 + EXE 打包
+
+- **Phase 1 部署收口** — Docker 3 缺陷修复、统一配置、README 三方式更新、构建测试全绿通过
+- **Phase 2 Electron 桌面版** — 完整 Electron 壳 + NestJS 子进程管理 + 随机端口 + 内置 demo.db + Mock AI + 设置弹窗 + 重置数据
+- **Phase 3 EXE 打包** — electron-builder NSIS/portable 双目标 + 后端运行时精简（287MB→45.7MB）+ 安全审计 + 安全声明弹窗
+- **文档收口** — `deployment-plan.md` 标注全线完成，删除过时 `phase3-exe-acceptance.md`
 
 ## 新增功能（v2.5.2）— 情绪洞察 + SSE 流式修复 + 部署收口
 

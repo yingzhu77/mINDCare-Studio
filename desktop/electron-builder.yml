@@ -1,0 +1,52 @@
+appId: com.ai-mental-health.desktop
+productName: AI心理健康助手
+icon: assets/icon.ico
+directories:
+  output: dist-electron
+  buildResources: assets
+files:
+  - main.js
+  - preload.js
+  - assets/**/*
+extraResources:
+  - from: .runtime/server
+    to: server
+    filter:
+      - "**/*"
+      - "!**/*.map"
+      - "!**/*.ts"
+      - "!**/*.md"
+      - "!**/*.markdown"
+      - "!**/*.tmp*"
+      - "!**/README*"
+      - "!**/CHANGELOG*"
+      - "!**/LICENSE*"
+      - "!**/docs/**"
+      - "!**/doc/**"
+      - "!**/example/**"
+      - "!**/examples/**"
+      - "!**/test/**"
+      - "!**/tests/**"
+      - "!**/__tests__/**"
+  - from: ../dist
+    to: dist
+  - from: data/demo.db
+    to: data/demo.db
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  icon: assets/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: assets/icon.ico
+  uninstallDisplayName: AI心理健康助手
+portable:
+  artifactName: ${productName}-portable-${version}.exe
+asar: true
+asarUnpack:
+  - "node_modules/.prisma/**"
+  - preload.js

@@ -208,9 +208,10 @@ describe('AnalysisService', () => {
   describe('getEmotionDiaryAnalysis', () => {
     it('应查询情绪日记分析结果', async () => {
       const result = { id: 1, bizType: 'emotion_diary', bizId: 1, status: 'success', emotionTags: null };
+      mockPrisma.emotionDiary.findUnique.mockResolvedValue({ id: 1, userId: 1 });
       mockPrisma.aiAnalysisResult.findFirst.mockResolvedValue(result);
 
-      const res = await service.getEmotionDiaryAnalysis(1);
+      const res = await service.getEmotionDiaryAnalysis(1, { sub: 1, role: 'user' });
       expect(res).toEqual({ ...result, emotionTags: [] });
       expect(mockPrisma.aiAnalysisResult.findFirst).toHaveBeenCalledWith({
         where: { bizType: 'emotion_diary', bizId: 1 },
@@ -228,7 +229,7 @@ describe('AnalysisService', () => {
       const result = { id: 1, bizType: 'chat_session', bizId: 1, status: 'success', emotionTags: null };
       mockPrisma.aiAnalysisResult.findFirst.mockResolvedValue(result);
 
-      const res = await service.getChatSessionAnalysis(sessionId);
+      const res = await service.getChatSessionAnalysis(sessionId, { sub: 1, role: 'user' });
       expect(res).toEqual({ ...result, emotionTags: [] });
     });
 

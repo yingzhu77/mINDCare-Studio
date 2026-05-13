@@ -78,9 +78,10 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="$t('client.diary.colActions')" width="140" align="center" fixed="right">
+        <el-table-column :label="$t('client.diary.colActions')" width="210" align="center" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">{{ $t('client.diary.edit') }}</el-button>
+            <el-button link type="primary" @click="handleViewAnalysis(row)">AI分析</el-button>
             <el-button link type="danger" @click="handleDelete(row)">{{ $t('client.diary.delete') }}</el-button>
           </template>
         </el-table-column>
@@ -216,6 +217,42 @@
         <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ $t('client.diary.save') }}</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="analysisVisible"
+      title="AI 情绪分析"
+      width="560px"
+      :close-on-click-modal="false"
+    >
+      <div v-loading="analysisLoading" class="analysis-content">
+        <el-empty v-if="!analysisLoading && !analysisData" description="暂无分析结果" />
+        <template v-else-if="analysisData">
+          <div class="analysis-row">
+            <span class="analysis-label">主要情绪</span>
+            <el-tag type="info" effect="plain">{{ analysisData.mainEmotion || '-' }}</el-tag>
+          </div>
+          <div class="analysis-row">
+            <span class="analysis-label">风险等级</span>
+            <el-tag :type="riskTagType(analysisData.riskLevel)" effect="plain">{{ analysisData.riskLevel || '-' }}</el-tag>
+          </div>
+          <div class="analysis-block">
+            <h4>专业建议</h4>
+            <p>{{ analysisData.professionalAdvice || '-' }}</p>
+          </div>
+          <div class="analysis-block">
+            <h4>风险描述</h4>
+            <p>{{ analysisData.riskDescription || '-' }}</p>
+          </div>
+          <div class="analysis-block">
+            <h4>改善建议</h4>
+            <p>{{ analysisData.improvementSuggestions || '-' }}</p>
+          </div>
+        </template>
+      </div>
+      <template #footer>
+        <el-button @click="analysisVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -224,7 +261,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { Plus, EditPen } from '@element-plus/icons-vue'
-import { myDiaryPage, diaryAdd, diaryUpdate, diaryDelete } from '@/api/client'
+import { myDiaryPage, diaryAdd, diaryUpdate, diaryDelete, getMyDiaryAnalysis } from '@/api/client'
 import { logger } from '@/utils/logger'
 
 const { t } = useI18n()
@@ -242,6 +279,9 @@ const submitting = ref(false)
 const formRef = ref(null)
 const isEdit = ref(false)
 const editId = ref(null)
+const analysisVisible = ref(false)
+const analysisLoading = ref(false)
+const analysisData = ref(null)
 
 const form = reactive({
   diaryDate: '',
@@ -271,6 +311,12 @@ const getStressType = (level) => {
   if (level >= 7) return 'danger'
   if (level >= 4) return 'warning'
   return 'success'
+}
+
+const riskTagType = (level) => {
+  if (level === 'critical' || level === 'high') return 'danger'
+  if (level === 'medium') return 'warning'
+  return 'info'
 }
 
 const fetchTableData = async () => {
@@ -347,6 +393,21 @@ const handleDelete = async (row) => {
     fetchTableData()
   } catch {
     // 取消删除
+  }
+}
+
+const handleViewAnalysis = async (row) => {
+  analysisVisible.value = true
+  analysisLoading.value = true
+  analysisData.value = null
+  try {
+    const res = await getMyDiaryAnalysis(row.id)
+    analysisData.value = res?.status === 'success' ? res : null
+  } catch (error) {
+    logger.error('获取日记分析失败:', error)
+    analysisData.value = null
+  } finally {
+    analysisLoading.value = false
   }
 }
 
@@ -490,5 +551,45 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.analysis-content {
+  min-height: 180px;
+}
+
+.analysis-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.analysis-label {
+  width: 72px;
+  color: #606266;
+  font-weight: 600;
+}
+
+.analysis-block {
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  margin-top: 12px;
+  overflow: hidden;
+
+  h4 {
+    margin: 0;
+    padding: 10px 12px;
+    background: #f7f8fa;
+    color: #303133;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 0;
+    padding: 12px;
+    line-height: 1.7;
+    color: #606266;
+    white-space: pre-wrap;
+  }
 }
 </style>

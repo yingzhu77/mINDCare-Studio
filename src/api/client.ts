@@ -4,6 +4,7 @@ import type {
   ChatSession, ChatMessage,
   EmotionDiary, CreateDiaryDto,
   NotificationItem, UnreadCountResult,
+  AiAnalysisResult,
   ClientArticle,
   KnowledgeCategory, KnowledgeArticle,
 } from './types'
@@ -106,6 +107,16 @@ export interface EmotionStatistics {
 
 export function myDiaryStatistics(): Promise<EmotionStatistics> {
   return service.get('/emotion-diary/my/statistics')
+}
+
+// ==================== AI 分析结果（用户端只读） ====================
+
+export function getMyDiaryAnalysis(id: number): Promise<AiAnalysisResult | null> {
+  return service.get(`/analysis/emotion-diary/${id}`)
+}
+
+export function getMyChatSessionAnalysis(sessionId: string): Promise<AiAnalysisResult | null> {
+  return service.get(`/analysis/chat-session/${sessionId}`)
 }
 
 // ==================== 通知 ====================

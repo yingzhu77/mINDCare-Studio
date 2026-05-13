@@ -65,7 +65,8 @@ export class KnowledgeController {
 
   @Put('article')
   articleUpdate(@Body() dto: UpdateArticleDto & { id: number }) {
-    return this.knowledgeService.updateArticle(dto.id, dto);
+    const { id, ...data } = dto;
+    return this.knowledgeService.updateArticle(Number(id), data);
   }
 
   @Delete('article/:id')

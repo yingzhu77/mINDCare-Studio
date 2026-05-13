@@ -97,7 +97,7 @@ docs/                      # 项目文档和计划书
 scripts/                   # 一键启动脚本
 e2e/                       # Playwright E2E 测试
 public/                    # 静态资源（favicon、icons）
-desktop/                   # Electron 桌面版（规划中）
+desktop/                   # Electron 桌面版（已完成 — NSIS + portable 打包就绪）
 
 ## 运行方式
 
@@ -151,9 +151,20 @@ docker compose up -d
 
 访问 `http://localhost:8080`。详见 [docs/deployment.md](docs/deployment.md)。
 
-### 方式三：Windows 演示 EXE（规划中）
+### 方式三：Windows 演示 EXE
 
-计划基于 Electron 打包本地演示版，双击运行，内置前后端 + SQLite + Mock AI，详见 [docs/deployment-plan.md](docs/deployment-plan.md) 路线 B。
+项目已打包为 Windows 桌面应用，双击运行，内置前后端 + SQLite + Mock AI：
+
+```powershell
+cd desktop
+npm run dist
+```
+
+产物位于 `desktop/dist-electron/`：
+- `AI心理健康助手 Setup 1.0.0.exe` — NSIS 安装包
+- `AI心理健康助手-portable-1.0.0.exe` — 便携版（免安装）
+
+详见 [docs/deployment-plan.md](docs/deployment-plan.md) 路线 B。
 
 ## 已实现接口
 

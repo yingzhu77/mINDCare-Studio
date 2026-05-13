@@ -51,7 +51,7 @@
 
 项目长期目标是做成偏 Web SaaS 形态的开源项目，具备清晰的前后端边界、统一类型契约、可复制的本地启动流程和完整的业务闭环。
 
-当前版本 **v2.5.0**，详见 [docs/current-state.md](../docs/current-state.md)。
+当前版本 **v2.6.0**，详见 [docs/current-state.md](../docs/current-state.md)。
 
 ## 6. 前后端分层（不可打乱）
 

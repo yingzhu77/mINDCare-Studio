@@ -73,7 +73,18 @@
       </div>
 
       <div class="chat-input-bar">
-        <div class="input-hint">{{ $t('client.chat.inputHint') }}</div>
+        <div class="input-hint-row">
+          <div class="input-hint">{{ $t('client.chat.inputHint') }}</div>
+          <el-button
+            v-if="currentSessionId"
+            link
+            type="primary"
+            class="analysis-link"
+            @click="handleViewSessionAnalysis"
+          >
+            查看AI分析
+          </el-button>
+        </div>
         <div class="input-row">
           <el-input
             v-model="inputText"
@@ -96,21 +107,60 @@
         </div>
       </div>
     </el-card>
+
+    <el-dialog
+      v-model="analysisVisible"
+      title="AI 会话分析"
+      width="560px"
+      :close-on-click-modal="false"
+    >
+      <div v-loading="analysisLoading" class="analysis-content">
+        <el-empty v-if="!analysisLoading && !analysisData" description="暂无分析结果" />
+        <template v-else-if="analysisData">
+          <div class="analysis-row">
+            <span class="analysis-label">风险等级</span>
+            <el-tag :type="riskTagType(analysisData.riskLevel)" effect="plain">{{ analysisData.riskLevel || '-' }}</el-tag>
+          </div>
+          <div class="analysis-row">
+            <span class="analysis-label">情绪标签</span>
+            <div class="analysis-tags">
+              <el-tag v-for="(tag, i) in analysisTags" :key="i" size="small" effect="light">{{ tag }}</el-tag>
+              <span v-if="analysisTags.length === 0">-</span>
+            </div>
+          </div>
+          <div class="analysis-block">
+            <h4>会话摘要</h4>
+            <p>{{ analysisData.summary || '-' }}</p>
+          </div>
+          <div class="analysis-block">
+            <h4>风险描述</h4>
+            <p>{{ analysisData.riskDescription || '-' }}</p>
+          </div>
+          <div class="analysis-block">
+            <h4>改善建议</h4>
+            <p>{{ analysisData.improvementSuggestions || '-' }}</p>
+          </div>
+        </template>
+      </div>
+      <template #footer>
+        <el-button @click="analysisVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { ChatLineSquare, Delete, Download } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/useAuthStore'
-import { mySessionPage, sessionMessages, deleteSession, exportSession } from '@/api/client'
+import { mySessionPage, sessionMessages, deleteSession, exportSession, getMyChatSessionAnalysis } from '@/api/client'
 import { renderMarkdown } from '@/utils/markdown'
 import { logger } from '@/utils/logger'
 import aiAvatar from '@/assets/logo.png'
 
-const { t, locale } = useI18n()
+const { t, tm, rt, locale } = useI18n()
 const authStore = useAuthStore()
 const messagesRef = ref(null)
 const inputText = ref('')
@@ -121,8 +171,35 @@ const currentSessionId = ref(null)
 // 会话侧边栏
 const sessions = ref([])
 const loadingSessions = ref(false)
+const analysisVisible = ref(false)
+const analysisLoading = ref(false)
+const analysisData = ref(null)
 
-const suggestions = t('client.chat.suggestions')
+const suggestions = computed(() => {
+  const items = tm('client.chat.suggestions')
+  if (Array.isArray(items)) {
+    return items.map((item) => (typeof item === 'string' ? item : rt(item)))
+  }
+  return []
+})
+
+const analysisTags = computed(() => {
+  const tags = analysisData.value?.emotionTags
+  if (Array.isArray(tags)) return tags
+  if (!tags) return []
+  try {
+    const parsed = JSON.parse(tags)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return String(tags).split(/[,，、]/).map((item) => item.trim()).filter(Boolean)
+  }
+})
+
+const riskTagType = (level) => {
+  if (level === 'critical' || level === 'high') return 'danger'
+  if (level === 'medium') return 'warning'
+  return 'info'
+}
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -225,6 +302,22 @@ const handleExport = async (sessionId) => {
     ElMessage.success(t('client.chat.exported'))
   } catch {
     ElMessage.error(t('client.chat.exportFailed'))
+  }
+}
+
+const handleViewSessionAnalysis = async () => {
+  if (!currentSessionId.value) return
+  analysisVisible.value = true
+  analysisLoading.value = true
+  analysisData.value = null
+  try {
+    const res = await getMyChatSessionAnalysis(currentSessionId.value)
+    analysisData.value = res?.status === 'success' ? res : null
+  } catch (error) {
+    logger.error('获取会话分析失败:', error)
+    analysisData.value = null
+  } finally {
+    analysisLoading.value = false
   }
 }
 
@@ -632,11 +725,24 @@ onMounted(async () => {
     border-top: 1px solid #f3e8ff;
     background: linear-gradient(0deg, #faf5ff 0%, transparent 100%);
 
-    .input-hint {
-      font-size: 12px;
-      color: #c4b5fd;
-      text-align: center;
-      line-height: 1.4;
+    .input-hint-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+
+      .input-hint {
+        font-size: 12px;
+        color: #c4b5fd;
+        text-align: center;
+        line-height: 1.4;
+      }
+
+      .analysis-link {
+        padding: 0;
+        height: auto;
+        font-size: 12px;
+      }
     }
 
     .input-row {
@@ -662,6 +768,52 @@ onMounted(async () => {
         }
       }
     }
+  }
+}
+
+.analysis-content {
+  min-height: 180px;
+}
+
+.analysis-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.analysis-label {
+  width: 72px;
+  color: #606266;
+  font-weight: 600;
+}
+
+.analysis-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.analysis-block {
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  margin-top: 12px;
+  overflow: hidden;
+
+  h4 {
+    margin: 0;
+    padding: 10px 12px;
+    background: #f7f8fa;
+    color: #303133;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 0;
+    padding: 12px;
+    line-height: 1.7;
+    color: #606266;
+    white-space: pre-wrap;
   }
 }
 

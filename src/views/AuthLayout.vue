@@ -6,7 +6,7 @@
         <div class="brand-badge">{{ $t('auth.layout.brand') }}</div>
         <h1 class="auth-title">{{ $t('auth.layout.title') }}</h1>
         <div class="auth-desc">
-          <p class="desc-line" v-for="(line, idx) in $t('auth.layout.desc')" :key="idx">{{ line }}</p>
+          <p class="desc-line" v-for="(line, idx) in layoutDesc" :key="idx">{{ line }}</p>
         </div>
         <div class="logo-wrapper">
           <img src="@/assets/logo.png" alt="心晴AI" class="auth-logo" />
@@ -32,7 +32,19 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ArrowLeft } from '@element-plus/icons-vue'
+
+const { t, tm, rt } = useI18n()
+
+const layoutDesc = computed(() => {
+  const lines = tm('auth.layout.desc')
+  if (Array.isArray(lines)) {
+    return lines.map((line) => (typeof line === 'string' ? line : rt(line)))
+  }
+  return [t('auth.layout.desc')]
+})
 </script>
 
 <style lang="scss" scoped>

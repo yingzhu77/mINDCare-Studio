@@ -133,7 +133,7 @@ async function main() {
       content:
         '运动不仅能改善身体健康，对心理健康也有显著益处。本文总结运动对焦虑、抑郁、自尊等方面的影响。',
       tags: JSON.stringify(['运动', '心理健康', '自我成长']),
-      status: 'pending_review',
+      status: 'draft',
     },
   ];
 
