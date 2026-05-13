@@ -451,7 +451,7 @@ defineExpose({ open })
             border: 1px solid #e4e7ed;
 
             .role-name {
-              color: #409eff;
+              color: #a78bfa;
             }
           }
 
@@ -520,9 +520,9 @@ defineExpose({ open })
             .emotion-tag {
               border-radius: 10px;
               font-size: 12px;
-              background: #eef5ff;
-              border-color: #d9e8ff;
-              color: #3b6fb6;
+              background: #f5f3ff;
+              border-color: #ede9fe;
+              color: #7c3aed;
             }
           }
 
@@ -587,6 +587,81 @@ defineExpose({ open })
 
         .card-content {
           font-size: 13px !important;
+        }
+      }
+    }
+  }
+}
+
+/* ===== 深色模式 ===== */
+html.dark .session-detail-dialog {
+  :deep(.el-dialog__body) {
+    background-color: var(--el-bg-color-page);
+  }
+
+  .loading-state {
+    color: var(--text-secondary);
+  }
+
+  .detail-content {
+    .info-card-grey {
+      background-color: var(--surface-warm);
+      border-color: var(--border-color);
+
+      .info-item {
+        .label { color: var(--text-secondary); }
+        .value { color: var(--text-color); }
+      }
+    }
+
+    .dialogue-section {
+      .section-title { color: var(--text-color); }
+
+      .message-list {
+        &::-webkit-scrollbar-thumb {
+          background: #3d325e;
+        }
+
+        .message-card {
+          &.user-card {
+            background-color: rgba(167, 139, 250, 0.06);
+            border-color: var(--border-color);
+          }
+          &.ai-card {
+            background-color: rgba(52, 211, 153, 0.06);
+            border-color: rgba(52, 211, 153, 0.15);
+            .role-name { color: #34d399; }
+          }
+          .card-header {
+            .role-name { color: var(--text-color); }
+            .timestamp { color: var(--text-secondary); }
+          }
+          .card-content {
+            color: var(--text-color);
+          }
+        }
+
+        .empty-messages { color: var(--text-muted); }
+      }
+    }
+
+    .analysis-section {
+      .section-title { color: var(--text-color); }
+
+      .analysis-grid .analysis-item {
+        .analysis-label { color: var(--text-secondary); }
+        .analysis-value { color: var(--text-color); }
+      }
+
+      .analysis-card {
+        border-color: var(--border-color);
+        .analysis-card-title {
+          background: var(--surface-warm);
+          color: var(--text-color);
+        }
+        .analysis-card-content {
+          background: var(--card-bg);
+          color: var(--text-color);
         }
       }
     }

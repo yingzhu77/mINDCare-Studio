@@ -13,7 +13,7 @@
           <p class="desc-line">温暖您的每一天</p>
         </div>
         <div class="logo-wrapper">
-          <img src="@/assets/咕咕嘎嘎.jpg" alt="心灵港湾" class="auth-logo" />
+          <img src="@/assets/logo.png" alt="心晴AI" class="auth-logo" />
         </div>
       </div>
     </div>

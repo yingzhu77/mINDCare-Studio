@@ -63,7 +63,7 @@ let emotionChart = null
 let sessionChart = null
 let articleChart = null
 
-const CHART_COLORS = ['#409eff', '#67c23a', '#e6a23c']
+const CHART_COLORS = ['#a78bfa', '#34d399', '#fbbf24']
 
 function initChart(domRef) {
   if (!domRef) return null

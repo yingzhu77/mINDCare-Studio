@@ -4,14 +4,14 @@
 
 ## 版本号
 
-**v2.5.0**（2026-05-13）— 文章审核系统重构 + 管理端分析页 + 用户端知识导航 + 前端 TS 化。
+**v2.5.1**（2026-05-13）— 文章审核流程收口 + 管理端知识文章体验修复 + 登录/性能优化。
 
 ## 测试综合
 
 | 层级 | 测试类型 | 数量 |
 |------|---------|------|
 | 前端 | Vitest 单元测试 | 60 用例（10 文件） |
-| 后端 | Jest 单元测试 | 111 用例（10 模块） |
+| 后端 | Jest 单元测试 | 113 用例（10 模块） |
 | 后端 | Jest E2E 测试 | 32 用例（覆盖 7 个模块） |
 | E2E | Playwright 冒烟测试 | 14 用例（smoke 8 + client-flows 6） |
 
@@ -52,6 +52,26 @@ npx playwright test --ui
 | 部署文档 | ✅ `docs/deployment.md` |
 | 启动脚本 | ✅ `scripts/start-dev.ps1`（Windows）+ `scripts/setup.sh`（macOS/Linux） |
 | API 接入文档 | ✅ `docs/deepseek-integration.md` |
+| UI/UX Skill | ✅ `ui-ux-pro-max` 已按官方 CLI 安装到 `.codex/skills/` 与 `.claude/skills/` |
+
+## 本地 Agent Skill
+
+### UI UX Pro Max
+
+- 安装方式：按官方文档执行 `npm install -g uipro-cli`，再在项目根目录执行 `uipro init --ai codex` 与 `uipro init --ai claude`
+- Codex 路径：`.codex/skills/ui-ux-pro-max/`
+- Claude Code 路径：`.claude/skills/ui-ux-pro-max/`
+- 依赖：Python 3.x（用于 `scripts/search.py` 检索设计数据库）
+- 校验：`python .codex/skills/ui-ux-pro-max/scripts/search.py "mental health dashboard" --design-system -p "AI心理健康助手"` 可正常返回设计系统建议
+
+## 新增功能（v2.5.1）
+
+- **知识文章状态操作收口** — 修复 `knowledge.vue` 已删除变量 `isPublish` 引用；按钮规则按 `draft/published/offline/pending_review/rejected` 分流，`offline` 文章支持重新发布
+- **管理端知识文章查看** — 新增查看弹窗，详情接口按需拉取正文，正文统一 `DOMPurify.sanitize` 后渲染；非草稿文章可查看但不可编辑
+- **审核红点即时刷新** — 新增 `useReviewStore.js` 集中维护待审数量，`Sidebar.vue` 使用 store，审核通过/驳回后立即刷新，保留 60 秒轮询兜底
+- **操作原因与用户通知** — 下线/删除普通用户文章时要求输入原因并通知作者；管理员自建文章或本人操作不产生不必要通知
+- **性能优化** — 移除 `router.afterEach` 全量预加载；知识文章列表接口排除 `content`，正文仅在查看详情时加载；知识页分类与列表并行请求
+- **登录稳定性** — 登录页移除重复提交入口，增加 `loading` 防重入，登录成功后使用 `router.replace`，autocomplete 调整为 `username/current-password`
 
 ## 新增功能（v2.5.0）
 
@@ -83,9 +103,8 @@ npx playwright test --ui
 ## 当前不做什么
 
 - 不引入 WebSocket 实时通知
-- 不做系统化移动端适配
 - 不做 i18n 国际化
-- 不动 ECharts 图表样式
+- 不在本轮重构整体 UI 视觉系统（下一阶段计划使用 UI UX Pro Max skill）
 - 不动已有的 Docker Compose / MySQL schema 配置
 
 ## API Key 合规提醒

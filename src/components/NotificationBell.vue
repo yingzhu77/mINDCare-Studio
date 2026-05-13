@@ -135,7 +135,7 @@ onUnmounted(() => {
 }
 
 .bell-icon:hover {
-  color: #409eff;
+  color: #a78bfa;
 }
 
 .notification-panel {
@@ -187,7 +187,7 @@ onUnmounted(() => {
 }
 
 .notification-item.unread {
-  background-color: #ecf5ff;
+  background-color: #f5f3ff;
 }
 
 .notification-item.unread:hover {
@@ -198,7 +198,7 @@ onUnmounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #409eff;
+  background: linear-gradient(135deg, #a78bfa, #c084fc);
   flex-shrink: 0;
   margin-top: 6px;
 }

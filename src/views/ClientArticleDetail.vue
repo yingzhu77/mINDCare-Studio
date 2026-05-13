@@ -169,7 +169,7 @@ onMounted(fetchDetail)
           margin: 0;
           padding: 14px 20px;
           background: #f0f9ff;
-          border-left: 4px solid #409eff;
+          border-left: 4px solid #a78bfa;
           border-radius: 4px;
           color: #606266;
           font-size: 15px;

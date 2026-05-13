@@ -399,4 +399,47 @@ const displayFraction = (value) => {
     }
   }
 }
+
+/* ===== 深色模式 ===== */
+html.dark .emotion-detail-dialog {
+  :deep(.el-dialog__body) {
+    background: var(--el-bg-color-page);
+  }
+
+  .detail-content .detail-section .section-title {
+    color: var(--text-color);
+  }
+
+  .grid-table {
+    border-color: var(--border-color);
+
+    .label-cell, .value-cell {
+      border-bottom-color: var(--border-color);
+    }
+
+    .label-cell {
+      background: var(--surface-warm);
+      color: var(--text-color);
+    }
+
+    .value-cell {
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+  }
+
+  .advice-card {
+    border-color: var(--border-color);
+
+    .advice-title {
+      background: var(--surface-warm);
+      color: var(--text-color);
+    }
+
+    .advice-content {
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+  }
+}
 </style>

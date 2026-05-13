@@ -350,38 +350,49 @@ onMounted(async () => {
   .chat-sidebar {
     width: 280px;
     flex-shrink: 0;
-    background: #fff;
-    border-radius: 8px;
+    background: linear-gradient(180deg, #faf5ff 0%, #fff7f5 100%);
+    border-radius: 14px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    border: 1px solid #f3e8ff;
 
     .sidebar-header {
-      padding: 12px;
-      border-bottom: 1px solid #f0f0f0;
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid #f3e8ff;
       flex-shrink: 0;
 
       .new-chat-btn {
         width: 100%;
+        border-radius: 10px;
+        font-weight: 500;
+        background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
+        border: none;
+        letter-spacing: 0.3px;
+
+        &:hover {
+          background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+        }
       }
     }
 
     .sidebar-list {
       flex: 1;
       overflow-y: auto;
-      padding: 4px 0;
+      padding: 6px 8px;
 
       .session-item {
         display: flex;
         align-items: center;
         padding: 10px 12px;
         cursor: pointer;
-        border-bottom: 1px solid #f5f5f5;
-        transition: background 0.2s;
+        border-radius: 10px;
+        transition: all 0.2s ease;
         gap: 8px;
+        margin-bottom: 2px;
 
         &:hover {
-          background: #f5f7fa;
+          background: rgba(167, 139, 250, 0.08);
 
           .session-actions {
             opacity: 1;
@@ -389,7 +400,8 @@ onMounted(async () => {
         }
 
         &.active {
-          background: #ecf5ff;
+          background: rgba(167, 139, 250, 0.15);
+          box-shadow: inset 3px 0 0 #a78bfa;
         }
 
         .session-info {
@@ -398,7 +410,7 @@ onMounted(async () => {
 
           .session-preview {
             font-size: 13px;
-            color: #303133;
+            color: var(--text-color);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -407,7 +419,7 @@ onMounted(async () => {
 
           .session-time {
             font-size: 11px;
-            color: #c0c4cc;
+            color: var(--text-secondary);
             margin-top: 2px;
           }
         }
@@ -432,7 +444,7 @@ onMounted(async () => {
         align-items: center;
         gap: 12px;
         padding: 60px 16px;
-        color: #c0c4cc;
+        color: var(--text-secondary);
 
         .empty-text {
           font-size: 14px;
@@ -447,8 +459,9 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     border: none;
-    border-radius: 8px;
+    border-radius: 14px;
     background: #fff;
+    box-shadow: 0 1px 6px rgba(167, 139, 250, 0.06);
 
     :deep(.el-card__body) {
       flex: 1;
@@ -466,32 +479,36 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(244, 114, 182, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(167, 139, 250, 0.03) 0%, transparent 50%),
+      #fffbf5;
 
     .welcome-section {
       text-align: center;
-      padding: 60px 20px 40px;
+      padding: 56px 20px 36px;
 
       .welcome-icon {
         margin-bottom: 16px;
-        color: #409eff;
+        color: #a78bfa;
       }
 
       .welcome-title {
         font-size: 22px;
         font-weight: 700;
-        color: #303133;
+        color: var(--text-color);
         margin-bottom: 8px;
       }
 
       .welcome-desc {
         font-size: 15px;
-        color: #909399;
+        color: var(--text-secondary);
         margin-bottom: 8px;
       }
 
       .welcome-disclaimer {
         font-size: 12px;
-        color: #c0c4cc;
+        color: #c4b5fd;
         margin-bottom: 24px;
         line-height: 1.5;
         max-width: 500px;
@@ -503,24 +520,26 @@ onMounted(async () => {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 12px;
+        gap: 10px;
         max-width: 600px;
         margin: 0 auto;
 
         .suggestion-chip {
-          padding: 8px 16px;
+          padding: 8px 18px;
           font-size: 14px;
           border-radius: 20px;
           cursor: pointer;
-          border: 1px solid #d9e8ff;
-          color: #409eff;
-          background: #f0f7ff;
-          transition: all 0.2s;
+          border: 1px solid #ede9fe;
+          color: #8b5cf6;
+          background: #faf5ff;
+          transition: all 0.25s ease;
 
           &:hover {
-            background: #409eff;
+            background: linear-gradient(135deg, #a78bfa, #c084fc);
             color: #fff;
-            border-color: #409eff;
+            border-color: #a78bfa;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(167, 139, 250, 0.25);
           }
         }
       }
@@ -536,9 +555,10 @@ onMounted(async () => {
         flex-direction: row-reverse;
 
         .message-bubble {
-          background: #409eff;
+          background: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
           color: #fff;
-          border-radius: 12px 4px 12px 12px;
+          border-radius: 16px 4px 16px 16px;
+          box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2);
         }
       }
 
@@ -546,9 +566,11 @@ onMounted(async () => {
         align-self: flex-start;
 
         .message-bubble {
-          background: #f5f7fa;
-          color: #303133;
-          border-radius: 4px 12px 12px 12px;
+          background: #faf5ff;
+          color: #1f1b2e;
+          border-radius: 4px 16px 16px 16px;
+          border: 1px solid #f3e8ff;
+          box-shadow: 0 1px 4px rgba(167, 139, 250, 0.06);
         }
       }
 
@@ -556,12 +578,12 @@ onMounted(async () => {
         flex-shrink: 0;
 
         .ai-avatar {
-          background: #e6f1ff;
-          color: #409eff;
+          background: linear-gradient(135deg, #a78bfa, #c084fc);
+          color: #fff;
         }
 
         .user-avatar {
-          background: #409eff;
+          background: linear-gradient(135deg, #f472b6, #fb7185);
           color: #fff;
           font-size: 14px;
         }
@@ -599,6 +621,7 @@ onMounted(async () => {
           .typing-cursor {
             display: inline;
             animation: blink 1s step-end infinite;
+            color: #a78bfa;
           }
         }
       }
@@ -609,11 +632,12 @@ onMounted(async () => {
     flex-direction: column;
     gap: 6px;
     padding: 12px 24px 16px;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid #f3e8ff;
+    background: linear-gradient(0deg, #faf5ff 0%, transparent 100%);
 
     .input-hint {
       font-size: 12px;
-      color: #c0c4cc;
+      color: #c4b5fd;
       text-align: center;
       line-height: 1.4;
     }
@@ -631,6 +655,14 @@ onMounted(async () => {
         height: 60px;
         width: 100px;
         font-size: 15px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #a78bfa, #c084fc);
+        border: none;
+        font-weight: 500;
+
+        &:hover {
+          background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+        }
       }
     }
   }
@@ -647,6 +679,7 @@ onMounted(async () => {
 
       .sidebar-list .session-item {
         padding: 8px 10px;
+        border-radius: 8px;
 
         .session-info .session-preview {
           font-size: 12px;
@@ -679,5 +712,56 @@ onMounted(async () => {
 
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+/* ===== 深色模式 ===== */
+html.dark .chat-view {
+  .chat-sidebar {
+    background: linear-gradient(180deg, #1e1933 0%, #16122a 100%);
+    border-color: var(--border-color);
+
+    .sidebar-header {
+      border-bottom-color: var(--border-color);
+    }
+
+    .sidebar-list {
+      .session-item {
+        &.active {
+          background: rgba(167, 139, 250, 0.12);
+          box-shadow: inset 3px 0 0 #a78bfa;
+        }
+
+        &:hover {
+          background: rgba(167, 139, 250, 0.06);
+        }
+      }
+    }
+  }
+
+  .chat-card {
+    background: var(--card-bg);
+    box-shadow: var(--shadow-card);
+  }
+
+  .chat-messages {
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(244, 114, 182, 0.07) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+      linear-gradient(180deg, #1a1533 0%, #16122a 50%, #141028 100%);
+
+    .message-row {
+      &.assistant .message-bubble {
+        background: #1e1933;
+        color: #e5e7eb;
+        border-color: #3d325e;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+
+  .chat-input-bar {
+    border-top-color: var(--border-color);
+    background: linear-gradient(0deg, #1e1933 0%, transparent 100%);
+  }
 }
 </style>

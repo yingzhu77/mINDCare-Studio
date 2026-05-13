@@ -4,7 +4,7 @@
 
 ## 项目状态
 
-**当前版本：v2.5.0 — 文章审核系统重构 + 管理端分析页 + 前端 TS 化**
+**当前版本：v2.5.1 — 文章审核流程收口 + 管理端知识文章体验修复 + 登录/性能优化**
 
 | 层级   | 状态          | 说明                                                                                |
 | ------ | ------------- | ----------------------------------------------------------------------------------- |
@@ -50,7 +50,7 @@ src/                       # Vue3 前端
     types.ts               # 类型定义
   components/              # 复用组件（侧边栏、弹窗、通知铃铛等）
   router/                  # 路由与鉴权守卫（角色区分 admin/user）
-  store/                   # Pinia 状态管理（auth、menu）
+  store/                   # Pinia 状态管理（auth、menu、review）
   utils/                   # 工具函数（请求封装、消息解析、日期格式化、日志）
   views/                   # 页面级组件
     AuthLayout.vue         # 登录/注册布局
@@ -138,7 +138,11 @@ npm run start:dev
 | ------------------- | ----------------------------------------------- | ---------------------------------- |
 | GET                 | `/api/knowledge/category/tree`                  | 知识分类树                         |
 | GET/POST/PUT/DELETE | `/api/knowledge/article/**`                     | 文章 CRUD                          |
-| PUT                 | `/api/knowledge/article/:id/status`             | 文章审核（通过/驳回/下线）         |
+| PUT                 | `/api/knowledge/article/:id/status`             | 管理端文章发布/下线/重新发布       |
+| GET                 | `/api/knowledge/article/review/page`            | 文章/修订统一审核列表              |
+| GET                 | `/api/knowledge/article/review/pending-count`   | 待审核数量                         |
+| GET                 | `/api/knowledge/article/review/:type/:id`       | 审核预览详情                       |
+| PUT                 | `/api/knowledge/article/review/:type/:id/status`| 审核通过/驳回                      |
 | GET                 | `/api/psychological-chat/sessions`              | 咨询会话列表                       |
 | GET                 | `/api/psychological-chat/sessions/:id/messages` | 会话消息                           |
 | GET                 | `/api/emotion-diary/admin/page`                 | 情绪日记管理端分页                 |
@@ -225,6 +229,14 @@ npm run build
 cd server
 npm run build
 npx prisma migrate status
+```
+
+前后端单元测试：
+
+```powershell
+npm run test
+cd server
+npm run test:unit
 ```
 
 登录接口验证：

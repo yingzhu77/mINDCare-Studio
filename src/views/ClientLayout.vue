@@ -70,14 +70,16 @@ const handleLogout = () => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f7fa;
+  background: linear-gradient(180deg, #faf5ff 0%, #fff7f5 50%, #fdf7f5 100%);
 
   .client-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #fff;
-    border-bottom: 1px solid #e4e7ed;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #f3e8ff;
     padding: 0 24px;
     height: 60px;
     flex-shrink: 0;
@@ -94,7 +96,10 @@ const handleLogout = () => {
         .logo-text {
           font-size: 18px;
           font-weight: 700;
-          color: #409eff;
+          background: linear-gradient(135deg, #a78bfa, #f472b6);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
           white-space: nowrap;
         }
       }
@@ -107,16 +112,16 @@ const handleLogout = () => {
           height: 60px;
           line-height: 60px;
           font-size: 15px;
-          color: #606266;
+          color: #6b7280;
 
           &.is-active {
-            color: #409eff;
-            border-bottom-color: #409eff;
+            color: #a78bfa;
+            border-bottom-color: #a78bfa;
             font-weight: 600;
           }
 
           &:hover {
-            color: #409eff;
+            color: #a78bfa;
           }
         }
       }
@@ -132,21 +137,22 @@ const handleLogout = () => {
         gap: 8px;
         cursor: pointer;
         padding: 4px 8px;
-        border-radius: 4px;
+        border-radius: 8px;
+        transition: background 0.2s;
 
         &:hover {
-          background-color: #f5f7fa;
+          background-color: #faf5ff;
         }
 
         .user-avatar {
-          background-color: #409eff;
+          background: linear-gradient(135deg, #f472b6, #fb7185);
           color: #fff;
           font-size: 14px;
         }
 
         .username {
           font-size: 14px;
-          color: #606266;
+          color: #6b7280;
           font-weight: 500;
         }
       }
@@ -168,9 +174,9 @@ const handleLogout = () => {
     text-align: center;
     padding: 10px 24px;
     font-size: 11px;
-    color: #c0c4cc;
-    background: #fff;
-    border-top: 1px solid #f0f0f0;
+    color: #c4b5fd;
+    background: rgba(255, 255, 255, 0.6);
+    border-top: 1px solid #f3e8ff;
     line-height: 1.5;
   }
 }
@@ -218,7 +224,7 @@ const handleLogout = () => {
 
 .fade-transform-enter-active,
 .fade-transform-leave-active {
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .fade-transform-enter-from {
@@ -229,5 +235,44 @@ const handleLogout = () => {
 .fade-transform-leave-to {
   opacity: 0;
   transform: translateX(10px);
+}
+
+/* ===== 深色模式 ===== */
+html.dark .client-layout {
+  background: var(--gradient-subtle);
+
+  .client-header {
+    background: var(--overlay-bg);
+    border-bottom-color: var(--border-color);
+
+    .header-left .client-menu {
+      :deep(.el-menu-item) {
+        color: var(--text-secondary);
+
+        &.is-active {
+          color: #a78bfa;
+          border-bottom-color: #a78bfa;
+        }
+        &:hover {
+          color: #a78bfa;
+        }
+      }
+    }
+
+    .header-right .user-info {
+      &:hover {
+        background-color: rgba(167, 139, 250, 0.08);
+      }
+      .username {
+        color: var(--text-secondary);
+      }
+    }
+  }
+
+  .client-footer {
+    color: var(--text-muted);
+    background: rgba(30, 25, 51, 0.6);
+    border-top-color: var(--border-color);
+  }
 }
 </style>

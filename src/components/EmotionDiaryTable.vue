@@ -202,4 +202,32 @@ const formatAvatarText = (row) => {
     }
   }
 }
+
+/* ===== 深色模式 ===== */
+html.dark .table-card {
+  background-color: var(--card-bg);
+
+  .diary-table {
+    :deep(.el-table__header-wrapper th) {
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      border-bottom-color: var(--border-color);
+    }
+    :deep(.el-table__row td) {
+      border-bottom-color: var(--border-color);
+    }
+    :deep(.el-rate__text) {
+      color: var(--text-secondary);
+    }
+  }
+
+  .session-avatar-wrap {
+    .session-avatar { background: #3d325e; }
+    .session-id-text { color: var(--text-muted); }
+  }
+
+  .indicator-wrap { color: var(--text-secondary); }
+
+  .pagination-wrapper .total-info { color: var(--text-secondary); }
+}
 </style>
