@@ -43,9 +43,11 @@ services:
       JWT_EXPIRES_IN: 1440m
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       DEEPSEEK_BASE_URL: https://api.deepseek.com
-      DEEPSEEK_MODEL: deepseek-chat
+      DEEPSEEK_MODEL: deepseek-v4-flash
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"  # 仅本机调试，不对外暴露
+    volumes:
+      - uploads_data:/app/uploads
 
   # ========== Vue3 前端 ==========
   frontend:
@@ -60,3 +62,4 @@ services:
 
 volumes:
   mysql_data:
+  uploads_data:

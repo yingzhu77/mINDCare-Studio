@@ -9,8 +9,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Prisma schema（MySQL 版本）
+# Prisma schema + 迁移文件（MySQL 版本）
 COPY prisma/mysql/schema.prisma ./prisma/schema.prisma
+COPY prisma/mysql/migrations/ ./prisma/migrations/
 RUN npx prisma generate
 
 # 源码编译
