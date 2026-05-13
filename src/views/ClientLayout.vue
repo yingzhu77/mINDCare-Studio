@@ -3,7 +3,7 @@
     <el-header height="60px" class="client-header">
       <div class="header-left">
         <router-link to="/client/chat" class="logo-link">
-          <span class="logo-text">心理健康AI助手</span>
+          <span class="logo-text">{{ $t('client.layout.logo') }}</span>
         </router-link>
         <el-menu
           :default-active="activeMenu"
@@ -11,22 +11,35 @@
           router
           class="client-menu"
         >
-          <el-menu-item index="/client/chat">AI 咨询</el-menu-item>
-          <el-menu-item index="/client/diary">情绪日记</el-menu-item>
-          <el-menu-item index="/client/knowledge">知识阅读</el-menu-item>
-          <el-menu-item index="/client/articles">文章投稿</el-menu-item>
+          <el-menu-item index="/client/chat">{{ $t('client.chat.newChat') }}</el-menu-item>
+          <el-menu-item index="/client/diary">{{ $t('client.diary.title') }}</el-menu-item>
+          <el-menu-item index="/client/insights">{{ $t('menu.insights') }}</el-menu-item>
+          <el-menu-item index="/client/knowledge">{{ $t('menu.knowledgeReading') }}</el-menu-item>
+          <el-menu-item index="/client/articles">{{ $t('menu.articles') }}</el-menu-item>
         </el-menu>
       </div>
       <div class="header-right">
+        <el-dropdown trigger="click" @command="switchLang">
+          <span class="lang-switch">
+            <el-icon><Global /></el-icon>
+            <span class="lang-label">{{ currentLangLabel }}</span>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="zh" :class="{ active: locale === 'zh' }">中文</el-dropdown-item>
+              <el-dropdown-item command="en" :class="{ active: locale === 'en' }">English</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <NotificationBell />
         <el-dropdown trigger="click">
           <div class="user-info">
             <el-avatar :size="32" class="user-avatar">{{ authStore.username?.[0] || 'U' }}</el-avatar>
-            <span class="username">{{ authStore.username || '用户' }}</span>
+            <span class="username">{{ authStore.username || $t('common.noData') }}</span>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+              <el-dropdown-item divided @click="handleLogout">{{ $t('client.layout.logout') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -42,7 +55,7 @@
     </el-main>
 
     <div class="client-footer">
-      <span>本平台为 AI 技术支持，不提供医疗诊断、处方或心理治疗。如有紧急情况请拨打 110 或心理援助热线 400-161-9995。</span>
+      <span>{{ $t('client.layout.footer') }}</span>
     </div>
   </el-container>
 </template>
@@ -50,14 +63,22 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/useAuthStore'
 import NotificationBell from '@/components/NotificationBell.vue'
 
+const { locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
 const activeMenu = computed(() => route.path)
+
+const currentLangLabel = computed(() => locale.value === 'zh' ? '中文' : 'EN')
+
+const switchLang = (lang) => {
+  locale.value = lang
+}
 
 const handleLogout = () => {
   authStore.logout()
@@ -131,6 +152,28 @@ const handleLogout = () => {
       display: flex;
       align-items: center;
       gap: 16px;
+
+      .lang-switch {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #6b7280;
+        transition: all 0.2s;
+
+        &:hover {
+          background-color: #faf5ff;
+          color: #a78bfa;
+        }
+
+        .lang-label {
+          font-weight: 500;
+        }
+      }
+
       .user-info {
         display: flex;
         align-items: center;
@@ -259,12 +302,23 @@ html.dark .client-layout {
       }
     }
 
-    .header-right .user-info {
-      &:hover {
-        background-color: rgba(167, 139, 250, 0.08);
-      }
-      .username {
+    .header-right {
+      .lang-switch {
         color: var(--text-secondary);
+
+        &:hover {
+          background-color: rgba(167, 139, 250, 0.08);
+          color: #a78bfa;
+        }
+      }
+
+      .user-info {
+        &:hover {
+          background-color: rgba(167, 139, 250, 0.08);
+        }
+        .username {
+          color: var(--text-secondary);
+        }
       }
     }
   }

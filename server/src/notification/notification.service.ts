@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationGateway } from './notification.gateway';
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationGateway: NotificationGateway,
+  ) {}
 
   /**
-   * 创建通知
+   * 创建通知并推送 WS 事件
    */
   async create(data: {
     userId: number;
@@ -15,7 +19,11 @@ export class NotificationService {
     content?: string;
     relatedId?: number;
   }) {
-    return this.prisma.notification.create({ data });
+    const notification = await this.prisma.notification.create({ data });
+    // 创建通知后推送未读计数变更
+    const count = await this.countUnread(data.userId);
+    this.notificationGateway.notifyUnreadCount(data.userId, count);
+    return notification;
   }
 
   /**
@@ -46,22 +54,28 @@ export class NotificationService {
   }
 
   /**
-   * 标记通知为已读
+   * 标记通知为已读并推送 WS 事件
    */
   async markAsRead(id: number, userId: number) {
-    return this.prisma.notification.updateMany({
+    const result = await this.prisma.notification.updateMany({
       where: { id, userId },
       data: { isRead: 1 },
     });
+    const count = await this.countUnread(userId);
+    this.notificationGateway.notifyUnreadCount(userId, count);
+    return result;
   }
 
   /**
-   * 标记全部已读
+   * 标记全部已读并推送 WS 事件
    */
   async markAllAsRead(userId: number) {
-    return this.prisma.notification.updateMany({
+    const result = await this.prisma.notification.updateMany({
       where: { userId, isRead: 0 },
       data: { isRead: 1 },
     });
+    const count = await this.countUnread(userId);
+    this.notificationGateway.notifyUnreadCount(userId, count);
+    return result;
   }
 }

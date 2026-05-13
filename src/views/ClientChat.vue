@@ -3,7 +3,7 @@
     <div class="chat-sidebar">
       <div class="sidebar-header">
         <el-button type="primary" size="small" @click="startNewChat" class="new-chat-btn">
-          + 新对话
+          {{ $t('client.chat.newChat') }}
         </el-button>
       </div>
       <div class="sidebar-list" v-loading="loadingSessions">
@@ -15,16 +15,16 @@
           @click="switchSession(session.sessionId)"
         >
           <div class="session-info">
-            <div class="session-preview">{{ session.lastMessage || '新对话' }}</div>
+            <div class="session-preview">{{ session.lastMessage || $t('client.chat.newChat') }}</div>
             <div class="session-time">{{ formatTime(session.lastTime) }}</div>
           </div>
           <div class="session-actions">
-            <el-tooltip content="导出">
+            <el-tooltip :content="$t('client.chat.export')">
               <el-button text size="small" class="action-btn" @click.stop="handleExport(session.sessionId)">
                 <el-icon><Download /></el-icon>
               </el-button>
             </el-tooltip>
-            <el-tooltip content="删除">
+            <el-tooltip :content="$t('client.chat.delete')">
               <el-button text size="small" type="danger" class="action-btn" @click.stop="handleDelete(session.sessionId)">
                 <el-icon><Delete /></el-icon>
               </el-button>
@@ -33,7 +33,7 @@
         </div>
         <div v-if="sessions.length === 0 && !loadingSessions" class="empty-sessions">
           <el-icon :size="48" color="#c0c4cc"><ChatLineSquare /></el-icon>
-          <p class="empty-text">还没有咨询记录</p>
+          <p class="empty-text">{{ $t('client.chat.noRecords') }}</p>
         </div>
       </div>
     </div>
@@ -44,9 +44,9 @@
           <div class="welcome-icon">
             <el-icon :size="48"><ChatLineSquare /></el-icon>
           </div>
-          <h2 class="welcome-title">你好，{{ authStore.username }}</h2>
-          <p class="welcome-desc">我是你的 AI 心理健康助手。有什么想聊的吗？</p>
-          <p class="welcome-disclaimer">本助手为 AI 技术支持，不提供医疗诊断、处方或心理治疗。如有紧急情况，请拨打心理援助热线。</p>
+          <h2 class="welcome-title">{{ $t('client.chat.welcomeTitle', { username: authStore.username }) }}</h2>
+          <p class="welcome-desc">{{ $t('client.chat.welcomeDesc') }}</p>
+          <p class="welcome-disclaimer">{{ $t('client.chat.welcomeDisclaimer') }}</p>
           <div class="suggestion-chips">
             <el-tag
               v-for="(s, i) in suggestions"
@@ -60,7 +60,7 @@
 
         <div v-for="(msg, idx) in messages" :key="idx" class="message-row" :class="msg.role">
           <div class="message-avatar">
-            <el-avatar :size="36" v-if="msg.role === 'assistant'" icon="ChatLineSquare" class="ai-avatar" />
+            <el-avatar :size="36" v-if="msg.role === 'assistant'" :src="aiAvatar" class="ai-avatar" />
             <el-avatar :size="36" v-else class="user-avatar">{{ authStore.username?.[0] || 'U' }}</el-avatar>
           </div>
           <div class="message-content">
@@ -73,14 +73,14 @@
       </div>
 
       <div class="chat-input-bar">
-        <div class="input-hint">AI 回复仅供参考，不能替代专业心理咨询</div>
+        <div class="input-hint">{{ $t('client.chat.inputHint') }}</div>
         <div class="input-row">
           <el-input
             v-model="inputText"
             type="textarea"
             :rows="2"
             :disabled="streaming"
-            placeholder="输入你想聊的话题..."
+            :placeholder="$t('client.chat.placeholder')"
             @keyup.ctrl.enter="handleSend"
             resize="none"
           />
@@ -91,7 +91,7 @@
             @click="handleSend"
             class="send-btn"
           >
-            {{ streaming ? '思考中...' : '发送' }}
+            {{ streaming ? $t('client.chat.thinking') : $t('client.chat.send') }}
           </el-button>
         </div>
       </div>
@@ -102,12 +102,15 @@
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { ChatLineSquare, Delete, Download } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/useAuthStore'
 import { mySessionPage, sessionMessages, deleteSession, exportSession } from '@/api/client'
 import { renderMarkdown } from '@/utils/markdown'
 import { logger } from '@/utils/logger'
+import aiAvatar from '@/assets/logo.png'
 
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
 const messagesRef = ref(null)
 const inputText = ref('')
@@ -119,13 +122,7 @@ const currentSessionId = ref(null)
 const sessions = ref([])
 const loadingSessions = ref(false)
 
-const suggestions = [
-  '最近总是感到焦虑，怎么办？',
-  '如何改善睡眠质量？',
-  '工作压力大，如何调节情绪？',
-  '怎样建立自信心？',
-  '我需要心理援助热线',
-]
+const suggestions = t('client.chat.suggestions')
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -135,15 +132,14 @@ const scrollToBottom = () => {
   })
 }
 
-// markdown 渲染（使用 marked + DOMPurify，见 src/utils/markdown.js）
-
 const formatTime = (time) => {
   if (!time) return ''
   const d = new Date(time)
   const now = new Date()
   const isToday = d.toDateString() === now.toDateString()
-  if (isToday) return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  return d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+  const lang = locale.value === 'en' ? 'en-US' : 'zh-CN'
+  if (isToday) return d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(lang, { month: '2-digit', day: '2-digit' })
 }
 
 // 加载会话列表
@@ -166,7 +162,7 @@ const loadMessages = async (sessionId) => {
     messages.value = res || []
     scrollToBottom()
   } catch {
-    ElMessage.error('加载消息失败')
+    ElMessage.error(t('client.chat.loadingFailed'))
     messages.value = []
   }
 }
@@ -189,9 +185,9 @@ const startNewChat = () => {
 // 删除会话
 const handleDelete = async (sessionId) => {
   try {
-    await ElMessageBox.confirm('确定要删除此对话吗？删除后不可恢复。', '删除确认', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('client.chat.deleteConfirm'), t('client.chat.deleteTitle'), {
+      confirmButtonText: t('client.chat.deleteBtn'),
+      cancelButtonText: t('client.chat.cancelBtn'),
       type: 'warning',
     })
   } catch {
@@ -200,7 +196,7 @@ const handleDelete = async (sessionId) => {
 
   try {
     await deleteSession(sessionId)
-    ElMessage.success('对话已删除')
+    ElMessage.success(t('client.chat.deleted'))
     // 如果删除的是当前会话，清空聊天区域
     if (currentSessionId.value === sessionId) {
       currentSessionId.value = null
@@ -208,7 +204,7 @@ const handleDelete = async (sessionId) => {
     }
     await loadSessions()
   } catch {
-    ElMessage.error('删除失败')
+    ElMessage.error(t('client.chat.deleteFailed'))
   }
 }
 
@@ -226,9 +222,9 @@ const handleExport = async (sessionId) => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    ElMessage.success('对话已导出')
+    ElMessage.success(t('client.chat.exported'))
   } catch {
-    ElMessage.error('导出失败')
+    ElMessage.error(t('client.chat.exportFailed'))
   }
 }
 
@@ -250,8 +246,9 @@ const handleSend = async () => {
   scrollToBottom()
 
   streaming.value = true
-  const assistantMsg = { role: 'assistant', content: '' }
-  messages.value.push(assistantMsg)
+  messages.value.push({ role: 'assistant', content: '' })
+  // 通过响应式数组获取 Vue reactive proxy，确保后续 content 修改触发模板更新
+  const assistantMsg = messages.value[messages.value.length - 1]
 
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 60000)
@@ -301,7 +298,7 @@ const handleSend = async () => {
             scrollToBottom()
           } else if (parsed.type === 'error') {
             streaming.value = false
-            assistantMsg.content = parsed.message || 'AI 服务暂时不可用，请稍后再试。'
+            assistantMsg.content = t('client.chat.serviceUnavailable')
             scrollToBottom()
           }
         } catch {
@@ -313,11 +310,11 @@ const handleSend = async () => {
     clearTimeout(timeoutId)
     logger.error('Chat error:', error)
     if (error.name === 'AbortError') {
-      assistantMsg.content = '请求超时，请稍后重试。'
-      ElMessage.warning('连接超时')
+      assistantMsg.content = t('client.chat.requestTimeout')
+      ElMessage.warning(t('client.chat.timeout'))
     } else {
-      assistantMsg.content = '网络连接失败，请检查后端服务是否运行。'
-      ElMessage.error('连接失败')
+      assistantMsg.content = t('client.chat.networkError')
+      ElMessage.error(t('client.chat.connectionFailed'))
     }
   } finally {
     clearTimeout(timeoutId)
@@ -578,8 +575,8 @@ onMounted(async () => {
         flex-shrink: 0;
 
         .ai-avatar {
-          background: linear-gradient(135deg, #a78bfa, #c084fc);
-          color: #fff;
+          border: 2px solid #c084fc;
+          box-sizing: content-box;
         }
 
         .user-avatar {

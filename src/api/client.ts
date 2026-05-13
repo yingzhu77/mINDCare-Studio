@@ -88,6 +88,26 @@ export function publishedArticleDetail(id: number): Promise<KnowledgeArticle> {
   return service.get(`/client/article/published/${id}`)
 }
 
+// ==================== 情绪洞察统计 ====================
+
+export interface EmotionStatistics {
+  overview: {
+    totalCount: number
+    thisMonthCount: number
+    averageMoodScore: number | null
+    averageSleepQuality: number | null
+    averageStressLevel: number | null
+  }
+  moodTrend: Array<{ month: string; avgScore: number; count: number }>
+  emotionDistribution: Array<{ emotion: string; count: number }>
+  stressSleepData: Array<{ date: string; stressLevel: number; sleepQuality: number }>
+  triggerAnalysis: Array<{ trigger: string; count: number }>
+}
+
+export function myDiaryStatistics(): Promise<EmotionStatistics> {
+  return service.get('/emotion-diary/my/statistics')
+}
+
 // ==================== 通知 ====================
 
 export function notificationPage(params: PageParams): Promise<PageResult<NotificationItem>> {

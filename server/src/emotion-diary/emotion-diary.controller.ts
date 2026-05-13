@@ -62,6 +62,12 @@ export class EmotionDiaryController {
     return this.diaryService.myPage(dto, user.sub, { diaryDate });
   }
 
+  @Get('emotion-diary/my/statistics')
+  @UseGuards(JwtAuthGuard)
+  statistics(@CurrentUser() user: any) {
+    return this.diaryService.myStatistics(user.sub);
+  }
+
   @Delete('emotion-diary/:id')
   @UseGuards(JwtAuthGuard)
   delete(@Param('id') id: string, @CurrentUser() user: any) {

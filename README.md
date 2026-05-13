@@ -4,12 +4,12 @@
 
 ## 项目状态
 
-**当前版本：v2.5.1 — 文章审核流程收口 + 管理端知识文章体验修复 + 登录/性能优化**
+**当前版本：v2.5.2 — 用户端情绪洞察 + SSE 流式修复 + 客户端 SSE 流式修复 + 文档同步收口**
 
 | 层级   | 状态          | 说明                                                                                |
 | ------ | ------------- | ----------------------------------------------------------------------------------- |
-| 前端   | ✅ 管理端完成 | 登录/Dashboard(含 ECharts 趋势图)/知识文章 CRUD+审核/咨询记录/情绪日志/用户管理/分析页 |
-| 前端   | ✅ 用户端完整 | ClientLayout + AI 聊天(SSE + 会话侧边栏+删除/导出) + 情绪日记 + 文章投稿+修订+知识阅读 + 通知铃铛 |
+| 前端   | ✅ 管理端完成 | 暖薰衣草紫统一主题 + 首页 + 登录/Dashboard(ECharts 趋势图)/知识文章 CRUD+审核/咨询记录/情绪日志/用户管理/分析页 |
+| 前端   | ✅ 用户端完整 | ClientLayout(顶部导航) + AI 聊天(SSE+会话侧边栏+删除/导出) + 情绪日记 + 情绪洞察(趋势/分布/图表) + 文章投稿+修订+知识阅读 + 通知铃铛 |
 | 后端   | ✅ 全部完成   | NestJS + Prisma + 9 实体(含通知+修订) + 认证 + 管理端/用户端接口 + AI 模块 + 审核通知 |
 | 数据库 | ✅ 主线完成   | Prisma migration 管理，SQLite 开发，可切换 MySQL，含 KnowledgeArticleRevision 表     |
 | AI     | ✅ 骨架就绪   | DeepSeek 客户端 + mock AI 模式 + SSE 流式 + 分析结果落库+缓存                       |
@@ -65,6 +65,7 @@ src/                       # Vue3 前端
     ClientLayout.vue       # 用户端布局（顶部导航 + 通知铃铛）
     ClientChat.vue         # AI 聊天（SSE 流式 + 会话侧边栏）
     ClientDiary.vue        # 用户端情绪日记
+    ClientEmotionInsights.vue        # 用户端情绪洞察（图表）
     ClientArticles.vue     # 用户端文章投稿列表
     ClientArticleCreate.vue# 用户端投稿编辑
 
@@ -93,26 +94,31 @@ server/                    # NestJS + Prisma 后端
   .env.example
 
 docs/                      # 项目文档和计划书
-scripts/                   # 一键启动和演示数据脚本
+scripts/                   # 一键启动脚本
 e2e/                       # Playwright E2E 测试
 public/                    # 静态资源（favicon、icons）
-```
+desktop/                   # Electron 桌面版（规划中）
 
-## 本地运行
+## 运行方式
 
-### 前端
+项目支持三种运行方式，按需选择：
+
+| 方式 | 适用场景 | 数据库 | AI |
+|------|----------|--------|----|
+| 开发运行 | 改代码 / 调试 | SQLite（可切换 MySQL） | Mock AI（可配 Key） |
+| Docker 部署 | 生产 / 自部署 | MySQL 8.0 | 可配真实 Key |
+| Windows EXE | 本地演示 / 复现 | SQLite | Mock AI（可配 Key） |
+
+### 方式一：开发运行
+
+**前端**
 
 ```powershell
 npm install
 npm run dev -- --host 127.0.0.1
 ```
 
-访问：`http://127.0.0.1:5173`
-
-- 管理端：`/auth/login`（admin 角色登录后自动跳转 `/back/dashboard`）
-- 用户端：`/auth/login`（user 角色登录后自动跳转 `/client/chat`）
-
-### 后端（NestJS 主线）
+**后端（NestJS 主线）**
 
 ```powershell
 cd server
@@ -122,7 +128,42 @@ npx prisma db seed
 npm run start:dev
 ```
 
+访问：`http://127.0.0.1:5173`
+
+- 管理端：`/auth/login`（admin 角色登录后自动跳转 `/back/dashboard`）
+- 用户端：`/auth/login`（user 角色登录后自动跳转 `/client/chat`）
+
+或使用一键启动脚本：
+
+```powershell
+# Windows
+.\scripts\start-dev.ps1
+
+# macOS / Linux
+bash scripts/setup.sh
+```
+
+### 方式二：Docker Compose
+
+```bash
+docker compose up -d
+```
+
+访问 `http://localhost:8080`。详见 [docs/deployment.md](docs/deployment.md)。
+
+### 方式三：Windows 演示 EXE（规划中）
+
+计划基于 Electron 打包本地演示版，双击运行，内置前后端 + SQLite + Mock AI，详见 [docs/deployment-plan.md](docs/deployment-plan.md) 路线 B。
+
 ## 已实现接口
+
+### 公共页面
+
+| 路径 | 说明 |
+| ---- | ---- |
+| `/` | 首页（功能卡片 + 关于区域） |
+| `/auth/login` | 登录页（左侧 logo + 暖金色文案） |
+| `/auth/register` | 注册 |
 
 ### 认证
 
@@ -173,6 +214,7 @@ npm run start:dev
 | GET    | `/api/emotion-diary/my/page`          | 我的情绪日记分页          |
 | PUT    | `/api/emotion-diary/:id`              | 更新情绪日记              |
 | DELETE | `/api/emotion-diary/:id`              | 删除情绪日记（用户端）    |
+| GET    | `/api/emotion-diary/my/statistics`   | 我的情绪数据统计（趋势/分布） |
 | GET    | `/api/client/article/page`            | 我的投稿列表              |
 | POST   | `/api/client/article`                 | 创建投稿                  |
 | PUT    | `/api/client/article/:id`             | 编辑投稿                  |
@@ -209,11 +251,10 @@ npm run start:dev
 | ------ | ------ | ----------- |
 | 管理员 | admin  | admin123456 |
 
-## 主计划书
+## 部署与运维
 
-所有开发决策、阶段划分、验收标准均以主计划书为准：
-
-- [docs/project-fullstack-plan.md](docs/project-fullstack-plan.md)
+- [docs/deployment.md](docs/deployment.md) — Docker Compose 三容器编排 + Nginx SSL + 安全加固
+- [docs/deployment-plan.md](docs/deployment-plan.md) — 部署上线双线计划（开源部署线 + Windows EXE 线）
 
 ## 验证命令
 

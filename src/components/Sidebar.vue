@@ -8,8 +8,8 @@
       <!-- 使用 Vue 3 的内置组件 <Transition> 实现 Logo 标题的平滑隐藏动画 -->
       <transition name="fade">
         <div v-if="!menuStore.isCollapsed" class="title-wrapper">
-          <div class="main-title text-ellipsis">心理健康AI助手</div>
-          <div class="sub-title text-ellipsis">管理后台</div>
+          <div class="main-title text-ellipsis">{{ $t('client.layout.logo') }}</div>
+          <div class="sub-title text-ellipsis">{{ $t('menu.adminTitle') }}</div>
         </div>
       </transition>
     </div>
@@ -36,9 +36,9 @@
             :max="99"
             class="review-badge"
           >
-            <span>{{ item.meta.title }}</span>
+            <span>{{ $t(item.meta.i18n) || item.meta.title }}</span>
           </el-badge>
-          <span v-else>{{ item.meta.title }}</span>
+          <span v-else>{{ $t(item.meta.i18n) || item.meta.title }}</span>
         </template>
       </el-menu-item>
     </el-menu>

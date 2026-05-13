@@ -1,9 +1,9 @@
 <template>
   <div class="diary-view">
     <div class="header-section">
-      <h2 class="section-title">我的情绪日记</h2>
+      <h2 class="section-title">{{ $t('client.diary.title') }}</h2>
       <el-button type="primary" @click="handleAdd">
-        <el-icon><Plus /></el-icon>写日记
+        <el-icon><Plus /></el-icon>{{ $t('client.diary.addBtn') }}
       </el-button>
     </div>
 
@@ -12,10 +12,10 @@
       <div class="empty-illustration">
         <el-icon :size="64"><EditPen /></el-icon>
       </div>
-      <h3 class="empty-title">还没有情绪日记</h3>
-      <p class="empty-desc">记录每天的情绪变化，发现自己的心理规律</p>
+      <h3 class="empty-title">{{ $t('client.diary.emptyTitle') }}</h3>
+      <p class="empty-desc">{{ $t('client.diary.emptyDesc') }}</p>
       <el-button type="primary" @click="handleAdd">
-        <el-icon><Plus /></el-icon>开始记录第一条情绪日记
+        <el-icon><Plus /></el-icon>{{ $t('client.diary.emptyAction') }}
       </el-button>
     </div>
 
@@ -28,13 +28,13 @@
         style="width: 100%"
         class="custom-table"
       >
-        <el-table-column label="日期" width="120">
+        <el-table-column :label="$t('client.diary.colDate')" width="120">
           <template #default="{ row }">
             {{ row.diaryDate || '-' }}
           </template>
         </el-table-column>
 
-        <el-table-column label="心情评分" width="100" align="center">
+        <el-table-column :label="$t('client.diary.colMood')" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="getMoodType(row.moodScore)" effect="light" round>
               {{ row.moodScore || '-' }}/10
@@ -42,13 +42,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="睡眠质量" width="100" align="center">
+        <el-table-column :label="$t('client.diary.colSleep')" width="100" align="center">
           <template #default="{ row }">
             {{ row.sleepQuality != null ? row.sleepQuality + '/10' : '-' }}
           </template>
         </el-table-column>
 
-        <el-table-column label="压力等级" width="100" align="center">
+        <el-table-column :label="$t('client.diary.colStress')" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="getStressType(row.stressLevel)" effect="light" round>
               {{ row.stressLevel != null ? row.stressLevel + '/10' : '-' }}
@@ -56,7 +56,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="主导情绪" width="120">
+        <el-table-column :label="$t('client.diary.colEmotion')" width="120">
           <template #default="{ row }">
             <el-tag
               v-if="row.dominantEmotion"
@@ -70,7 +70,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="日记内容" min-width="200">
+        <el-table-column :label="$t('client.diary.colContent')" min-width="200">
           <template #default="{ row }">
             <div class="content-preview text-ellipsis">
               {{ row.diaryContent || '-' }}
@@ -78,20 +78,20 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="140" align="center" fixed="right">
+        <el-table-column :label="$t('client.diary.colActions')" width="140" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" @click="handleEdit(row)">{{ $t('client.diary.edit') }}</el-button>
+            <el-button link type="danger" @click="handleDelete(row)">{{ $t('client.diary.delete') }}</el-button>
           </template>
         </el-table-column>
 
         <template #empty>
-          <el-empty description="暂无情绪日记" />
+          <el-empty :description="$t('client.diary.noData')" />
         </template>
       </el-table>
 
       <div class="pagination-wrapper">
-        <div class="total-info">共 {{ pagination.total }} 条</div>
+        <div class="total-info">{{ $t('client.diary.total', { count: pagination.total }) }}</div>
         <el-pagination
           v-model:current-page="pagination.pageNum"
           v-model:page-size="pagination.pageSize"
@@ -119,11 +119,11 @@
         label-width="90px"
         label-position="top"
       >
-        <el-form-item label="日期" prop="diaryDate">
+        <el-form-item :label="$t('client.diary.dateLabel')" prop="diaryDate">
           <el-date-picker
             v-model="form.diaryDate"
             type="date"
-            placeholder="选择日期"
+            :placeholder="$t('client.diary.datePlaceholder')"
             format="YYYY-MM-DD"
             value-format="YYYY-MM-DD"
             style="width: 100%"
@@ -132,7 +132,7 @@
 
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="心情评分 (1-10)" prop="moodScore">
+            <el-form-item :label="$t('client.diary.moodLabel')" prop="moodScore">
               <el-slider
                 v-model="form.moodScore"
                 :min="1"
@@ -142,7 +142,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="睡眠质量 (1-10)" prop="sleepQuality">
+            <el-form-item :label="$t('client.diary.sleepLabel')" prop="sleepQuality">
               <el-slider
                 v-model="form.sleepQuality"
                 :min="1"
@@ -152,7 +152,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="压力等级 (1-10)" prop="stressLevel">
+            <el-form-item :label="$t('client.diary.stressLabel')" prop="stressLevel">
               <el-slider
                 v-model="form.stressLevel"
                 :min="1"
@@ -163,8 +163,8 @@
           </el-col>
         </el-row>
 
-        <el-form-item label="主导情绪" prop="dominantEmotion">
-          <el-select v-model="form.dominantEmotion" placeholder="选择情绪" style="width: 100%">
+        <el-form-item :label="$t('client.diary.emotionLabel')" prop="dominantEmotion">
+          <el-select v-model="form.dominantEmotion" :placeholder="$t('client.diary.emotionPlaceholder')" style="width: 100%">
             <el-option label="开心" value="开心" />
             <el-option label="平静" value="平静" />
             <el-option label="焦虑" value="焦虑" />
@@ -178,14 +178,14 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="情绪触发因素" prop="emotionTriggers">
+        <el-form-item :label="$t('client.diary.triggerLabel')" prop="emotionTriggers">
           <el-select
             v-model="form.emotionTriggers"
             multiple
             filterable
             allow-create
             default-first-option
-            placeholder="选择或输入触发因素"
+            :placeholder="$t('client.diary.triggerPlaceholder')"
             style="width: 100%"
           >
             <el-option label="工作" value="工作" />
@@ -199,12 +199,12 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="日记内容" prop="diaryContent">
+        <el-form-item :label="$t('client.diary.contentLabel')" prop="diaryContent">
           <el-input
             v-model="form.diaryContent"
             type="textarea"
             :rows="5"
-            placeholder="记录今天的情绪和想法..."
+            :placeholder="$t('client.diary.contentPlaceholder')"
             maxlength="2000"
             show-word-limit
           />
@@ -212,8 +212,8 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">保存</el-button>
+        <el-button @click="dialogVisible = false">{{ $t('client.diary.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ $t('client.diary.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -222,9 +222,12 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { Plus, EditPen } from '@element-plus/icons-vue'
 import { myDiaryPage, diaryAdd, diaryUpdate, diaryDelete } from '@/api/client'
 import { logger } from '@/utils/logger'
+
+const { t } = useI18n()
 
 const pagination = reactive({
   pageNum: 1,
@@ -250,13 +253,13 @@ const form = reactive({
   diaryContent: '',
 })
 
-const rules = {
-  diaryDate: [{ required: true, message: '请选择日期', trigger: 'change' }],
-  moodScore: [{ required: true, message: '请评分', trigger: 'blur' }],
-  diaryContent: [{ required: true, message: '请输入日记内容', trigger: 'blur' }],
-}
+const rules = computed(() => ({
+  diaryDate: [{ required: true, message: t('client.diary.datePlaceholder'), trigger: 'change' }],
+  moodScore: [{ required: true, message: t('client.diary.moodLabel'), trigger: 'blur' }],
+  diaryContent: [{ required: true, message: t('client.diary.contentPlaceholder'), trigger: 'blur' }],
+}))
 
-const dialogTitle = computed(() => (isEdit.value ? '编辑日记' : '写日记'))
+const dialogTitle = computed(() => isEdit.value ? t('client.diary.dialogEdit') : t('client.diary.dialogAdd'))
 
 const getMoodType = (score) => {
   if (score >= 7) return 'success'
@@ -336,11 +339,11 @@ const handleEdit = (row) => {
 
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定删除这条日记吗？', '确认删除', {
+    await ElMessageBox.confirm(t('client.diary.deleteConfirm'), t('client.diary.deleteTitle'), {
       type: 'warning',
     })
     await diaryDelete(row.id)
-    ElMessage.success('已删除')
+    ElMessage.success(t('client.diary.deleted'))
     fetchTableData()
   } catch {
     // 取消删除
@@ -366,10 +369,10 @@ const handleSubmit = async () => {
 
       if (isEdit.value && editId.value) {
         await diaryUpdate(editId.value, payload)
-        ElMessage.success('已更新')
+        ElMessage.success(t('client.diary.updated'))
       } else {
         await diaryAdd(payload)
-        ElMessage.success('已保存')
+        ElMessage.success(t('client.diary.saved'))
       }
 
       dialogVisible.value = false

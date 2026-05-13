@@ -12,12 +12,12 @@ const backendRouterRoutes = [
       {
         path: 'login',
         component: () => import('@/views/Login.vue'),
-        meta: { title: '登录' },
+        meta: { title: '登录', i18n: 'menu.login' },
       },
       {
         path: 'register',
         component: () => import('@/views/Register.vue'),
-        meta: { title: '注册' },
+        meta: { title: '注册', i18n: 'menu.register' },
       },
     ],
   },
@@ -32,6 +32,7 @@ const backendRouterRoutes = [
           title: '数据分析',
           icon: 'PieChart',
           roles: ['admin'],
+          i18n: 'menu.dashboard',
         },
       },
       {
@@ -41,6 +42,7 @@ const backendRouterRoutes = [
           title: '知识文章',
           icon: 'Document',
           roles: ['admin'],
+          i18n: 'menu.knowledge',
         },
       },
       {
@@ -50,6 +52,7 @@ const backendRouterRoutes = [
           title: '文章审核',
           icon: 'CircleCheck',
           roles: ['admin'],
+          i18n: 'menu.articleReview',
         },
       },
       {
@@ -59,6 +62,7 @@ const backendRouterRoutes = [
           title: '咨询记录',
           icon: 'ChatLineSquare',
           roles: ['admin'],
+          i18n: 'menu.consultations',
         },
       },
       {
@@ -68,6 +72,7 @@ const backendRouterRoutes = [
           title: '数据洞察',
           icon: 'DataAnalysis',
           roles: ['admin'],
+          i18n: 'menu.analytics',
         },
       },
       {
@@ -77,6 +82,7 @@ const backendRouterRoutes = [
           title: '情绪日志',
           icon: 'User',
           roles: ['admin'],
+          i18n: 'menu.logs',
         },
       },
     ],
@@ -91,6 +97,7 @@ const backendRouterRoutes = [
         meta: {
           title: 'AI 咨询',
           roles: ['admin', 'user'],
+          i18n: 'menu.chat',
         },
       },
       {
@@ -99,6 +106,7 @@ const backendRouterRoutes = [
         meta: {
           title: '情绪日记',
           roles: ['admin', 'user'],
+          i18n: 'menu.diary',
         },
       },
       {
@@ -107,6 +115,7 @@ const backendRouterRoutes = [
         meta: {
           title: '知识阅读',
           roles: ['admin', 'user'],
+          i18n: 'menu.knowledgeReading',
         },
       },
       {
@@ -115,6 +124,16 @@ const backendRouterRoutes = [
         meta: {
           title: '文章详情',
           roles: ['admin', 'user'],
+          i18n: 'menu.knowledgeDetail',
+        },
+      },
+      {
+        path: 'insights',
+        component: () => import('@/views/ClientEmotionInsights.vue'),
+        meta: {
+          title: '情绪洞察',
+          roles: ['admin', 'user'],
+          i18n: 'menu.insights',
         },
       },
       {
@@ -123,6 +142,7 @@ const backendRouterRoutes = [
         meta: {
           title: '我的投稿',
           roles: ['admin', 'user'],
+          i18n: 'menu.articles',
         },
       },
       {
@@ -131,6 +151,7 @@ const backendRouterRoutes = [
         meta: {
           title: '写文章',
           roles: ['admin', 'user'],
+          i18n: 'menu.articleCreate',
         },
       },
       {
@@ -139,6 +160,7 @@ const backendRouterRoutes = [
         meta: {
           title: '编辑文章',
           roles: ['admin', 'user'],
+          i18n: 'menu.articleEdit',
         },
       },
     ],
@@ -146,18 +168,18 @@ const backendRouterRoutes = [
   {
     path: '/articles',
     component: () => import('@/views/ClientArticleBrowse.vue'),
-    meta: { title: '知识文章' },
+    meta: { title: '知识文章', i18n: 'menu.knowledgeReading' },
   },
   {
     path: '/articles/:id',
     component: () => import('@/views/ClientArticleDetail.vue'),
-    meta: { title: '文章详情' },
+    meta: { title: '文章详情', i18n: 'menu.knowledgeDetail' },
   },
   {
     path: '/',
     name: 'Home',
     component: () => import('@/views/Home.vue'),
-    meta: { title: '心晴 · AI心理健康助手' },
+    meta: { title: '心晴 · AI心理健康助手', i18n: 'menu.home' },
   },
 ]
 

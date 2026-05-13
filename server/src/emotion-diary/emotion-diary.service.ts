@@ -3,6 +3,20 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateDiaryDto, UpdateDiaryDto } from './dto/diary.dto';
 
+export interface EmotionStatistics {
+  overview: {
+    totalCount: number;
+    thisMonthCount: number;
+    averageMoodScore: number | null;
+    averageSleepQuality: number | null;
+    averageStressLevel: number | null;
+  };
+  moodTrend: Array<{ month: string; avgScore: number; count: number }>;
+  emotionDistribution: Array<{ emotion: string; count: number }>;
+  stressSleepData: Array<{ date: string; stressLevel: number; sleepQuality: number }>;
+  triggerAnalysis: Array<{ trigger: string; count: number }>;
+}
+
 @Injectable()
 export class EmotionDiaryService {
   constructor(private readonly prisma: PrismaService) {}
@@ -107,6 +121,105 @@ export class EmotionDiaryService {
       throw new ForbiddenException('无权删除他人的情绪日记');
     }
     return this.prisma.emotionDiary.delete({ where: { id } });
+  }
+
+  async myStatistics(userId: number): Promise<EmotionStatistics> {
+    const diaries = await this.prisma.emotionDiary.findMany({
+      where: { userId },
+      orderBy: { diaryDate: 'asc' },
+    });
+
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    // 总数与本月数
+    const totalCount = diaries.length;
+    const thisMonthCount = diaries.filter((d) => d.diaryDate && d.diaryDate.startsWith(thisMonth)).length;
+
+    // 均值
+    const withScore = diaries.filter((d): d is typeof d & { moodScore: number } => d.moodScore != null);
+    const withSleep = diaries.filter((d): d is typeof d & { sleepQuality: number } => d.sleepQuality != null);
+    const withStress = diaries.filter((d): d is typeof d & { stressLevel: number } => d.stressLevel != null);
+    const averageMoodScore = withScore.length
+      ? Math.round((withScore.reduce((s, d) => s + d.moodScore, 0) / withScore.length) * 10) / 10
+      : null;
+    const averageSleepQuality = withSleep.length
+      ? Math.round((withSleep.reduce((s, d) => s + d.sleepQuality, 0) / withSleep.length) * 10) / 10
+      : null;
+    const averageStressLevel = withStress.length
+      ? Math.round((withStress.reduce((s, d) => s + d.stressLevel, 0) / withStress.length) * 10) / 10
+      : null;
+
+    // 月度情绪趋势
+    const monthMap = new Map<string, { sum: number; count: number }>();
+    for (const d of diaries) {
+      if (!d.diaryDate || d.moodScore == null) continue;
+      const month = d.diaryDate.slice(0, 7);
+      const entry = monthMap.get(month) || { sum: 0, count: 0 };
+      entry.sum += d.moodScore;
+      entry.count += 1;
+      monthMap.set(month, entry);
+    }
+    const moodTrend = Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, { sum, count }]) => ({
+        month,
+        avgScore: Math.round((sum / count) * 10) / 10,
+        count,
+      }));
+
+    // 情绪分布（dominantEmotion）
+    const emotionMap = new Map<string, number>();
+    for (const d of diaries) {
+      if (!d.dominantEmotion) continue;
+      emotionMap.set(d.dominantEmotion, (emotionMap.get(d.dominantEmotion) || 0) + 1);
+    }
+    const emotionDistribution = Array.from(emotionMap.entries())
+      .sort(([, a], [, b]) => b - a)
+      .map(([emotion, count]) => ({ emotion, count }));
+
+    // 压力与睡眠对照（最近 30 条有数据的）
+    const withStressSleep = diaries.filter(
+      (d): d is typeof d & { diaryDate: string; stressLevel: number; sleepQuality: number } =>
+        !!d.diaryDate && d.stressLevel != null && d.sleepQuality != null,
+    );
+    const stressSleepData = withStressSleep
+      .slice(-30)
+      .map((d) => ({
+        date: d.diaryDate,
+        stressLevel: d.stressLevel,
+        sleepQuality: d.sleepQuality,
+      }));
+
+    // 触发因素分析
+    const triggerMap = new Map<string, number>();
+    for (const d of diaries) {
+      if (!d.emotionTriggers) continue;
+      const triggers = typeof d.emotionTriggers === 'string'
+        ? d.emotionTriggers.split(/[,，、]/).map((s) => s.trim()).filter(Boolean)
+        : d.emotionTriggers;
+      for (const t of triggers) {
+        triggerMap.set(t, (triggerMap.get(t) || 0) + 1);
+      }
+    }
+    const triggerAnalysis = Array.from(triggerMap.entries())
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([trigger, count]) => ({ trigger, count }));
+
+    return {
+      overview: {
+        totalCount,
+        thisMonthCount,
+        averageMoodScore,
+        averageSleepQuality,
+        averageStressLevel,
+      },
+      moodTrend,
+      emotionDistribution,
+      stressSleepData,
+      triggerAnalysis,
+    };
   }
 
   private async getDiaryOrFail(id: number) {

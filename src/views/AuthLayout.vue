@@ -3,14 +3,10 @@
     <!-- 左侧展示区 -->
     <div class="auth-left">
       <div class="auth-content">
-        <div class="brand-badge">心晴 · AI 心理健康</div>
-        <h1 class="auth-title">心理AI助手</h1>
+        <div class="brand-badge">{{ $t('auth.layout.brand') }}</div>
+        <h1 class="auth-title">{{ $t('auth.layout.title') }}</h1>
         <div class="auth-desc">
-          <p class="desc-line">每个深夜，每个焦虑的时刻，</p>
-          <p class="desc-line">我们都在这里。</p>
-          <p class="desc-line desc-highlight">不必独自承受，</p>
-          <p class="desc-line">让心与心的连接</p>
-          <p class="desc-line">温暖您的每一天</p>
+          <p class="desc-line" v-for="(line, idx) in $t('auth.layout.desc')" :key="idx">{{ line }}</p>
         </div>
         <div class="logo-wrapper">
           <img src="@/assets/logo.png" alt="心晴AI" class="auth-logo" />
@@ -23,7 +19,7 @@
       <div class="form-container">
         <div class="back-home" @click="$router.push('/')">
           <el-icon><ArrowLeft /></el-icon>
-          返回首页
+          {{ $t('auth.layout.backHome') }}
         </div>
         <router-view v-slot="{ Component }">
           <transition name="fade-transform" mode="out-in">
@@ -117,14 +113,6 @@ import { ArrowLeft } from '@element-plus/icons-vue'
           text-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
           font-weight: 400;
           letter-spacing: 1px;
-        }
-
-        .desc-highlight {
-          font-size: 20px;
-          font-weight: 600;
-          opacity: 1;
-          color: #FCD34D;
-          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
       }
 

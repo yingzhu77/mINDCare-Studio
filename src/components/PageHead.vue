@@ -15,10 +15,22 @@
           <Fold v-else />
         </el-icon>
       </div>
-      <h2 class="page-title">{{ title || currentRouteTitle }}</h2>
+      <h2 class="page-title">{{ title || ($t(route.meta.i18n) || currentRouteTitle) }}</h2>
     </div>
 
     <div class="right-section">
+      <el-dropdown trigger="click" @command="switchLang">
+        <span class="lang-switch">
+          <el-icon><Global /></el-icon>
+          <span class="lang-label">{{ currentLangLabel }}</span>
+        </span>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="zh">中文</el-dropdown-item>
+            <el-dropdown-item command="en">English</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
       <slot>
         <el-dropdown trigger="click">
           <div class="user-info">
@@ -31,7 +43,7 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
+              <el-dropdown-item @click="handleLogout">{{ $t('admin.pageHead.logout') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -43,9 +55,12 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useMenuStore } from '@/store/useMenuStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { Expand, Fold, ArrowDown } from '@element-plus/icons-vue'
+
+const { locale } = useI18n()
 
 const props = defineProps({
   title: {
@@ -62,6 +77,12 @@ const route = useRoute()
 const router = useRouter()
 const menuStore = useMenuStore()
 const authStore = useAuthStore()
+
+const currentLangLabel = computed(() => locale.value === 'zh' ? '中文' : 'EN')
+
+const switchLang = (lang) => {
+  locale.value = lang
+}
 
 const currentRouteTitle = computed(() => route.meta.title || '管理后台')
 
@@ -140,6 +161,31 @@ const handleLogout = () => {
   }
 
   .right-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .lang-switch {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: var(--el-color-primary-light-9);
+        color: var(--primary-color);
+      }
+
+      .lang-label {
+        font-weight: 500;
+      }
+    }
+
     .user-info {
       display: flex;
       align-items: center;
@@ -197,6 +243,15 @@ html.dark .page-head {
   }
 
   .toggle-icon {
+    color: var(--text-secondary);
+
+    &:hover {
+      background-color: rgba(167, 139, 250, 0.1);
+      color: var(--text-warm);
+    }
+  }
+
+  .lang-switch {
     color: var(--text-secondary);
 
     &:hover {

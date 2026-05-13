@@ -57,16 +57,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { Bell } from '@element-plus/icons-vue'
 import { notificationPage, unreadNotificationCount, notificationRead, notificationReadAll } from '@/api/client'
 import { formatDate } from '@/utils/date'
+import { useNotificationSocket } from '@/composables/useNotificationSocket'
 
 const popoverVisible = ref(false)
 const unreadCount = ref(0)
 const list = ref([])
 const loading = ref(false)
 let pollTimer = null
+
+const { connected, isFallback, connect: wsConnect, disconnect: wsDisconnect, onUnreadCount } = useNotificationSocket()
 
 const formatTime = (t) => {
   if (!t) return ''
@@ -112,14 +115,37 @@ const handleReadAll = async () => {
   unreadCount.value = 0
 }
 
-// 每 30 秒轮询未读数量
-onMounted(() => {
+/** 启动轮询（降级方案） */
+const startPolling = () => {
   fetchUnreadCount()
   pollTimer = setInterval(fetchUnreadCount, 30000)
+}
+
+/** 停止轮询 */
+const stopPolling = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+onMounted(() => {
+  // 先尝试 WebSocket
+  onUnreadCount(fetchUnreadCount)
+  wsConnect()
+
+  // 初始加载未读数
+  fetchUnreadCount()
+
+  // WS 不可用时自动回落轮询
+  watch(isFallback, (val) => {
+    if (val) startPolling()
+  })
 })
 
 onUnmounted(() => {
-  if (pollTimer) clearInterval(pollTimer)
+  wsDisconnect()
+  stopPolling()
 })
 </script>
 

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationService } from './notification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationGateway } from './notification.gateway';
 
 describe('NotificationService', () => {
   let service: NotificationService;
@@ -14,11 +15,16 @@ describe('NotificationService', () => {
     },
   };
 
+  const mockGateway = {
+    notifyUnreadCount: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: NotificationGateway, useValue: mockGateway },
       ],
     }).compile();
 

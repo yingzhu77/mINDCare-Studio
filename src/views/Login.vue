@@ -1,7 +1,7 @@
 <template>
   <div class="login-view">
-    <h2 class="title">登录您的账户</h2>
-    <p class="subtitle">请输入您的登录信息</p>
+    <h2 class="title">{{ $t('auth.login.title') }}</h2>
+    <p class="subtitle">{{ $t('auth.login.subtitle') }}</p>
 
     <el-form
       :model="loginForm"
@@ -11,23 +11,23 @@
       autocomplete="on"
       @submit.prevent="handleLogin"
     >
-      <el-form-item label="用户名或邮箱" prop="username">
+      <el-form-item :label="$t('auth.login.usernameLabel')" prop="username">
         <el-input
           v-model="loginForm.username"
           name="username"
           autocomplete="username"
-          placeholder="请输入用户名或邮箱"
+          :placeholder="$t('auth.login.usernamePlaceholder')"
           size="large"
         />
       </el-form-item>
 
-      <el-form-item label="密码" prop="password">
+      <el-form-item :label="$t('auth.login.passwordLabel')" prop="password">
         <el-input
           v-model="loginForm.password"
           type="password"
           name="password"
           autocomplete="current-password"
-          placeholder="请输入密码"
+          :placeholder="$t('auth.login.passwordPlaceholder')"
           size="large"
         />
       </el-form-item>
@@ -39,24 +39,26 @@
         :loading="loading"
         native-type="submit"
       >
-        登录账户
+        {{ $t('auth.login.loginBtn') }}
       </el-button>
     </el-form>
 
     <div class="footer">
-      还没有账户？<el-link type="primary" @click="$router.push('/auth/register')">去注册</el-link>
+      {{ $t('auth.login.noAccount') }}<el-link type="primary" @click="$router.push('/auth/register')">{{ $t('auth.login.goRegister') }}</el-link>
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { login } from '@/api/admin'
 import { useAuthStore } from '@/store/useAuthStore'
 import { logger } from '@/utils/logger'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const loginFormRef = ref(null)
@@ -67,10 +69,10 @@ const loginForm = reactive({
   password: '',
 })
 
-const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-}
+const rules = computed(() => ({
+  username: [{ required: true, message: t('auth.login.usernamePlaceholder'), trigger: 'blur' }],
+  password: [{ required: true, message: t('auth.login.passwordPlaceholder'), trigger: 'blur' }],
+}))
 
 const handleLogin = async () => {
   if (loading.value) return
@@ -89,7 +91,7 @@ const handleLogin = async () => {
           if (res.user) {
             authStore.setUser(res.user)
           }
-          ElMessage.success('登录成功')
+          ElMessage.success(t('auth.login.success'))
           const role = res.user?.role || ''
           if (role === 'admin') {
             await router.replace('/back/dashboard')
@@ -101,7 +103,7 @@ const handleLogin = async () => {
         }
       } catch (error) {
         logger.error('Login Error:', error)
-        const msg = error?.response?.data?.message || error?.message || '登录失败，请检查用户名和密码'
+        const msg = error?.response?.data?.message || error?.message || t('auth.login.failed')
         ElMessage.error(msg)
       } finally {
         loading.value = false

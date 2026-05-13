@@ -8,6 +8,7 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import App from './App.vue'
 // 导入我们刚刚在 router/index.js 中配置并导出的 router 实例
 import router from './router'
+import i18n from './i18n'
 // main.ts
 
 // 自动适配系统暗黑模式：监听系统主题变化并应用 dark 类名
@@ -39,5 +40,6 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(pinia)
 // 通过 .use(router) 将路由功能集成到 Vue 实例中
 app.use(router)
+app.use(i18n)
 
 app.mount('#app')
