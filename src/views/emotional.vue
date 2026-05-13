@@ -354,9 +354,9 @@ onMounted(() => {
         .emotion-tag {
           border-radius: 10px;
           font-size: 12px;
-          background: #eef5ff;
-          border-color: #d9e8ff;
-          color: #3b6fb6;
+          background: #F5F3FF;
+          border-color: #EDE9FE;
+          color: #7C3AED;
         }
       }
 
@@ -386,7 +386,7 @@ onMounted(() => {
     .detail-link {
       font-size: 14px;
       font-weight: 500;
-      color: #409eff;
+      color: var(--primary-color);
     }
 
     .pagination-wrapper {
@@ -446,5 +446,81 @@ onMounted(() => {
   white-space: nowrap;
   display: block;
   max-width: 100%;
+}
+
+/* ===== 深色模式 ===== */
+html.dark .emotional-container {
+  .header-section .section-title {
+    color: var(--text-color);
+  }
+
+  .search-card {
+    background-color: var(--card-bg);
+  }
+
+  .table-card {
+    background-color: var(--card-bg);
+
+    .custom-table :deep(.el-table__row) {
+      td.el-table__cell {
+        border-bottom-color: var(--border-color);
+      }
+
+      &:hover {
+        background-color: rgba(167, 139, 250, 0.04) !important;
+      }
+    }
+
+    .custom-table :deep(.el-table__header) th {
+      background-color: var(--card-bg);
+      color: var(--text-secondary);
+      border-bottom-color: var(--border-color);
+    }
+
+    .session-id-col .session-id-text {
+      color: var(--text-muted);
+    }
+
+    .content-col {
+      .session-title {
+        .assistant-name { color: var(--text-color); }
+        .title-sep { color: var(--text-muted); }
+        .title-time { color: var(--text-secondary); }
+      }
+      .session-preview { color: var(--text-secondary); }
+      .session-preview-empty { color: var(--text-muted); }
+    }
+
+    .msg-count { color: var(--text-color); }
+    .time-display { color: var(--text-secondary); }
+
+    .pagination-wrapper {
+      .total-info { color: var(--text-secondary); }
+      :deep(.el-pagination) {
+        .btn-prev, .btn-next, .el-pager li {
+          background-color: transparent;
+          border-color: var(--border-color);
+          color: var(--text-secondary);
+          &.is-active {
+            background-color: var(--primary-color);
+            color: #fff;
+            border-color: var(--primary-color);
+          }
+        }
+      }
+    }
+  }
+}
+
+/* 移动端：禁用 hover 高亮闪烁（触摸设备不显示 hover 态） */
+@media (hover: none) and (max-width: 768px) {
+  .emotional-container .table-card .custom-table :deep(.el-table__row) {
+    &:hover {
+      background-color: transparent !important;
+    }
+    &:active {
+      background-color: rgba(167, 139, 250, 0.08) !important;
+    }
+  }
 }
 </style>

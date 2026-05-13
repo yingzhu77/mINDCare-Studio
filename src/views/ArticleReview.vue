@@ -346,7 +346,7 @@ onMounted(() => {
     .section-title {
       font-size: 20px;
       font-weight: 600;
-      color: #303133;
+      color: var(--text-color);
       margin: 0;
     }
   }
@@ -434,7 +434,7 @@ onMounted(() => {
 
   img { max-width: 100%; border-radius: 4px; }
   pre { background: #f5f7fa; padding: 16px; border-radius: 6px; overflow-x: auto; }
-  blockquote { border-left: 4px solid #409eff; padding-left: 16px; color: #909399; margin: 16px 0; }
+  blockquote { border-left: 4px solid var(--primary-color); padding-left: 16px; color: #909399; margin: 16px 0; }
 }
 
 // 移动端适配

@@ -3,13 +3,17 @@
     <!-- 左侧展示区 -->
     <div class="auth-left">
       <div class="auth-content">
+        <div class="brand-badge">心晴 · AI 心理健康</div>
         <h1 class="auth-title">心理AI助手</h1>
-        <p class="auth-desc">
-          每个深夜，每个焦虑的时刻，我们都在这里。不必独自承受，让心与心的连接温暖您的每一天
-        </p>
+        <div class="auth-desc">
+          <p class="desc-line">每个深夜，每个焦虑的时刻，</p>
+          <p class="desc-line">我们都在这里。</p>
+          <p class="desc-line desc-highlight">不必独自承受，</p>
+          <p class="desc-line">让心与心的连接</p>
+          <p class="desc-line">温暖您的每一天</p>
+        </div>
         <div class="logo-wrapper">
-          <!-- 引入指定的资产图片 -->
-          <img src="@/assets/咕咕嘎嘎.jpg" alt="logo" class="auth-logo" />
+          <img src="@/assets/咕咕嘎嘎.jpg" alt="心灵港湾" class="auth-logo" />
         </div>
       </div>
     </div>
@@ -45,41 +49,98 @@ import { ArrowLeft } from '@element-plus/icons-vue'
 
   .auth-left {
     flex: 1;
-    background-color: #5b8c7a; // 墨绿色背景
+    background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 30%, #C084FC 70%, #F472B6 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     padding: 40px;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      top: -120px;
+      right: -120px;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.04);
+      bottom: -100px;
+      left: -100px;
+    }
 
     .auth-content {
       text-align: center;
       max-width: 500px;
+      position: relative;
+      z-index: 1;
+
+      .brand-badge {
+        display: inline-block;
+        padding: 6px 20px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(4px);
+        font-size: 13px;
+        letter-spacing: 2px;
+        margin-bottom: 32px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
 
       .auth-title {
-        font-size: 42px;
-        font-weight: 700;
-        margin-bottom: 24px;
+        font-size: 48px;
+        font-weight: 800;
+        margin-bottom: 32px;
         color: #fff;
+        letter-spacing: 4px;
+        text-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
       }
 
       .auth-desc {
-        font-size: 18px;
-        line-height: 1.6;
         margin-bottom: 40px;
-        opacity: 0.9;
+
+        .desc-line {
+          font-size: 18px;
+          line-height: 2;
+          opacity: 0.9;
+          text-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+          font-weight: 400;
+          letter-spacing: 1px;
+        }
+
+        .desc-highlight {
+          font-size: 20px;
+          font-weight: 600;
+          opacity: 1;
+          color: #FCD34D;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
       }
 
       .logo-wrapper {
-        width: 160px;
-        height: 160px;
-        background: rgba(255, 255, 255, 0.2);
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(4px);
         border-radius: 50%;
         margin: 0 auto;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.25);
+        border: 2px solid rgba(255, 255, 255, 0.2);
 
         .auth-logo {
           width: 100%;

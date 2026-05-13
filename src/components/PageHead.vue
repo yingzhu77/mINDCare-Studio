@@ -31,8 +31,7 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item>个人中心</el-dropdown-item>
-              <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+              <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -79,15 +78,15 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* 桌面端边距由变量控制 */
   padding: 0 var(--layout-padding);
-  background-color: var(--card-bg);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  box-shadow: 0 1px 4px rgba(167, 139, 250, 0.06);
   z-index: 100;
   overflow: hidden;
 
-  /* 背景层实现 */
   .head-bg-layer {
     position: absolute;
     top: 0;
@@ -95,14 +94,13 @@ const handleLogout = () => {
     width: 100%;
     height: 100%;
     z-index: -1;
-    /* 使用渐变色模拟图片效果，体积极小且兼容深色模式 */
     background: linear-gradient(
       90deg,
       rgba(255, 255, 255, 1) 0%,
-      rgba(240, 247, 255, 0.5) 50%,
+      rgba(167, 139, 250, 0.06) 50%,
       rgba(255, 255, 255, 1) 100%
     );
-    background-attachment: fixed; /* 视差效果模拟 */
+    background-attachment: fixed;
     opacity: 0.8;
   }
 
@@ -123,20 +121,20 @@ const handleLogout = () => {
       justify-content: center;
       cursor: pointer;
       padding: 8px;
-      border-radius: 4px;
+      border-radius: 8px;
       transition: all 0.3s;
-      color: #606266;
+      color: var(--text-secondary);
 
       &:hover {
-        background-color: rgba(64, 158, 255, 0.1);
-        color: #409eff;
+        background-color: var(--el-color-primary-light-9);
+        color: var(--primary-color);
       }
     }
 
     .page-title {
       font-size: 18px;
       font-weight: 600;
-      color: #303133;
+      color: var(--text-color);
       margin: 0;
     }
   }
@@ -148,16 +146,16 @@ const handleLogout = () => {
       gap: 8px;
       cursor: pointer;
       padding: 4px 8px;
-      border-radius: 4px;
+      border-radius: 8px;
       transition: background-color 0.3s;
 
       &:hover {
-        background-color: rgba(0, 0, 0, 0.02);
+        background-color: var(--el-color-primary-light-9);
       }
 
       .username {
         font-size: 14px;
-        color: #606266;
+        color: var(--text-secondary);
         font-weight: 500;
       }
     }
@@ -179,28 +177,31 @@ const handleLogout = () => {
   }
 }
 
-/* 深色模式兼容性预设 */
-@media (prefers-color-scheme: dark) {
-  .page-head {
-    background-color: #1a1a1a;
-    border-bottom-color: #333;
+/* 深色模式 */
+html.dark .page-head {
+  background-color: var(--card-bg);
+  border-bottom-color: var(--border-color);
 
-    .head-bg-layer {
-      background: linear-gradient(
-        90deg,
-        #1a1a1a 0%,
-        rgba(64, 158, 255, 0.05) 50%,
-        #1a1a1a 100%
-      );
-    }
+  .head-bg-layer {
+    background: linear-gradient(
+      90deg,
+      var(--card-bg) 0%,
+      rgba(167, 139, 250, 0.04) 50%,
+      var(--card-bg) 100%
+    );
+  }
 
-    .page-title,
-    .username {
-      color: #e5eaf3;
-    }
+  .page-title,
+  .username {
+    color: var(--text-color);
+  }
 
-    .toggle-icon {
-      color: #a3a6ad;
+  .toggle-icon {
+    color: var(--text-secondary);
+
+    &:hover {
+      background-color: rgba(167, 139, 250, 0.1);
+      color: var(--text-warm);
     }
   }
 }

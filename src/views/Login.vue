@@ -119,11 +119,12 @@ const handleLogin = async () => {
     margin-bottom: 8px;
     color: var(--text-color);
     text-align: center;
+    letter-spacing: 1px;
   }
 
   .subtitle {
     font-size: 14px;
-    color: #909399;
+    color: var(--text-secondary);
     margin-bottom: 32px;
     text-align: center;
   }
@@ -134,13 +135,15 @@ const handleLogin = async () => {
     height: 48px;
     font-size: 16px;
     font-weight: 500;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
   }
 
   .footer {
     margin-top: 24px;
     text-align: center;
     font-size: 14px;
-    color: #606266;
+    color: var(--text-secondary);
   }
 }
 </style>

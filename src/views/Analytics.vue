@@ -56,7 +56,7 @@ const riskChartRef = ref(null)
 let rankChart = null
 let riskChart = null
 
-const CHART_COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399']
+const CHART_COLORS = ['#A78BFA', '#34D399', '#FBBF24', '#FB7185', '#C084FC']
 const RISK_LABELS = {
   low: '低风险',
   medium: '中风险',
@@ -232,10 +232,10 @@ onBeforeUnmount(() => {
 
       .el-icon {
         font-size: 24px;
-        &.blue { color: #409eff; }
-        &.green { color: #67c23a; }
-        &.orange { color: #e6a23c; }
-        &.purple { color: #909399; }
+        &.blue { color: #A78BFA; }
+        &.green { color: #34D399; }
+        &.orange { color: #FBBF24; }
+        &.purple { color: #C084FC; }
       }
 
       .stat-title {

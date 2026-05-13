@@ -138,16 +138,16 @@ onMounted(() => {
       .el-icon {
         font-size: 24px;
         &.blue {
-          color: #409eff;
+          color: #8B5CF6;
         }
         &.green {
-          color: #67c23a;
+          color: #34D399;
         }
         &.orange {
-          color: #e6a23c;
+          color: #FBBF24;
         }
         &.purple {
-          color: #909399;
+          color: #C084FC;
         }
       }
 
@@ -161,6 +161,10 @@ onMounted(() => {
       font-size: 28px;
       font-weight: 700;
       color: var(--text-color);
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
   }
 

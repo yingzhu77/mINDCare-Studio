@@ -155,7 +155,9 @@ const backendRouterRoutes = [
   },
   {
     path: '/',
-    redirect: '/auth/login',
+    name: 'Home',
+    component: () => import('@/views/Home.vue'),
+    meta: { title: '心晴 · AI心理健康助手' },
   },
 ]
 

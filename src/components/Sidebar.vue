@@ -3,7 +3,7 @@
   <el-aside :width="menuStore.isCollapsed ? '64px' : '240px'" class="sidebar">
     <div class="logo-container">
       <div class="logo">
-        <img src="@/assets/anno.jpg" alt="logo" class="logo-img" />
+        <img src="@/assets/logo.png" alt="心晴AI" class="logo-img" />
       </div>
       <!-- 使用 Vue 3 的内置组件 <Transition> 实现 Logo 标题的平滑隐藏动画 -->
       <transition name="fade">
@@ -42,6 +42,11 @@
         </template>
       </el-menu-item>
     </el-menu>
+
+    <!-- 侧边栏底部：风景装饰图 -->
+    <div class="sidebar-footer" v-if="!menuStore.isCollapsed">
+      <img src="@/assets/sidebar-scene.jpg" alt="山水相伴" class="footer-img" />
+    </div>
   </el-aside>
 </template>
 
@@ -99,8 +104,8 @@ const activeMenu = computed(() => route.path)
       min-width: 40px;
       width: 40px;
       height: 40px;
-      background: #f0f7ff;
-      border-radius: 8px;
+      background: #f5f3ff;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -122,12 +127,12 @@ const activeMenu = computed(() => route.path)
       .main-title {
         font-size: 16px;
         font-weight: 600;
-        color: #303133;
+        color: var(--text-color);
         line-height: 1.2;
       }
       .sub-title {
         font-size: 11px;
-        color: #909399;
+        color: var(--text-secondary);
         margin-top: 4px;
       }
     }
@@ -137,24 +142,46 @@ const activeMenu = computed(() => route.path)
     border-right: none;
     flex: 1;
 
-    // 修改 Element Plus 内部样式，确保菜单项折叠时美观
     :deep(.el-menu-item) {
       height: 50px;
       line-height: 50px;
       margin: 4px 10px;
-      border-radius: 8px;
-      color: #606266;
+      padding-left: 20px !important;
+      border-radius: 0 10px 10px 0;
+      color: var(--el-text-color-regular);
       transition: all 0.2s ease-in-out;
+      position: relative;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%) scaleY(0);
+        width: 3px;
+        height: 20px;
+        background: linear-gradient(180deg, #A78BFA, #C084FC);
+        border-radius: 0 3px 3px 0;
+        transition: transform 0.25s ease;
+      }
 
       &:hover {
-        background-color: #f5f7fa;
-        color: #409eff;
+        background-color: var(--el-color-primary-light-9);
+        color: var(--primary-color);
+
+        &::before {
+          transform: translateY(-50%) scaleY(0.6);
+        }
       }
 
       &.is-active {
-        background-color: #ecf5ff;
-        color: #409eff;
-        font-weight: 500;
+        background: linear-gradient(90deg, var(--el-color-primary-light-9) 0%, transparent 100%);
+        color: var(--primary-color);
+        font-weight: 600;
+
+        &::before {
+          transform: translateY(-50%) scaleY(1);
+        }
       }
 
       .el-icon {
@@ -175,6 +202,27 @@ const activeMenu = computed(() => route.path)
         .el-icon {
           margin-right: 0;
         }
+      }
+    }
+  }
+
+  // 侧边栏底部装饰图
+  .sidebar-footer {
+    padding: 12px 16px 16px;
+    flex-shrink: 0;
+    border-top: 1px solid var(--border-color);
+
+    .footer-img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 10px;
+      opacity: 0.75;
+      transition: opacity 0.3s ease;
+      filter: saturate(0.9);
+
+      &:hover {
+        opacity: 1;
       }
     }
   }
@@ -212,5 +260,34 @@ const activeMenu = computed(() => route.path)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ===== 深色模式 ===== */
+html.dark .sidebar {
+  .side-menu :deep(.el-menu-item) {
+    color: var(--text-secondary);
+
+    &:hover {
+      background-color: rgba(167, 139, 250, 0.08);
+      color: var(--text-warm);
+    }
+
+    &.is-active {
+      background: linear-gradient(90deg, rgba(167, 139, 250, 0.12) 0%, transparent 100%);
+      color: var(--text-warm);
+
+      &::before {
+        background: linear-gradient(180deg, #A78BFA, #C084FC);
+      }
+    }
+  }
+
+  .sidebar-footer {
+    border-top-color: var(--border-color);
+
+    .footer-img {
+      opacity: 0.5;
+    }
+  }
 }
 </style>
