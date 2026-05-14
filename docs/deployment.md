@@ -257,7 +257,7 @@ server {
 | `JWT_EXPIRES_IN` | 否 | `1440m` | Token 有效期 |
 | `DEEPSEEK_API_KEY` | 否 | 空 | DeepSeek API Key（留空使用 mock AI） |
 | `DEEPSEEK_BASE_URL` | 否 | `https://api.deepseek.com` | API 端点 |
-| `DEEPSEEK_MODEL` | 否 | `deepseek-chat` | 模型名称 |
+| `DEEPSEEK_MODEL` | 否 | `deepseek-v4-flash` | 模型名称 |
 
 ### Docker Compose 环境变量
 

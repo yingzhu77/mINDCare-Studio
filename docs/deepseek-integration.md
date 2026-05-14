@@ -17,7 +17,7 @@ cp server/.env.example server/.env
 4. 编辑 `server/.env`，填入 API Key：
 
 ```env
-DEEPSEEK_API_KEY=sk-你的真实密钥
+DEEPSEEK_API_KEY=<your_deepseek_api_key>
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
 ```

@@ -4,135 +4,68 @@
 
 ## 版本号
 
-**v2.6.0**（2026-05-14）— 部署三阶段全线完成 + Electron 桌面版 + EXE 打包就绪。
+**v2.6.0**（2026-05-14）— 正式开源版本。
 
-## 部署计划
+## 功能模块总览
 
-**全部 Phase 1~3 已于 2026-05-14 完成验收。** 详见 [docs/deployment-plan.md](deployment-plan.md)（历史记录）。
+| 模块 | 角色 | 状态 | 说明 |
+|------|------|------|------|
+| 首页 | 公共 | ✅ | 功能入口卡片 + 关于区域，暖薰衣草紫主题 |
+| 登录/注册 | 公共 | ✅ | 左侧 logo + 暖金色诗意文案，JWT 认证，admin/user 角色分离 |
+| Dashboard | 管理端 | ✅ | ECharts 趋势图（情绪/咨询/文章）、统计概览 |
+| 知识文章 | 管理端 | ✅ | 分类树 + CRUD + 富文本编辑（wangEditor）、发布/下线/重新发布 |
+| 文章审核 | 管理端 | ✅ | 主文章 + 修订统一审核队列、修订版提审/审核/驳回、通知作者 |
+| 咨询记录 | 管理端 | ✅ | 会话列表 + 消息查看 |
+| 情绪日志 | 管理端 | ✅ | 用户情绪日记管理端分页 + 删除 |
+| 数据洞察 | 管理端 | ✅ | 分析页面（阅读排行 + 风险分布 + SEIQ 评分统计） |
+| 用户管理 | 管理端 | ✅ | 用户列表分页 + 启用/禁用 |
+| 通知铃铛 | 管理端 | ✅ | 待审核红点 + 通知列表 + 已读标记，60 秒轮询 |
+| AI 聊天 | 用户端 | ✅ | SSE 流式回复、会话侧边栏、删除/导出、DeepSeek v4-Flash |
+| 情绪日记 | 用户端 | ✅ | CRUD + 情绪评分/睡眠/压力/触发因素 + 情绪洞察图表 |
+| 情绪洞察 | 用户端 | ✅ | 趋势折线图、情绪分布饼图、压力与睡眠对比柱状图、触发因素分析 |
+| 文章投稿 | 用户端 | ✅ | 投稿/编辑/提交审核、支持修订版 |
+| 知识阅读 | 用户端 | ✅ | 文章浏览 + 详情页 |
+| 多语言 | 全平台 | ✅ | 简体中文/繁体中文/英文，vue-i18n，浏览器自动检测 |
 
-实现成果：
+## 技术栈
 
-- **路线 A · 开源部署线** — Docker Compose 缺陷修复 + 统一配置 + README 三方式 + 构建测试全绿
-- **路线 B · Windows EXE 线** — Electron + SQLite + Mock AI + 设置弹窗 + 安全声明 + 打包产物就绪
+**前端：** Vue3 + Vite + Element Plus + Axios + Pinia + Vue Router + wangEditor + ECharts
 
-## 测试综合
+**后端：** NestJS + Prisma + MySQL（开发期 SQLite）+ JWT + Swagger
 
-| 层级 | 测试类型            | 数量                                |
-| ---- | ------------------- | ----------------------------------- |
-| 前端 | Vitest 单元测试     | 60 用例（10 文件）                  |
-| 后端 | Jest 单元测试       | 113 用例（10 模块）                 |
-| 后端 | Jest E2E 测试       | 32 用例（覆盖 7 个模块）            |
-| E2E  | Playwright 冒烟测试 | 14 用例（smoke 8 + client-flows 6） |
+**AI：** DeepSeek API（兼容 OpenAI 格式），后端代理 + SSE 流式，Mock AI 演示模式
 
-### Playwright E2E 本地运行
-
-**前置条件：** 后端已构建（`cd server && npm run build`），依赖已安装（`npm install` + `cd server && npm install`）。
-
-```bash
-# 运行全部 E2E 测试（自动启动前后端服务）
-npx playwright test
-
-# 仅运行冒烟测试
-npx playwright test e2e/smoke.spec.ts
-
-# 仅运行客户端流程测试
-npx playwright test e2e/client-flows.spec.ts
-
-# UI 调试模式
-npx playwright test --ui
-```
-
-**端口管理：**
-
-- 前端端口 `5174`，后端端口 `8001`
-- 本地运行（无 `CI` 环境变量）时 `reuseExistingServer: true`：若已有 dev server 占用端口则直接复用，否则自动启动
-- CI 环境始终干净启动；`--strictPort` 确保端口被占用时报错明确
-- 端口被占用时的典型错误：Vite 报 `Port 5174 is in use`，Node 报 `EADDRINUSE`
-- 如需释放端口：`npx kill-port 5174 8001` 或手动终止占用进程
-
-**AI 依赖：** Playwright 配置不设 `DEEPSEEK_API_KEY`，后端自动降级为 Mock AI 模式，无需外部服务即可完整运行。
+**桌面：** Electron + electron-builder（NSIS/portable 双目标）
 
 ## 基础设施
 
-| 项目           | 状态                                                                                  |
-| -------------- | ------------------------------------------------------------------------------------- |
-| Docker Compose | ✅ 三容器编排就绪（MySQL 8.0 + NestJS + Vue/nginx）                                   |
-| CI Pipeline    | ✅ GitHub Actions（frontend lint/build/test + backend build/lint/test:unit/validate） |
-| 部署文档       | ✅ `docs/deployment.md`                                                               |
-| 启动脚本       | ✅ `scripts/start-dev.ps1`（Windows）+ `scripts/setup.sh`（macOS/Linux）              |
-| API 接入文档   | ✅ `docs/deepseek-integration.md`                                                     |
-| UI/UX Skill    | ✅ `ui-ux-pro-max` 已按官方 CLI 安装到 `.codex/skills/` 与 `.claude/skills/`          |
+| 项目 | 状态 | 说明 |
+|------|------|------|
+| Docker Compose | ✅ | 三容器编排（MySQL 8.0 + NestJS + Vue/nginx） |
+| CI Pipeline | ✅ | GitHub Actions（lint/build/test/validate） |
+| Playwright E2E | ✅ | 14 用例（smoke + client-flows） |
+| 部署文档 | ✅ | `docs/deployment.md`（Docker + Nginx SSL + 安全加固） |
+| 启动脚本 | ✅ | `scripts/start-dev.ps1`（Windows）+ `scripts/setup.sh`（macOS/Linux） |
+| API 文档 | ✅ | `docs/deepseek-integration.md` |
 
-## 本地 Agent Skill
+## 测试覆盖
 
-### UI UX Pro Max
+| 层级 | 类型 | 数量 |
+|------|------|------|
+| 前端 | Vitest 单元测试 | 60 用例（10 文件） |
+| 后端 | Jest 单元测试 | 113 用例（10 模块） |
+| 后端 | Jest E2E 测试 | 32 用例（7 模块） |
+| E2E | Playwright 冒烟测试 | 14 用例 |
 
-- 安装方式：按官方文档执行 `npm install -g uipro-cli`，再在项目根目录执行 `uipro init --ai codex` 与 `uipro init --ai claude`
-- Codex 路径：`.codex/skills/ui-ux-pro-max/`
-- Claude Code 路径：`.claude/skills/ui-ux-pro-max/`
-- 依赖：Python 3.x（用于 `scripts/search.py` 检索设计数据库）
-- 校验：`python .codex/skills/ui-ux-pro-max/scripts/search.py "mental health dashboard" --design-system -p "AI心理健康助手"` 可正常返回设计系统建议
+## 多语言支持
 
-## 新增功能（v2.6.0）— 部署三阶段全线完成 + Electron 桌面版 + EXE 打包
+- 支持语言：简体中文（zh）、繁体中文（zh-TW）、英文（en）
+- 实现方式：vue-i18n，`legacy: false` 模式
+- 翻译范围：导航菜单、按钮、标签、提示信息等 UI 框架文字
+- 浏览器自动检测：`zh-TW`/`zh-HK`/`zh-MO` 自动加载繁体，`en` 加载英文，其余默认简体
+- 用户生成内容（文章、日记、聊天消息）保持原语言不变
 
-- **Phase 1 部署收口** — Docker 3 缺陷修复、统一配置、README 三方式更新、构建测试全绿通过
-- **Phase 2 Electron 桌面版** — 完整 Electron 壳 + NestJS 子进程管理 + 随机端口 + 内置 demo.db + Mock AI + 设置弹窗 + 重置数据
-- **Phase 3 EXE 打包** — electron-builder NSIS/portable 双目标 + 后端运行时精简（287MB→45.7MB）+ 安全审计 + 安全声明弹窗
-- **文档收口** — `deployment-plan.md` 标注全线完成，删除过时 `phase3-exe-acceptance.md`
-
-## 新增功能（v2.5.2）— 情绪洞察 + SSE 流式修复 + 部署收口
-
-- **用户端情绪洞察模块** — 新增 `ClientEmotionInsights.vue`，展示当前用户的情绪趋势折线图、情绪分布饼图、压力与睡眠对比柱状图、触发因素分析条形图
-- **后端统计接口** — `GET /api/emotion-diary/my/statistics` 返回当前用户的情绪聚合数据（月度趋势、情绪分布、压力睡眠对照、触发因素词频）
-- **SSE 流式修复** — 修正 Vue 3 响应式失效问题：`assistantMsg` 改为通过响应式数组获取 reactive proxy，AI 回复实现真正的逐字流式输出
-- **AI 头像优化** — 聊天消息中 AI 头像改为项目 logo.png，增强品牌交互感
-- **文档收口** — 删除已完成的 `docs/backlog-prompts.md`；README/current-state/task-backlog 与 git 提交历史同步
-- **测试修复** — NotificationBell 测试增加 Pinia 实例化；NotificationService 测试注入 Gateway mock
-
-## 新增功能（v2.5.1）
-
-- **UI 主题重构** — 全局主题从暖靛蓝改为暖薰衣草紫渐变（#8B5CF6 → #A78BFA → #C084FC），所有管理端/用户端页面配色统一；按钮统一样式（渐变紫 + 阴影 + 悬停效果），去除所有 Element Plus 默认蓝色边框
-- **首页设计** — 新增 `Home.vue`（`/` 路由），含首页大图背景 + 功能入口卡片 + 关于区域
-- **登录页优化** — 左侧图片替换为 `logo.png`，文案改为诗意分行排版 + 暖金色高亮；移除重复提交入口，增加 `loading` 防重入，登录成功后使用 `router.replace`
-- **侧边栏优化** — 选中态还原紫色，底部插入 `sidebar-scene.jpg` 风景装饰图；管理端导航菜单 active/hover 状态强制紫色
-- **资源清理** — 删除废弃 `hero.png` / `vite.svg` / `vue.svg`；新增 `home-bg.jpg` / `sidebar-scene.jpg` / `logo.png`
-- **客户端聊天优化** — `ClientChat.vue` 消息气泡样式优化、时间显示优化、加载状态改进
-- **客户端布局优化** — `ClientLayout.vue` 导航栏排版调整、过渡动画优化
-- **登录稳定性** — 登录页移除重复提交入口，增加 `loading` 防重入，登录成功后使用 `router.replace`，autocomplete 调整为 `username/current-password`
-- **知识文章状态操作收口** — 修复 `knowledge.vue` 已删除变量 `isPublish` 引用；按钮规则按 `draft/published/offline/pending_review/rejected` 分流，`offline` 文章支持重新发布
-- **管理端知识文章查看** — 新增查看弹窗，详情接口按需拉取正文，正文统一 `DOMPurify.sanitize` 后渲染；非草稿文章可查看但不可编辑
-- **审核红点即时刷新** — 新增 `useReviewStore.js` 集中维护待审数量，`Sidebar.vue` 使用 store，审核通过/驳回后立即刷新，保留 60 秒轮询兜底
-- **操作原因与用户通知** — 下线/删除普通用户文章时要求输入原因并通知作者；管理员自建文章或本人操作不产生不必要通知
-- **性能优化** — 移除 `router.afterEach` 全量预加载；知识文章列表接口排除 `content`，正文仅在查看详情时加载；知识页分类与列表并行请求
-
-## 新增功能（v2.5.0）
-
-- **文章审核系统重构** — 新增 `KnowledgeArticleRevision` 修订表，合并主文章+修订的统一审核队列，支持修订版提审/审核/拒绝；管理端 `ArticleReview.vue` 全面重写，审核列表分页+统一状态管理
-- **前端 API 层 TypeScript 化** — `admin.ts` 全部接口类型化，新增 `ReviewArticle` 类型；`types.ts` 补充 `KnowledgeArticle` 字段（`role`、`hasPendingRevision`）
-- **管理端分析页** — `/back/analytics` 阅读排行 Top 10 + 风险分布饼图 + SEIQ 评分统计
-- **用户端知识阅读导航** — `ClientLayout.vue` 导航栏集成"知识阅读"入口，路由 `/client/knowledge` `/client/knowledge/:id`
-- **文章状态过渡约束** — 主文章状态过渡规则化（draft→published、published→offline 等），审核状态必须走审核专用接口
-- **删除/下线通知作者** — 管理员删除或下线文章时自动通知作者
-- **路由性能优化** — 移除非阻塞预加载（`router.afterEach`），减少单页应用后台流量
-- **新增文件**：`Analytics.vue`、`useReviewStore.js`
-- **删除清理**：移除 `DeepSeek API 最小接入注意清单.md`、`docs/ai-handoff.md`
-
-### 缺陷修复
-
-- **日记保存 400 错误** — `emotionTriggers` 前端发送 `string[]` 而后端 DTO 要求 `string`，发送前 `join(',')` 转换
-- **聊天"网络连接失败"** — `ClientChat.vue` 直连 `fetch('http://127.0.0.1:8000/api/chat/send')` 绕过了 Vite 代理，改走相对路径 `/api/chat/send`
-
-## 新增功能（v2.4.1）
-
-- 后端 E2E 测试从 7 条扩展到 32 条，覆盖 knowledge / emotion-diary / analytics / upload / client-article
-- 跨平台启动脚本 `scripts/setup.sh`（bash），macOS/Linux 一键开发启动
-- DeepSeek API 接入文档 `docs/deepseek-integration.md`，含配置/模型/故障排查
-- 管理端分析页 `/back/analytics`：文章阅读排行 Top 10 + 风险分布饼图
-- 缺陷修复：
-  - 日记保存：`emotionTriggers` 数组→字符串转换，修复 400 验证错误
-  - 聊天连接：去掉直连 fetch，改走 Vite 代理，修复跨站/后端未启动时的"网络连接失败"
-
-## API Key 合规提醒
+## API Key 合规
 
 - 绝不提交真实 API Key 到仓库
 - 未配置 Key 时自动降级至 Mock 模式，clone 即用

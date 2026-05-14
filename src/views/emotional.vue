@@ -5,9 +5,9 @@
     </div>
 
     <el-card class="search-card" shadow="never">
-      <el-form :inline="true" class="search-form">
+      <el-form :inline="true" class="search-form" @submit.prevent="handleSearch">
         <el-form-item label="用户名称">
-          <el-input v-model="searchUser" placeholder="请输入用户名称" clearable @keyup.enter="handleSearch" />
+          <el-input v-model="searchUser" placeholder="请输入用户名称" clearable />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -26,13 +26,13 @@
       >
         <el-table-column width="190">
           <template #header>
-            <span class="custom-header">会话ID</span>
+            <span class="custom-header">用户</span>
           </template>
           <template #default="{ row }">
             <div class="session-id-col">
-              <el-avatar :size="42" class="user-avatar">{{ row.userName || '-' }}</el-avatar>
-              <div class="session-id-text" :title="String(row.displaySessionId || '-')">
-                {{ row.displaySessionId || '-' }}
+              <el-avatar :size="42" class="user-avatar">{{ row.userName?.[0] || '-' }}</el-avatar>
+              <div class="user-name-text" :title="row.userName || '-'">
+                {{ row.userName || '-' }}
               </div>
             </div>
           </template>
@@ -171,7 +171,6 @@ const fetchTableData = async () => {
     const res = await sessionPage(params)
     const rows = (res?.records || []).map((item) => ({
       ...item,
-      displaySessionId: item.sessionId || item.id,
       emotionTags: Array.isArray(item.emotionTags) ? item.emotionTags : [],
       displayMessageCount: item.messageCount ?? 0,
     }))
@@ -306,13 +305,14 @@ onMounted(() => {
         text-transform: lowercase;
       }
 
-      .session-id-text {
+      .user-name-text {
         max-width: 102px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        color: #909399;
-        font-size: 13px;
+        color: #303133;
+        font-size: 14px;
+        font-weight: 600;
       }
     }
 
@@ -477,8 +477,8 @@ html.dark .emotional-container {
       border-bottom-color: var(--border-color);
     }
 
-    .session-id-col .session-id-text {
-      color: var(--text-muted);
+    .session-id-col .user-name-text {
+      color: var(--text-color);
     }
 
     .content-col {
@@ -491,7 +491,7 @@ html.dark .emotional-container {
       .session-preview-empty { color: var(--text-muted); }
     }
 
-    .msg-count { color: var(--text-color); }
+    .msg-count { color: var(--text-muted); }
     .time-display { color: var(--text-secondary); }
 
     .pagination-wrapper {

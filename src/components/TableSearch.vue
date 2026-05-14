@@ -1,6 +1,6 @@
 <template>
   <el-card class="search-card" shadow="never">
-    <el-form :inline="true" :model="form" class="search-form">
+    <el-form :inline="true" :model="form" class="search-form" @submit.prevent>
       <!-- 动态渲染表单项 -->
       <el-form-item v-for="item in config" :key="item.prop" :label="item.label">
         <!-- 输入框 -->

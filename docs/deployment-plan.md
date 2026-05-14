@@ -1,7 +1,7 @@
-# 部署上线双线计划（已完成）
+# 部署 + 开源上线计划
 
-> **全部 Phase 1~3 已于 2026-05-14 全线完成验收。**
-> 本文档保留为历史参考，所有计划项均已实现。
+> **部署 Phase 1~3 已于 2026-05-14 全线完成验收。**
+> 本文档同步管理开源流程推进计划。
 
 ---
 
@@ -183,3 +183,84 @@ desktop/
 | 4 | 不含真实 API Key（无 `sk-` 明文） | ✅ 通过 |
 | 5 | 不含 .env 真实配置 | ✅ 通过 |
 | 6 | 安全声明弹窗在首次启动时显示 | ✅ 通过 |
+
+---
+
+## 路线 C · 开源流程计划
+
+### 背景
+
+部署三阶段完成后，项目核心功能完备。补齐开源基础设施，使其达到标准开源项目的可接受水平。
+
+### 当前状态
+
+| 项目 | 状态 | 说明 |
+|------|------|------|
+| README.md | ✅ 已有 | 完整，含三方式说明 |
+| CHANGELOG.md | ✅ 已有 | Keep a Changelog 格式 |
+| LICENSE (MIT) | ✅ 已有 | 已提交 |
+| CONTRIBUTING.md | ✅ 已有 | 含 PR 流程与提交规范 |
+| CI (GitHub Actions) | ✅ 已有 | 前后端构建 + lint + 测试 |
+| Prettier | ✅ 已有 | 根目录配置 |
+
+
+### Phase C1 — 文档补全（当前阶段）
+
+| # | 文件 | 说明 | 优先级 |
+|---|------|------|--------|
+| 1 | `CODE_OF_CONDUCT.md` | 采用 Contributor Covenant v2.1，中英双语 | 高 |
+| 2 | `SECURITY.md` | 安全漏洞报告流程、受支持版本、响应时间 | 高 |
+| 3 | `.github/ISSUE_TEMPLATE/bug_report.md` | Bug 模板：描述/复现/环境/严重程度 | 高 |
+| 4 | `.github/ISSUE_TEMPLATE/feature_request.md` | 功能请求模板：描述/场景/替代方案 | 高 |
+| 5 | `.github/PULL_REQUEST_TEMPLATE.md` | PR 模板：变更摘要/关联 Issue/测试说明/截图 | 中 |
+| 6 | `package.json` 元数据修复 | 根 `"version": "2.6.0"` + `"license": "MIT"` | 中 |
+| 7 | `.editorconfig` | charset/indent/eol/trim 统一 | 低 |
+
+### Phase C2 — 流程加固
+
+| # | 项目 | 说明 |
+|---|------|------|
+| 8 | GitHub Release 工作流 | 打 tag 时自动构建、生成 Release Notes、上传 artifacts（前端 dist、EXE） |
+| 9 | ESLint 配置补全 | 根目录安装 eslint + eslint-plugin-vue，使 CI lint 步骤生效 |
+| 10 | E2E 接入 CI | `ci.yml` 增加 Playwright job |
+| 11 | 分支策略文档化 | CONTRIBUTING.md 补充 main/dev/feature/fix 分支命名规则 |
+
+### Phase C3 — 持续优化
+
+| # | 项目 | 说明 | 优先级 |
+|---|------|------|--------|
+| 12 | Dependabot 配置 | 每周 npm 依赖更新检查 | 中 |
+| 13 | Docker 镜像发布 | release 时 push 到 GitHub Container Registry | 低 |
+| 14 | Issue 标签体系 | bug/enhancement/docs/good first issue/help wanted | 低 |
+| 15 | Commitlint + Husky | commit-msg 钩子校验 Conventional Commits | 低 |
+| 16 | GitHub Pages / Wiki | 文档站点或前端 demo page | 低 |
+
+### 实施顺序
+
+```
+Phase C1: 文档补全 ← 当前阶段
+  ├─ CODE_OF_CONDUCT.md
+  ├─ SECURITY.md
+  ├─ Issue 模板 × 2 + PR 模板
+  ├─ package.json 元数据
+  └─ .editorconfig
+
+Phase C2: 流程加固 ← 下一阶段
+  ├─ Release 工作流
+  ├─ ESLint 配置
+  ├─ E2E 集成 CI
+  └─ 分支策略文档化
+
+Phase C3: 持续优化 ← 长期
+  ├─ Dependabot
+  ├─ Docker 镜像发布
+  ├─ Issue 标签 / Commitlint / GitHub Pages
+```
+
+### 验收方式
+
+1. 各文档文件 `CODE_OF_CONDUCT.md` / `SECURITY.md` 等存在且内容完整
+2. `package.json` 确认 `license` 和 `version` 字段正确
+3. Issue/PR 模板在 GitHub 仓库 Settings 中可选择
+4. Release 工作流需创建 tag 后触发验证
+5. CI 中 Playwright E2E job 通过

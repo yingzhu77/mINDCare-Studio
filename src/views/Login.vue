@@ -77,39 +77,39 @@ const rules = computed(() => ({
 const handleLogin = async () => {
   if (loading.value) return
   if (!loginFormRef.value) return
-  await loginFormRef.value.validate(async (valid) => {
-    if (valid) {
-      loading.value = true
-      try {
-        const res = await login({
-          username: loginForm.username,
-          password: loginForm.password,
-        })
+  try {
+    await loginFormRef.value.validate()
+    loading.value = true
+    const res = await login({
+      username: loginForm.username,
+      password: loginForm.password,
+    })
 
-        if (res && res.token) {
-          authStore.setToken(res.token)
-          if (res.user) {
-            authStore.setUser(res.user)
-          }
-          ElMessage.success(t('auth.login.success'))
-          const role = res.user?.role || ''
-          if (role === 'admin') {
-            await router.replace('/back/dashboard')
-          } else {
-            await router.replace('/client/chat')
-          }
-        } else {
-          ElMessage.warning('登录成功但未获取到有效 Token，请联系管理员')
-        }
-      } catch (error) {
-        logger.error('Login Error:', error)
-        const msg = error?.response?.data?.message || error?.message || t('auth.login.failed')
-        ElMessage.error(msg)
-      } finally {
-        loading.value = false
+    if (res && res.token) {
+      authStore.setToken(res.token)
+      if (res.user) {
+        authStore.setUser(res.user)
       }
+      ElMessage.success(t('auth.login.success'))
+      const role = res.user?.role || ''
+      if (role === 'admin') {
+        await router.replace('/back/dashboard')
+      } else {
+        await router.replace('/client/chat')
+      }
+    } else {
+      ElMessage.warning('登录成功但未获取到有效 Token，请联系管理员')
     }
-  })
+  } catch (error) {
+    // validate 失败时 error 为 false，API 报错时为 AxiosError
+    if (error) {
+      logger.error('Login Error:', error)
+      const msg = error?.response?.data?.message || error?.message || t('auth.login.failed')
+      ElMessage.error(msg)
+    }
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

@@ -1,6 +1,6 @@
 {
   "name": "ai-mental-health-desktop",
-  "version": "1.0.0",
+  "version": "2.6.0",
   "private": true,
   "description": "AI 心理健康助手 — Windows 本地演示版",
   "main": "main.js",
@@ -13,5 +13,6 @@
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0",
     "sharp": "^0.34.5"
-  }
+  },
+  "license": "MIT"
 }

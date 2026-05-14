@@ -27,6 +27,7 @@
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item command="zh">中文</el-dropdown-item>
+            <el-dropdown-item command="zh-TW">繁體中文</el-dropdown-item>
             <el-dropdown-item command="en">English</el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -78,7 +79,10 @@ const router = useRouter()
 const menuStore = useMenuStore()
 const authStore = useAuthStore()
 
-const currentLangLabel = computed(() => locale.value === 'zh' ? '中文' : 'EN')
+const currentLangLabel = computed(() => {
+  const labels = { zh: '中文', 'zh-TW': '繁體中文', en: 'EN' }
+  return labels[locale.value] || '中文'
+})
 
 const switchLang = (lang) => {
   locale.value = lang

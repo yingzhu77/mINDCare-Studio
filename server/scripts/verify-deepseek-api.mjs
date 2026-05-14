@@ -1,13 +1,13 @@
 /**
  * DeepSeek API 独立验证脚本
- * 用法: DEEPSEEK_API_KEY=sk-xxx node verify-deepseek-api.mjs
+ * 用法: DEEPSEEK_API_KEY=<your_deepseek_api_key> node verify-deepseek-api.mjs
  *
  * 先独立验证模型 API 能否调用成功，再接入项目。
  */
 
 const API_KEY = process.env.DEEPSEEK_API_KEY || process.argv[2];
 if (!API_KEY) {
-  console.error('❌ 请提供 API Key: DEEPSEEK_API_KEY=sk-xxx node verify-deepseek-api.mjs');
+  console.error('❌ 请提供 API Key: DEEPSEEK_API_KEY=<your_deepseek_api_key> node verify-deepseek-api.mjs');
   process.exit(1);
 }
 

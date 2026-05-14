@@ -1,7 +1,7 @@
 {
   "name": "ai-vue-project",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -37,5 +37,7 @@
     "unplugin-vue-components": "^32.0.0",
     "vite": "^8.0.4",
     "vitest": "^3.2.4"
-  }
+  },
+  "description": "AI mental health assistant with Vue, NestJS, Docker, and Electron desktop demo.",
+  "license": "MIT"
 }

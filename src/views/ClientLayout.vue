@@ -27,6 +27,7 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="zh" :class="{ active: locale === 'zh' }">中文</el-dropdown-item>
+              <el-dropdown-item command="zh-TW" :class="{ active: locale === 'zh-TW' }">繁體中文</el-dropdown-item>
               <el-dropdown-item command="en" :class="{ active: locale === 'en' }">English</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -74,7 +75,10 @@ const authStore = useAuthStore()
 
 const activeMenu = computed(() => route.path)
 
-const currentLangLabel = computed(() => locale.value === 'zh' ? '中文' : 'EN')
+const currentLangLabel = computed(() => {
+  const labels = { zh: '中文', 'zh-TW': '繁體中文', en: 'EN' }
+  return labels[locale.value] || '中文'
+})
 
 const switchLang = (lang) => {
   locale.value = lang

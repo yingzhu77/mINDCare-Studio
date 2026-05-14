@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useAuthStore } from '@/store/useAuthStore'
 
 import BackendLayout from '@/components/BackendLayout.vue'
 import ClientLayout from '@/views/ClientLayout.vue'
@@ -191,7 +192,6 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   ElMessage.closeAll()
 
-  const { useAuthStore } = await import('@/store/useAuthStore')
   const authStore = useAuthStore()
 
   // 需要登录才能访问的路径前缀

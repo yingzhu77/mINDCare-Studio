@@ -1,6 +1,6 @@
 {
   "name": "ai-vue-server",
-  "version": "0.1.0",
+  "version": "2.6.0",
   "private": true,
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -58,5 +58,7 @@
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.0"
-  }
+  },
+  "description": "NestJS backend for the AI mental health assistant.",
+  "license": "MIT"
 }
