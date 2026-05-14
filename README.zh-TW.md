@@ -1,8 +1,22 @@
-# AI 心理健康管理平台
+# mINDCare Studio
 
 [简体中文](README.md) · [English](README.en.md) · **繁體中文**
 
-基於 Vue3 + NestJS + DeepSeek AI 的全端心理健康管理平台。支援管理後台和使用者端雙角色，提供 AI 聊天、情緒日記、知識科普、資料看板等功能，已打包為 Windows 桌面應用。
+倉庫地址：https://github.com/yingzhu77/mINDCare-Studio
+
+mINDCare Studio 是一個基於 Vue3、NestJS、Prisma、Docker 與 Electron 的 AI 心理健康管理平台。專案支援管理後台和使用者端雙角色，提供 AI 聊天、情緒日記、知識科普、資料看板和 Windows 本機示範應用。
+
+> 免責聲明：本專案不提供醫療診斷、處方或心理治療；DeepSeek API Key 由使用者自行配置，專案不內建真實 Key；Windows EXE 是本機示範版，不是生產部署替代品。
+
+## AI 輔助開發實踐
+
+本專案開發過程中使用 Codex、Claude Code 與本地 Skill 機制輔助完成需求拆解、程式碼審查、UI/UX 設計建議、文件整理和發布前複查。AI 只作為工程協作者，最終程式碼、建置、測試、打包和發布均以人工複查為準。
+
+- **約束文件與上下文管理** — 透過 `.claude/CLAUDE.md` 等專案約束文件記錄工程規則、交接上下文和關鍵決策，減少跨會話開發時的資訊遺失。
+- **UI/UX Pro Max Skill** — 已接入 `ui-ux-pro-max`，路徑為 `.codex/skills/ui-ux-pro-max/` 與 `.claude/skills/ui-ux-pro-max/`。該 skill 用於介面佈局、視覺一致性、可用性、設計系統建議和 Vue 頁面設計參考。
+- **程式碼審查輔助** — 使用審查類 skill 和 AI 對關鍵改動進行二次檢查，重點關注安全、邊界條件、測試缺口和部署影響。
+- **測試與驗收策略** — 每次發布前執行前端建置、後端建置、前端單元測試、後端單元測試，並在 Windows EXE 場景下進行人工驗收。
+- **開發邊界** — 不提交真實 API Key、生產 `.env` 或真實使用者資料；AI 生成內容必須經過建置、測試和人工確認後才能進入發布流程。
 
 ## 專案狀態
 
@@ -166,8 +180,8 @@ npm run dist
 ```
 
 產物位於 `desktop/dist-electron/`：
-- `AI心理健康助手 Setup 1.0.0.exe` — NSIS 安裝包
-- `AI心理健康助手-portable-1.0.0.exe` — 攜帶版（免安裝）
+- `AI心理健康助手 Setup 2.6.0.exe` — NSIS 安裝包
+- `AI心理健康助手-portable-2.6.0.exe` — 攜帶版（免安裝）
 
 詳見 [docs/deployment-plan.md](docs/deployment-plan.md) 路線 B。
 

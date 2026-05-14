@@ -1,11 +1,18 @@
-# AI 心理健康管理平台
+# mINDCare Studio
 
 [简体中文](README.md) · [English](README.en.md) · [繁體中文](README.zh-TW.md)
 
-基于 Vue3 + NestJS + DeepSeek AI 的全栈心理健康管理平台。支持管理后台和用户端双角色，提供 AI 聊天、情绪日记、知识科普、数据看板等功能，已打包为 Windows 桌面应用。
+仓库地址：https://github.com/yingzhu77/mINDCare-Studio
+
+mINDCare Studio 是一个基于 Vue3、NestJS、Prisma、Docker 与 Electron 的 AI 心理健康管理平台。项目支持管理后台和用户端双角色，提供 AI 聊天、情绪日记、知识科普、数据看板和 Windows 本地演示应用。
+
+> 免责声明：本项目不提供医疗诊断、处方或心理治疗；DeepSeek API Key 由用户自行配置，项目不内置真实 Key；Windows EXE 是本地演示版，不是生产部署替代品。
+
 参考项目：[B站 BV1Rh41117o](https://b23.tv/CuL7lkI)
 
-本项目开发过程中使用 Codex、Claude Code(接入DeepSeek V4) 与本地 Skill 机制辅助完成需求拆解、代码审查、UI/UX 设计建议、文档整理和发布前复查。AI 只作为工程协作者，最终代码、构建、测试、打包和发布均以人工复查为准。
+## AI 辅助开发实践
+
+本项目开发过程中使用 Codex、Claude Code 与本地 Skill 机制辅助完成需求拆解、代码审查、UI/UX 设计建议、文档整理和发布前复查。AI 只作为工程协作者，最终代码、构建、测试、打包和发布均以人工复查为准。
 
 - **约束文件与上下文管理** — 通过 `.claude/CLAUDE.md` 等项目约束文档记录工程规则、交接上下文和关键决策，减少跨会话开发时的信息丢失。
 - **UI/UX Pro Max Skill** — 已接入 `ui-ux-pro-max`，路径为 `.codex/skills/ui-ux-pro-max/` 与 `.claude/skills/ui-ux-pro-max/`。该 skill 用于界面布局、视觉一致性、可用性、设计系统建议和 Vue 页面设计参考。
@@ -177,8 +184,8 @@ npm run dist
 
 产物位于 `desktop/dist-electron/`：
 
-- `AI心理健康助手 Setup 1.0.0.exe` — NSIS 安装包
-- `AI心理健康助手-portable-1.0.0.exe` — 便携版（免安装）
+- `AI心理健康助手 Setup 2.6.0.exe` — NSIS 安装包
+- `AI心理健康助手-portable-2.6.0.exe` — 便携版（免安装）
 
 详见 [docs/deployment-plan.md](docs/deployment-plan.md) 路线 B。
 
@@ -281,7 +288,7 @@ npm run dist
 | 角色     | 用户名   | 密码        |
 | -------- | -------- | ----------- |
 | 管理员   | admin    | admin123456 |
-| 测试用户 | testuser | admin123456 |
+| 测试用户 | testuser | test123456  |
 
 > 所有环境使用相同种子数据，包含管理员和测试用户各一，以及示例文章、会话记录和情绪日记。
 

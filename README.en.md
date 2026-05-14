@@ -1,8 +1,22 @@
-# AI Mental Health Management Platform
+# mINDCare Studio
 
 [简体中文](README.md) · [繁體中文](README.zh-TW.md) · **English**
 
-A full-stack mental health management platform built with **Vue3 + NestJS + DeepSeek AI**. Supports both admin backend and client-facing user interface, providing AI chat, emotion diary, knowledge articles, data dashboard, and more. Also packaged as a Windows desktop application.
+Repository: https://github.com/yingzhu77/mINDCare-Studio
+
+mINDCare Studio is an open-source AI-assisted mental wellness management platform built with Vue 3, NestJS, Prisma, Docker, and Electron. It supports both admin and client roles, including AI chat, emotion diaries, wellness knowledge articles, analytics dashboards, and a Windows local demo app.
+
+> Disclaimer: This project does not provide medical diagnosis, prescriptions, or psychotherapy. DeepSeek API keys are configured by users and are not built into the project. The Windows EXE is a local demo version, not a replacement for production deployment.
+
+## AI-Assisted Development Practice
+
+This project used Codex, Claude Code, and local Skills to support planning, code review, UI/UX design suggestions, documentation, and release readiness checks. AI is treated as an engineering collaborator; final code, builds, tests, packaging, and releases require human review.
+
+- **Project constraints and context management** — Project constraint documents such as `.claude/CLAUDE.md` record engineering rules, handoff context, and key decisions to reduce information loss across development sessions.
+- **UI/UX Pro Max Skill** — The project has integrated `ui-ux-pro-max`, located at `.codex/skills/ui-ux-pro-max/` and `.claude/skills/ui-ux-pro-max/`. This skill supports layout review, visual consistency, usability checks, design system suggestions, and Vue page design references.
+- **Code review assistance** — Review-oriented skills and AI checks are used for critical changes, focusing on security, edge cases, test gaps, and deployment impact.
+- **Testing and acceptance strategy** — Before release, frontend build, backend build, frontend unit tests, backend unit tests, and Windows EXE manual acceptance are required.
+- **Development boundaries** — Real API keys, production `.env` files, and real user data must not be committed. AI-generated output must pass builds, tests, and human review before entering the release process.
 
 ## Project Status
 
@@ -146,8 +160,8 @@ npm run dist
 ```
 
 Output in `desktop/dist-electron/`:
-- `AI心理健康助手 Setup 1.0.0.exe` — NSIS installer
-- `AI心理健康助手-portable-1.0.0.exe` — Portable version (no install needed)
+- `AI心理健康助手 Setup 2.6.0.exe` — NSIS installer
+- `AI心理健康助手-portable-2.6.0.exe` — Portable version (no install needed)
 
 See [docs/deployment-plan.md](docs/deployment-plan.md) (English version not available), Route B.
 
