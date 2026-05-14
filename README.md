@@ -413,7 +413,3 @@ DEEPSEEK_API_KEY=<your_deepseek_api_key>
 - AI 聊天内容会存储在服务器中用于对话连续性
 - 建议不要在对话中透露个人身份信息（真实姓名、身份证号、住址等）
 - 详细的隐私政策请参阅项目相关文档
-
----
-
-**项目主页：** [github.com/yingzhu77/MindCare-AI](https://github.com/yingzhu77/MindCare-AI)
