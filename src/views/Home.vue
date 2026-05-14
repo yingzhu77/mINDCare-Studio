@@ -83,7 +83,7 @@
         <p class="footer-text">心晴 AI 心理健康助手 — 让温暖触手可及</p>
         <div class="footer-repo">
           <el-icon :size="16"><Link /></el-icon>
-          <a href="https://github.com/yingzhu77/MindCare-AI" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub 开源仓库</a>
+          <a href="https://github.com/yingzhu77/mINDCare-Studio" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub 开源仓库</a>
         </div>
         <p class="footer-copy">MIT License · 开源共建</p>
       </div>
