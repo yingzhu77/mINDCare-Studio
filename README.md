@@ -1,10 +1,69 @@
 # AI 心理健康管理平台
 
-面向长期 Web SaaS 开源方向推进的 AI 心理健康管理平台。项目目标不是只做一个本地后台演示，而是建设一个可 clone、可启动、可贡献、可扩展的全栈开源项目。
+[简体中文](README.md) · [English](README.en.md) · [繁體中文](README.zh-TW.md)
+
+基于 Vue3 + NestJS + DeepSeek AI 的全栈心理健康管理平台。支持管理后台和用户端双角色，提供 AI 聊天、情绪日记、知识科普、数据看板等功能，已打包为 Windows 桌面应用。
+
+## AI 辅助开发实践
+
+本项目全程使用 **Claude Code（AI 配对编程）** 完成，以下是开发过程中的方法总结。
+
+### 核心工具链
+
+| 工具 | 用途 |
+|------|------|
+| Claude Code (CLI) | 配对编程主力——代码生成、重构、Bug 排查、测试 |
+| Skill 机制 | 调用专用 skill 处理特定任务（代码审查、安全审查、Playwright 联调） |
+| CLAUDE.md | 项目级约束文件，统一 AI 行为边界和开发习惯 |
+| Memory 系统 | 跨会话持久化用户偏好、项目状态、关键决策 |
+
+### 约束工程（CLAUDE.md）
+
+项目根目录的 `.claude/CLAUDE.md` 是 AI 行为的"宪法"文件。核心约束包括：
+
+- **先想清楚再写**：需求有歧义时先列出假设，不默默选一种解释直接实现
+- **保持最小实现**：50 行能解决的不写成 200 行，不为"未来可能"提前加抽象层
+- **只做手术式改动**：不顺手重构无关模块、不改无关注释格式、不改无关代码
+- **目标驱动执行**：改动前先定验收标准，多步任务按"先打通→再验证→再扩展"推进
+- **分层不可打乱**：前端 `src/views/` `src/api/` `src/router/` 等目录职责固定，后端 NestJS 模块按业务域拆分
+- **接口稳定优先**：后端必须兼容前端已调用的接口路径和返回结构
+- **API Key 合规**：绝不提交真实 Key，未配置时自动降级 Mock 模式
+
+### 上下文管理
+
+全栈项目容易超出单次对话窗口。采用的策略：
+
+- **CLAUDE.md 会话交接段**（第 18 节）：每次关闭窗口前，将当前完成节点、下一任务、边界约束、关键设计决策写入文档，下个窗口自动恢复上下文
+- **Memory 系统**：持久化用户偏好、项目历史状态和重要决策，避免反复说明
+- **计划的增量执行**：主计划书 `docs/project-fullstack-plan.md` 定义 6 阶段路线，每次集中完成一个 Phase 内的明确子任务
+
+### 用到的 Skill
+
+| Skill | 触发场景 |
+|-------|---------|
+| `code-review-expert` | 提交前代码审查，发现 SOLID 违规和安全风险 |
+| `security-review` | 安全专项审查（API Key 泄露、注入、认证绕过） |
+| `playwright` | 真实浏览器自动化联调和 E2E 回归 |
+| `web-design-guidelines` | 前端页面交互和可访问性审查 |
+| `simplify` | 审查已改代码，消除过度设计 |
+
+### 测试策略
+
+- **构建验证**：每次改动后 `npm run build`（前端）和 `cd server && npm run build`（后端）确保不产生编译错误
+- **接口验证**：改动后端后用 curl 或浏览器检查接口返回结构
+- **Playwright E2E**：`e2e/` 目录下 14 条用例覆盖登录→管理后台→用户端→AI 聊天→情绪日记全流程
+- **真实浏览器联调**：通过 Playwright skill 在容器内启动 Chromium 逐页截图检查
+
+### 开发原则总结
+
+1. **文档即代码**：CLAUDE.md、project-context.md、README 三者联动，不出现互相矛盾的状态描述
+2. **AI 是协作者，不是黑箱**：每步改动可追溯、可验证、可回滚；AI 生成的代码必须经过构建和人工确认
+3. **约束优于提示**：写死的规则（分层、接口路径、认证方式）写入 CLAUDE.md，避免每次口头重复
+4. **先跑通再优化**：每个阶段先打通完整链路（Mock AI → 真实 AI，SQLite → MySQL），再做功能扩展
 
 ## 项目状态
 
-**当前版本：v2.5.2 — 用户端情绪洞察 + SSE 流式修复 + 客户端 SSE 流式修复 + 文档同步收口**
+**当前版本：v2.6.0 — Docker 部署线 + Electron Windows 桌面演示版 + 开源上线准备**
 
 | 层级   | 状态          | 说明                                                                                |
 | ------ | ------------- | ----------------------------------------------------------------------------------- |
@@ -13,9 +72,9 @@
 | 后端   | ✅ 全部完成   | NestJS + Prisma + 9 实体(含通知+修订) + 认证 + 管理端/用户端接口 + AI 模块 + 审核通知 |
 | 数据库 | ✅ 主线完成   | Prisma migration 管理，SQLite 开发，可切换 MySQL，含 KnowledgeArticleRevision 表     |
 | AI     | ✅ 骨架就绪   | DeepSeek 客户端 + mock AI 模式 + SSE 流式 + 分析结果落库+缓存                       |
-| P5-P8  | ✅ 全部完成   | 聊天历史管理、Docker 部署、GitHub Actions CI、Playwright E2E、测试深化              |
+| 基础设施 | ✅ 就绪   | Docker Compose 三容器编排、GitHub Actions CI、Playwright E2E 14 用例                |
 
-## 目标技术栈
+## 技术栈
 
 **前端：**
 
@@ -56,6 +115,7 @@ src/                       # Vue3 前端
     AuthLayout.vue         # 登录/注册布局
     Login.vue              # 登录页
     Register.vue           # 注册页
+    Home.vue               # 首页（功能卡片 + 关于区域）
     Dashboard.vue          # 管理端仪表盘（ECharts 趋势图）
     knowledge.vue          # 知识文章管理
     emotional.vue          # 情绪日志管理
@@ -68,6 +128,8 @@ src/                       # Vue3 前端
     ClientEmotionInsights.vue        # 用户端情绪洞察（图表）
     ClientArticles.vue     # 用户端文章投稿列表
     ClientArticleCreate.vue# 用户端投稿编辑
+    ClientArticleBrowse.vue # 用户端知识阅读
+    ClientArticleDetail.vue # 用户端文章详情
 
 server/                    # NestJS + Prisma 后端
   prisma/
@@ -115,7 +177,7 @@ desktop/                   # Electron 桌面版（已完成 — NSIS + portable 
 
 ```powershell
 npm install
-npm run dev -- --host 127.0.0.1
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
 **后端（NestJS 主线）**
@@ -165,6 +227,10 @@ npm run dist
 - `AI心理健康助手-portable-1.0.0.exe` — 便携版（免安装）
 
 详见 [docs/deployment-plan.md](docs/deployment-plan.md) 路线 B。
+
+## 运行说明
+
+> ⚠️ 本项目目前**仅进行过本地开发环境测试和 Windows EXE 桌面应用测试**，尚未在生产服务器上部署运行。如果你计划部署到公网服务器，请自行评估安全加固（HTTPS、反向代理、数据库访问控制等），详见 `docs/deployment.md`。
 
 ## 已实现接口
 
@@ -258,9 +324,12 @@ npm run dist
 
 ## 默认账号
 
-| 角色   | 用户名 | 密码        |
-| ------ | ------ | ----------- |
-| 管理员 | admin  | admin123456 |
+| 角色   | 用户名     | 密码        |
+| ------ | ---------- | ----------- |
+| 管理员 | admin      | admin123456 |
+| 测试用户 | testuser  | admin123456 |
+
+> 所有环境使用相同种子数据，包含管理员和测试用户各一，以及示例文章、会话记录和情绪日记。
 
 ## 部署与运维
 
@@ -330,12 +399,12 @@ npx playwright test --ui
 
 ```powershell
 # 编辑 server/.env，填入你的 DeepSeek API Key
-DEEPSEEK_API_KEY=sk-your-key-here
+DEEPSEEK_API_KEY=<your_deepseek_api_key>
 ```
 
 重启后端后，所有 AI 功能自动切换到真实模型调用：
 
-- AI 聊天使用 DeepSeek Chat 模型实时生成回复
+- AI 聊天使用 DeepSeek v4-Flash 模型实时生成回复
 - 情绪日记分析使用真实模型分析
 - 会话摘要由模型生成真实摘要
 
@@ -344,6 +413,14 @@ DEEPSEEK_API_KEY=sk-your-key-here
 > - API Key 只存在于后端 `.env` 文件中，不会写入前端或提交到仓库
 > - 未配置 Key 时系统自动使用 Mock 模式，不会报错
 > - 如果你 clone 了本仓库，使用前请先确认是否已配置自己的 API Key
+
+## 多语言说明
+
+本项目支持简体中文、繁体中文和英文界面，通过 vue-i18n 实现。
+
+**翻译范围：** 导航菜单、按钮、标签、提示信息等 UI 框架文字已完整翻译。页面中由用户生成的内容（文章正文、情绪日记内容、AI 聊天消息等）保持原语言不变，不会自动翻译。
+
+**切换方式：** 管理端顶栏或用户端导航栏右侧的语言切换下拉菜单，可随时切换界面语言。浏览器默认语言为 `zh-TW`/`zh-HK`/`zh-MO` 时会自动加载繁体中文。
 
 ## 产品安全声明
 
