@@ -3,19 +3,11 @@
 [简体中文](README.md) · [English](README.en.md) · [繁體中文](README.zh-TW.md)
 
 基于 Vue3 + NestJS + DeepSeek AI 的全栈心理健康管理平台。支持管理后台和用户端双角色，提供 AI 聊天、情绪日记、知识科普、数据看板等功能，已打包为 Windows 桌面应用。
+参考项目：[B站 BV1Rh41117o](https://b23.tv/CuL7lkI)
 
 ## AI 辅助开发实践
 
-本项目全程使用 **Claude Code（AI 配对编程）** 完成，以下是开发过程中的方法总结。
-
-### 核心工具链
-
-| 工具 | 用途 |
-|------|------|
-| Claude Code (CLI) | 配对编程主力——代码生成、重构、Bug 排查、测试 |
-| Skill 机制 | 调用专用 skill 处理特定任务（代码审查、安全审查、Playwright 联调） |
-| CLAUDE.md | 项目级约束文件，统一 AI 行为边界和开发习惯 |
-| Memory 系统 | 跨会话持久化用户偏好、项目状态、关键决策 |
+本项目全程使用 Codex + Cladue Code(接入DeepSeek V4) 完成，以下是开发过程中的方法总结。
 
 ### 约束工程（CLAUDE.md）
 
@@ -39,13 +31,13 @@
 
 ### 用到的 Skill
 
-| Skill | 触发场景 |
-|-------|---------|
-| `code-review-expert` | 提交前代码审查，发现 SOLID 违规和安全风险 |
-| `security-review` | 安全专项审查（API Key 泄露、注入、认证绕过） |
-| `playwright` | 真实浏览器自动化联调和 E2E 回归 |
-| `web-design-guidelines` | 前端页面交互和可访问性审查 |
-| `simplify` | 审查已改代码，消除过度设计 |
+ | Skill | 触发场景 |
+ | ----------------------- | -------------------------------------------- |
+ | `code-review-expert` | 提交前代码审查，发现 SOLID 违规和安全风险 |
+ | `security-review` | 安全专项审查（API Key 泄露、注入、认证绕过） |
+ | `playwright` | 真实浏览器自动化联调和 E2E 回归 |
+ | `web-design-guidelines` | 前端页面交互和可访问性审查 |
+ | `simplify` | 审查已改代码，消除过度设计 |
 
 ### 测试策略
 
@@ -65,14 +57,14 @@
 
 **当前版本：v2.6.0 — Docker 部署线 + Electron Windows 桌面演示版 + 开源上线准备**
 
-| 层级   | 状态          | 说明                                                                                |
-| ------ | ------------- | ----------------------------------------------------------------------------------- |
-| 前端   | ✅ 管理端完成 | 暖薰衣草紫统一主题 + 首页 + 登录/Dashboard(ECharts 趋势图)/知识文章 CRUD+审核/咨询记录/情绪日志/用户管理/分析页 |
-| 前端   | ✅ 用户端完整 | ClientLayout(顶部导航) + AI 聊天(SSE+会话侧边栏+删除/导出) + 情绪日记 + 情绪洞察(趋势/分布/图表) + 文章投稿+修订+知识阅读 + 通知铃铛 |
-| 后端   | ✅ 全部完成   | NestJS + Prisma + 9 实体(含通知+修订) + 认证 + 管理端/用户端接口 + AI 模块 + 审核通知 |
-| 数据库 | ✅ 主线完成   | Prisma migration 管理，SQLite 开发，可切换 MySQL，含 KnowledgeArticleRevision 表     |
-| AI     | ✅ 骨架就绪   | DeepSeek 客户端 + mock AI 模式 + SSE 流式 + 分析结果落库+缓存                       |
-| 基础设施 | ✅ 就绪   | Docker Compose 三容器编排、GitHub Actions CI、Playwright E2E 14 用例                |
+ | 层级 | 状态 | 说明 |
+ | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+ | 前端 | ✅ 管理端完成 | 暖薰衣草紫统一主题 + 首页 + 登录/Dashboard(ECharts 趋势图)/知识文章 CRUD+审核/咨询记录/情绪日志/用户管理/分析页 |
+ | 前端 | ✅ 用户端完整 | ClientLayout(顶部导航) + AI 聊天(SSE+会话侧边栏+删除/导出) + 情绪日记 + 情绪洞察(趋势/分布/图表) + 文章投稿+修订+知识阅读 + 通知铃铛 |
+ | 后端 | ✅ 全部完成 | NestJS + Prisma + 9 实体(含通知+修订) + 认证 + 管理端/用户端接口 + AI 模块 + 审核通知 |
+ | 数据库 | ✅ 主线完成 | Prisma migration 管理，SQLite 开发，可切换 MySQL，含 KnowledgeArticleRevision 表 |
+ | AI | ✅ 骨架就绪 | DeepSeek 客户端 + mock AI 模式 + SSE 流式 + 分析结果落库+缓存 |
+ | 基础设施 | ✅ 就绪 | Docker Compose 三容器编排、GitHub Actions CI、Playwright E2E 14 用例 |
 
 ## 技术栈
 
@@ -160,16 +152,17 @@ scripts/                   # 一键启动脚本
 e2e/                       # Playwright E2E 测试
 public/                    # 静态资源（favicon、icons）
 desktop/                   # Electron 桌面版（已完成 — NSIS + portable 打包就绪）
+```
 
 ## 运行方式
 
 项目支持三种运行方式，按需选择：
 
-| 方式 | 适用场景 | 数据库 | AI |
-|------|----------|--------|----|
-| 开发运行 | 改代码 / 调试 | SQLite（可切换 MySQL） | Mock AI（可配 Key） |
-| Docker 部署 | 生产 / 自部署 | MySQL 8.0 | 可配真实 Key |
-| Windows EXE | 本地演示 / 复现 | SQLite | Mock AI（可配 Key） |
+ | 方式 | 适用场景 | 数据库 | AI |
+ | ------ | ---------- | -------- | ---- |
+ | 开发运行 | 改代码 / 调试 | SQLite（可切换 MySQL） | Mock AI（可配 Key） |
+ | Docker 部署 | 生产 / 自部署 | MySQL 8.0 | 可配真实 Key |
+ | Windows EXE | 本地演示 / 复现 | SQLite | Mock AI（可配 Key） |
 
 ### 方式一：开发运行
 
@@ -223,6 +216,7 @@ npm run dist
 ```
 
 产物位于 `desktop/dist-electron/`：
+
 - `AI心理健康助手 Setup 1.0.0.exe` — NSIS 安装包
 - `AI心理健康助手-portable-1.0.0.exe` — 便携版（免安装）
 
@@ -236,66 +230,66 @@ npm run dist
 
 ### 公共页面
 
-| 路径 | 说明 |
-| ---- | ---- |
-| `/` | 首页（功能卡片 + 关于区域） |
-| `/auth/login` | 登录页（左侧 logo + 暖金色文案） |
-| `/auth/register` | 注册 |
+ | 路径 | 说明 |
+ | ---------------- | -------------------------------- |
+ | `/` | 首页（功能卡片 + 关于区域） |
+ | `/auth/login` | 登录页（左侧 logo + 暖金色文案） |
+ | `/auth/register` | 注册 |
 
 ### 认证
 
-| 方法 | 路径                 | 说明                 |
-| ---- | -------------------- | -------------------- |
-| POST | `/api/user/login`    | 登录，返回 JWT token |
-| POST | `/api/user/register` | 注册                 |
-| GET  | `/api/user/me`       | 当前用户信息         |
+ | 方法 | 路径 | 说明 |
+ | ---- | -------------------- | -------------------- |
+ | POST | `/api/user/login` | 登录，返回 JWT token |
+ | POST | `/api/user/register` | 注册 |
+ | GET | `/api/user/me` | 当前用户信息 |
 
 ### 管理端
 
-| 方法                | 路径                                            | 说明                               |
-| ------------------- | ----------------------------------------------- | ---------------------------------- |
-| GET                 | `/api/knowledge/category/tree`                  | 知识分类树                         |
-| GET/POST/PUT/DELETE | `/api/knowledge/article/**`                     | 文章 CRUD                          |
-| PUT                 | `/api/knowledge/article/:id/status`             | 管理端文章发布/下线/重新发布       |
-| GET                 | `/api/knowledge/article/review/page`            | 文章/修订统一审核列表              |
-| GET                 | `/api/knowledge/article/review/pending-count`   | 待审核数量                         |
-| GET                 | `/api/knowledge/article/review/:type/:id`       | 审核预览详情                       |
-| PUT                 | `/api/knowledge/article/review/:type/:id/status`| 审核通过/驳回                      |
-| GET                 | `/api/psychological-chat/sessions`              | 咨询会话列表                       |
-| GET                 | `/api/psychological-chat/sessions/:id/messages` | 会话消息                           |
-| GET                 | `/api/emotion-diary/admin/page`                 | 情绪日记管理端分页                 |
-| DELETE              | `/api/emotion-diary/admin/:id`                  | 情绪日记删除                       |
-| GET                 | `/api/data-analytics/overview`                  | Dashboard 统计概览                 |
-| GET                 | `/api/data-analytics/trends`                    | Dashboard 趋势图（情绪/咨询/文章） |
-| POST                | `/api/file/upload`                              | 文件上传                           |
-| POST                | `/api/analysis/emotion-diary/:id`               | 触发情绪日记 AI 分析               |
-| GET                 | `/api/analysis/emotion-diary/:id`               | 获取情绪日记分析结果               |
-| POST                | `/api/analysis/chat-session/:id`                | 触发会话 AI 分析                   |
-| GET                 | `/api/analysis/chat-session/:id`                | 获取会话分析结果                   |
-| GET                 | `/api/user/page`                                | 用户管理分页                       |
-| PUT                 | `/api/user/:id/status`                          | 启用/禁用用户                      |
-| GET                 | `/api/notification/list`                        | 通知列表                           |
-| GET                 | `/api/notification/unread-count`                | 未读通知数                         |
-| PUT                 | `/api/notification/read/:id`                    | 标记通知已读                       |
-| PUT                 | `/api/notification/read-all`                    | 全部标记已读                       |
+ | 方法 | 路径 | 说明 |
+ | ------------------- | ------------------------------------------------ | ---------------------------------- |
+ | GET | `/api/knowledge/category/tree` | 知识分类树 |
+ | GET/POST/PUT/DELETE | `/api/knowledge/article/**` | 文章 CRUD |
+ | PUT | `/api/knowledge/article/:id/status` | 管理端文章发布/下线/重新发布 |
+ | GET | `/api/knowledge/article/review/page` | 文章/修订统一审核列表 |
+ | GET | `/api/knowledge/article/review/pending-count` | 待审核数量 |
+ | GET | `/api/knowledge/article/review/:type/:id` | 审核预览详情 |
+ | PUT | `/api/knowledge/article/review/:type/:id/status` | 审核通过/驳回 |
+ | GET | `/api/psychological-chat/sessions` | 咨询会话列表 |
+ | GET | `/api/psychological-chat/sessions/:id/messages` | 会话消息 |
+ | GET | `/api/emotion-diary/admin/page` | 情绪日记管理端分页 |
+ | DELETE | `/api/emotion-diary/admin/:id` | 情绪日记删除 |
+ | GET | `/api/data-analytics/overview` | Dashboard 统计概览 |
+ | GET | `/api/data-analytics/trends` | Dashboard 趋势图（情绪/咨询/文章） |
+ | POST | `/api/file/upload` | 文件上传 |
+ | POST | `/api/analysis/emotion-diary/:id` | 触发情绪日记 AI 分析 |
+ | GET | `/api/analysis/emotion-diary/:id` | 获取情绪日记分析结果 |
+ | POST | `/api/analysis/chat-session/:id` | 触发会话 AI 分析 |
+ | GET | `/api/analysis/chat-session/:id` | 获取会话分析结果 |
+ | GET | `/api/user/page` | 用户管理分页 |
+ | PUT | `/api/user/:id/status` | 启用/禁用用户 |
+ | GET | `/api/notification/list` | 通知列表 |
+ | GET | `/api/notification/unread-count` | 未读通知数 |
+ | PUT | `/api/notification/read/:id` | 标记通知已读 |
+ | PUT | `/api/notification/read-all` | 全部标记已读 |
 
 ### 用户端
 
-| 方法   | 路径                                  | 说明                      |
-| ------ | ------------------------------------- | ------------------------- |
-| POST   | `/api/chat/send`                      | AI 聊天 SSE 流式          |
-| GET    | `/api/chat/sessions/my`               | 我的会话列表带预览        |
-| DELETE | `/api/chat/session/:sessionId`        | 删除会话（级联消息+分析） |
-| GET    | `/api/chat/session/:sessionId/export` | 导出会话为 JSON           |
-| POST   | `/api/emotion-diary`                  | 新增情绪日记              |
-| GET    | `/api/emotion-diary/my/page`          | 我的情绪日记分页          |
-| PUT    | `/api/emotion-diary/:id`              | 更新情绪日记              |
-| DELETE | `/api/emotion-diary/:id`              | 删除情绪日记（用户端）    |
-| GET    | `/api/emotion-diary/my/statistics`   | 我的情绪数据统计（趋势/分布） |
-| GET    | `/api/client/article/page`            | 我的投稿列表              |
-| POST   | `/api/client/article`                 | 创建投稿                  |
-| PUT    | `/api/client/article/:id`             | 编辑投稿                  |
-| PUT    | `/api/client/article/:id/submit`      | 提交审核                  |
+ | 方法 | 路径 | 说明 |
+ | ------ | ------------------------------------- | ----------------------------- |
+ | POST | `/api/chat/send` | AI 聊天 SSE 流式 |
+ | GET | `/api/chat/sessions/my` | 我的会话列表带预览 |
+ | DELETE | `/api/chat/session/:sessionId` | 删除会话（级联消息+分析） |
+ | GET | `/api/chat/session/:sessionId/export` | 导出会话为 JSON |
+ | POST | `/api/emotion-diary` | 新增情绪日记 |
+ | GET | `/api/emotion-diary/my/page` | 我的情绪日记分页 |
+ | PUT | `/api/emotion-diary/:id` | 更新情绪日记 |
+ | DELETE | `/api/emotion-diary/:id` | 删除情绪日记（用户端） |
+ | GET | `/api/emotion-diary/my/statistics` | 我的情绪数据统计（趋势/分布） |
+ | GET | `/api/client/article/page` | 我的投稿列表 |
+ | POST | `/api/client/article` | 创建投稿 |
+ | PUT | `/api/client/article/:id` | 编辑投稿 |
+ | PUT | `/api/client/article/:id/submit` | 提交审核 |
 
 ### 统一响应结构
 
@@ -324,10 +318,10 @@ npm run dist
 
 ## 默认账号
 
-| 角色   | 用户名     | 密码        |
-| ------ | ---------- | ----------- |
-| 管理员 | admin      | admin123456 |
-| 测试用户 | testuser  | admin123456 |
+ | 角色 | 用户名 | 密码 |
+ | -------- | -------- | ----------- |
+ | 管理员 | admin | admin123456 |
+ | 测试用户 | testuser | admin123456 |
 
 > 所有环境使用相同种子数据，包含管理员和测试用户各一，以及示例文章、会话记录和情绪日记。
 
